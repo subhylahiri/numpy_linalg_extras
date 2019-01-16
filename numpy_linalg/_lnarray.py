@@ -36,7 +36,7 @@ Examples
 >>> u = x @ y.t
 >>> v = (x.r @ y.t).ur
 """
-from __future__ import annotations
+# from __future__ import annotations
 from typing import Optional, Tuple, Sequence
 import numpy as np
 import numpy.lib.mixins as _mix

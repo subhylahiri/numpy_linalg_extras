@@ -1,0 +1,530 @@
+/* -*- Mode: C -*- */
+/* Common code for creating GUFuncs with BLAS/Lapack
+*/
+/*
+Adapted from https://github.com/numpy/numpy/numpy/linalg/umath_linalg.c.src
+Copyright/licence info for that file:
+* Copyright (c) 2005-2017, NumPy Developers.
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions
+* are met:
+*   - Redistributions of source code must retain the above
+*     copyright notice, this list of conditions and the
+*     following disclaimer.
+*   - Redistributions in binary form must reproduce the above copyright
+*     notice, this list of conditions and the following disclaimer
+*     in the documentation and/or other materials provided with the
+*     distribution.
+*   - Neither the name of the author nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+* A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+* OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+* THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+/*
+*****************************************************************************
+**                            Includes                                     **
+*****************************************************************************
+*/
+#define NPY_NO_DEPRECATED_API NPY_API_VERSION
+#include "rearrange_data.h"
+
+/*
+*****************************************************************************
+**                   BLAS/Lapack calling macros                            **
+*****************************************************************************
+*/
+/**begin repeat
+    #typ = float, double, f2c_complex, f2c_doublecomplex#
+    #copy = scopy, dcopy, ccopy, zcopy#
+    #lacgv = clacgv, zlacgv, clacgv, zlacgv#
+    #cmplx = 0, 0, 1, 1#
+*/
+
+/* copy vector x into y */
+extern void
+FNAME(@copy@)(int *n,
+            @typ@ *sx, int *incx,
+            @typ@ *sy, int *incy);
+
+#if @cmplx@
+/* complex conjugate */
+extern void
+FNAME(@lacgv@)(int *n, @typ@ *x, int *incx);
+#endif
+
+/**end repeat**/
+
+/*
+*****************************************************************************
+**                    Data rearrangement functions                         **
+*****************************************************************************
+*/
+
+              /* rearranging of 2D matrices using blas */
+
+/**begin repeat
+    #TYPE = FLOAT, DOUBLE, CFLOAT, CDOUBLE#
+    #typ = float, double, COMPLEX_t, DOUBLECOMPLEX_t#
+    #ftyp = fortran_real, fortran_doublereal, fortran_complex, fortran_doublecomplex#
+    #copy = scopy, dcopy, ccopy, zcopy#
+    #lacgv = clacgv, zlacgv, clacgv, zlacgv#
+    #zero = s_zero, d_zero, c_zero, z_zero#
+    #one = s_one, d_one, c_one, z_one#
+    #nan = s_nan, d_nan, c_nan, z_nan#
+    #cmplx = 0, 0, 1, 1#
+*/
+
+/*********************
+*  Complex numbers   *
+**********************/
+
+fortran_int
+@TYPE@_real_int(@ftyp@ val)
+{
+#if @cmplx@
+    return (fortran_int)val.r;
+#else
+    return (fortran_int)val;
+#endif
+}
+
+static NPY_INLINE void
+@TYPE@_conj_vec(fortran_int len, @typ@ *dst, fortran_int stride,
+                const LINEARIZE_DATA_t *data)
+{
+#if @cmplx@
+    if (data->conj) {
+        FNAME(@lacgv@)(&len, (void *)dst, &stride);
+    }
+#endif
+}
+
+/*********************
+*  Copying matrices  *
+**********************/
+
+void
+linearize_@TYPE@_matrix(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data)
+{
+    @typ@ *src = (@typ@ *) src_in;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    if (dst) {
+        int i, j;
+        fortran_int columns = (fortran_int)data->columns;
+        fortran_int column_strides =
+                (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        for (i = 0; i < data->rows; i++) {
+            if (column_strides > 0) {
+                FNAME(@copy@)(&columns,
+                              (void *)src, &column_strides,
+                              (void *)dst, &one);
+            }
+            else if (column_strides < 0) {
+                /*
+                * BLAS _copy assumes dst points to the first element in memory.
+                * numpy points it at the first element of the array.
+                * We have to compensate.
+                */
+                FNAME(@copy@)(  &columns,
+                                (void *)((@typ@*)src + (columns-1)*column_strides),
+                                &column_strides,
+                                (void *)dst, &one);
+            }
+            else {
+                /*
+                * Zero stride has undefined behavior in some BLAS
+                * implementations (e.g. OSX Accelerate), so do it
+                * manually
+                */
+                for (j = 0; j < columns; ++j) {
+                    memcpy((void *)(dst + j), (void *)src, sizeof(@typ@));
+                }
+            }
+            @TYPE@_conj_vec(columns, dst, one, data);
+            src += data->row_strides/sizeof(@typ@);
+            dst += data->output_lead_dim;
+        }
+    }
+}
+
+void
+delinearize_@TYPE@_matrix(  void *dst_in,
+                            const void *src_in,
+                            const LINEARIZE_DATA_t* data)
+{
+    @typ@ *src = (@typ@ *) src_in;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    if (src) {
+        int i;
+        fortran_int columns = (fortran_int)data->columns;
+        fortran_int column_strides =
+            (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        for (i = 0; i < data->rows; i++) {
+            if (column_strides > 0) {
+                FNAME(@copy@)(  &columns,
+                                (void *)src, &one,
+                                (void *)dst, &column_strides);
+                @TYPE@_conj_vec(columns, dst, column_strides, data);
+            }
+            else if (column_strides < 0) {
+                /*
+                * BLAS _copy/lacgv assume dst points to first element in memory
+                * numpy points it at the first element of the array.
+                * We have to compensate.
+                */
+                @typ@ *dst_end = dst + (columns-1)*column_strides;
+                FNAME(@copy@)(  &columns,
+                                (void *)src, &one,
+                                (void *)dst_end, &column_strides);
+                @TYPE@_conj_vec(columns, dst_end, column_strides, data);
+            }
+            else {
+                /*
+                * Zero stride has undefined behavior in some BLAS
+                * implementations (e.g. OSX Accelerate), so do it
+                * manually
+                */
+                if (columns > 0) {
+                    memcpy((void *)dst, (void *)(src + (columns-1)), sizeof(@typ@));
+                    @TYPE@_conj_vec(one, dst, column_strides, data);
+                }
+            }
+            src += data->output_lead_dim;
+            dst += data->row_strides/sizeof(@typ@);
+        }
+    }
+}
+
+/*
+This function does not fill the lower triangle with zeros.
+To do that, call zero_@TYPE@_matrix first.
+*/
+void
+delinearize_@TYPE@_triu(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data)
+{
+   @typ@ *src = (@typ@ *) src_in;
+   @typ@ *dst = (@typ@ *) dst_in;
+
+   if (src) {
+       int i;
+        fortran_int columns = (fortran_int)data->columns;
+        fortran_int column_strides =
+            (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        for (i = 0; i < data->rows; i++) {
+            fortran_int len = fortran_int_min(i + 1, columns);
+            if (column_strides > 0) {
+                FNAME(@copy@)(  &len,
+                                (void *)src, &one,
+                                (void *)dst, &column_strides);
+            }
+            else if (column_strides < 0) {
+                /*
+                * BLAS _copy assumes dst points to the first element in memory.
+                * numpy points it at the first element of the array.
+                * We have to compensate.
+                */
+                FNAME(@copy@)(  &len,
+                                (void *)src, &one,
+                                (void *)(dst + (len-1)*column_strides),
+                                &column_strides);
+            }
+            else {
+                /*
+                * Zero stride has undefined behavior in some BLAS
+                * implementations (e.g. OSX Accelerate), so do it
+                * manually
+                */
+                if (columns > 0) {
+                    memcpy((void *)dst, (void *)(src + (len-1)), sizeof(@typ@));
+                }
+            }
+            src += data->output_lead_dim;
+            dst += data->row_strides/sizeof(@typ@);
+        }
+    }
+}
+
+/*
+This function does not fill the upper triangle with zeros, or set the diagonal.
+To do that, call zero_@TYPE@_matrix first. Unit diagonals can be set with
+eye_@TYPE@_matrix.
+*/
+void
+delinearize_@TYPE@_tril(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data)
+{
+   @typ@ *src = (@typ@ *) src_in;
+   @typ@ *dst = (@typ@ *) dst_in;
+
+   if (src) {
+       int i;
+        fortran_int columns = (fortran_int)data->columns;
+        fortran_int column_strides =
+            (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        for (i = 0; i < data->rows && i < columns - 1; i++) {
+            fortran_int len = columns - i - 1;
+            if (column_strides > 0) {
+                FNAME(@copy@)(  &len,
+                                (void *)(src + i + 1), &one,
+                                (void *)(dst + (i+1)*column_strides),
+                                &column_strides);
+            }
+            else if (column_strides < 0) {
+                /*
+                * BLAS _copy assumes dst points to the first element in memory.
+                * numpy points it at the first element of the array.
+                * We have to compensate.
+                */
+                FNAME(@copy@)(  &len,
+                                (void *)(src + i + 1), &one,
+                                (void *)(dst + (columns-1)*column_strides),
+                                &column_strides);
+            }
+            else {
+                /*
+                * Zero stride has undefined behavior in some BLAS
+                * implementations (e.g. OSX Accelerate), so do it
+                * manually
+                */
+                memcpy((void *)dst, (void *)(src + (columns-1)), sizeof(@typ@));
+            }
+            src += data->output_lead_dim;
+            dst += data->row_strides/sizeof(@typ@);
+        }
+    }
+}
+
+/*********************
+*  Filling matrices  *
+**********************/
+
+void
+nan_@TYPE@_matrix(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int i, j;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+    for (i = 0; i < data->rows; i++) {
+        @typ@ *cp = dst;
+        for (j = 0; j < data->columns; ++j) {
+            *cp = @nan@;
+            cp += cs;
+        }
+        dst += data->row_strides/sizeof(@typ@);
+    }
+}
+
+void
+zero_@TYPE@_matrix(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int i, j;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+    for (i = 0; i < data->rows; i++) {
+        @typ@ *cp = dst;
+        for (j = 0; j < data->columns; ++j) {
+            *cp = @zero@;
+            cp += cs;
+        }
+        dst += data->row_strides/sizeof(@typ@);
+    }
+}
+
+void
+zero_@TYPE@_triu(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *cp;
+    npy_intp len;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int i, j;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+    for (i = 0; i < data->rows; i++) {
+        cp = dst;
+        len = npy_int_min(i + 1, data->columns);
+        for (j = 0; j < len; ++j) {
+            *cp = @zero@;
+            cp += cs;
+        }
+        dst += data->row_strides/sizeof(@typ@);
+    }
+}
+
+void
+zero_@TYPE@_tril(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *cp;
+    npy_intp len;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int i, j;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+
+    for (i = 0; i < data->rows; i++) {
+        cp = dst + (i + 1) * cs;
+        len = npy_int_max(0, data->columns - i - 1);
+        for (j = 0; j < len; ++j) {
+            *cp = @zero@;
+            cp += cs;
+        }
+        dst += data->row_strides/sizeof(@typ@);
+    }
+}
+
+/*
+This function does not fill the off-diagonals with zeros.
+To do that, call zero_@TYPE@_matrix first.
+*/
+void
+eye_@TYPE@_matrix(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int i;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+    ptrdiff_t rs = data->row_strides/sizeof(@typ@);
+
+    for (i = 0; (i < data->rows) && (i < data->columns); i++) {
+        *dst = @one@;
+        dst += cs + rs;
+    }
+}
+
+/*********************
+*      Vectors       *
+**********************/
+
+void
+linearize_@TYPE@_vec(void *dst_in,
+                    const void *src_in,
+                    const LINEARIZE_DATA_t *data)
+{
+    @typ@ *src = (@typ@ *) src_in;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    if (dst) {
+        fortran_int len = (fortran_int)data->columns;
+        fortran_int strides = (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        if (strides > 0) {
+            FNAME(@copy@)(  &len,
+                            (void *)src, &strides,
+                            (void *)dst, &one);
+        }
+        else if (strides < 0) {
+            /*
+            * Lapack _copy assumes dst points to first element in memory
+            * instead of first element of array & tries to compensate.
+            * We have to undo that
+            */
+            FNAME(@copy@)(  &len,
+                            (void *)(src + (len-1)*strides), &strides,
+                            (void *)dst, &one);
+        }
+        else {
+            /*
+            * Zero stride has undefined behavior in some BLAS
+            * implementations (e.g. OSX Accelerate), so do it
+            * manually
+            */
+            int j;
+            for (j = 0; j < len; ++j) {
+                memcpy((void *)(dst + j), (void *)src, sizeof(@typ@));
+            }
+            @TYPE@_conj_vec(len, dst, one, data);
+        }
+    }
+}
+
+void
+delinearize_@TYPE@_vec(void *dst_in,
+                     const void *src_in,
+                     const LINEARIZE_DATA_t *data)
+{
+    @typ@ *src = (@typ@ *) src_in;
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    if (dst) {
+        fortran_int len = (fortran_int)data->columns;
+        fortran_int strides = (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int one = 1;
+        if (strides > 0) {
+            FNAME(@copy@)(  &len,
+                            (void *)src, &one,
+                            (void *)dst, &strides);
+            @TYPE@_conj_vec(len, dst, strides, data);
+        }
+        else if (strides < 0) {
+            /*
+            * BLAS _copy assumes dst points to the first element in memory.
+            * numpy points it at the first element of the array.
+            * We have to compensate.
+            */
+            FNAME(@copy@)(  &len,
+                            (void *)src, &one,
+                            (void *)(dst + (len-1)*strides), &strides);
+            @TYPE@_conj_vec(len, dst + (len-1)*strides, strides, data);
+        }
+        else {
+            /*
+            * Zero stride has undefined behavior in some BLAS
+            * implementations (e.g. OSX Accelerate), so do it
+            * manually
+            */
+            if (len > 0) {
+                int j;
+                for (j = 0; j < len; ++j) {
+                    memcpy((void *)dst, (void *)(src + j), sizeof(@typ@));
+                }
+                @TYPE@_conj_vec(one, dst, strides, data);
+            }
+        }
+    }
+}
+
+void
+nan_@TYPE@_vec(void *dst_in, const LINEARIZE_DATA_t* data)
+{
+    init_constants();
+    @typ@ *dst = (@typ@ *) dst_in;
+
+    int j;
+    ptrdiff_t cs = data->column_strides/sizeof(@typ@);
+    for (j = 0; j < data->columns; ++j) {
+        *dst = @nan@;
+        dst += cs;
+    }
+}
+
+/**end repeat**/

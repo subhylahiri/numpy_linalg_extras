@@ -11,10 +11,10 @@ functions will work with `numpy.ndarray` objects as well. Furthermore,
 
 The `lnarray` class has properties `t` for transposing, `h` for
 conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
-scalars in a way that fits with `numpy.linalg` broadcasting rules (`t` only
-transposes the last two indices, `r,c,s` add singleton axes so that linear
+scalars in a way that fits with `numpy.linalg` broadcasting rules (`t,h` only
+transpose the last two indices, `r,c,s` add singleton axes so that linear
 algebra routines treat them as arrays of vectors/scalars rather than matrices,
-and `uc,ur,us` undo the effects of `r,c,s`).
+and `ur,uc,us` undo the effects of `r,c,s`).
 
 The `lnarray` class also has properties for delayed matrix division:
 ```python
@@ -36,7 +36,7 @@ To get the actual inverse matrices you can call the objects:
 
 * `lnarray`:  
     Subclass of `numpy.ndarray` with properties such as `pinv/inv` for matrix
-    division, `t` and `h` for transposing stacks of matrices, `c`, `r` and `s`
+    division, `t` and `h` for transposing stacks of matrices, `r`, `c` and `s`
     for dealing with stacks of vectors and scalars.
 * `pinvarray`:  
     Provides interface for matrix division when it is matrix multiplied (@).
@@ -97,13 +97,13 @@ To get the actual inverse matrices you can call the objects:
     the deprecated modes of `numpy.linalg.qr`.
 
 ## GUfuncs
+
 These implement the functions above.
 * `gufuncs.matmul`:  
 * `gufuncs.solve`:  
 * `gufuncs.rsolve`:  
 * `gufuncs.lstsq`:  
 * `gufuncs.rlstsq`:  
-    These implement the functions above.
 * `gufuncs.norm`:  
     This is literally the same as the functions above.
 * `gufuncs.lu_m`:  
@@ -147,6 +147,7 @@ These implement the functions above.
     `invarray`.
 
 ## Wrappers
+
 * `wrappers.wrap_one`:  
     Create version of `numpy` function with single `lnarray` output.
 * `wrappers.wrap_several`:  
@@ -164,23 +165,25 @@ These implement the functions above.
     Create version of `numpy` function with some `lnarray` outputs, some
     non-array outputs, passing through subclasses.
 
-Examples
---------
+## Examples
+
 ```python
 >>> import numpy as np
->>> import linalg as sp
->>> x = sp.lnarray(np.random.rand(2, 3, 4))
->>> y = sp.lnarray(np.random.rand(2, 3, 4))
+>>> import numpy_linalg as la
+>>> x = la.lnarray(np.random.rand(2, 3, 4))
+>>> y = la.lnarray(np.random.rand(2, 3, 4))
 >>> z = x.pinv @ y
 >>> w = x @ y.pinv
 >>> u = x @ y.t
 >>> v = (x.r @ y[:, None, ...].t).ur
->>> a = sp.ldarray(np.random.rand(2, 3, 4))
->>> b = sp.ldarray(np.random.rand(2, 3, 4))
->>> c = (a << b)
->>> d = (a >> b)
 ```
 
+## Requirements
+
+* Python 3.6
+* Numpy 1.15
+* C compiler or prebuilt binaries in `numpy_linalg.gufuncs` (see below)
+* BLAS/Lapack distribution that was present when the binaries were built
 
 ## Building the CPython modules
 
@@ -211,7 +214,7 @@ Once you have all of the above, you can build the CPython modules in-place:
 ```
 > python setup.py build_ext
 ```
-or you can install it system-wide:
+or you can install the package system-wide:
 ```
 > python setup.py install
 ```
@@ -221,3 +224,12 @@ If you have `setuptools`, you can also do:
 ```
 this builds it in-place and creates an `.egg-link` file to make it available
 system-wide.
+
+
+## To dos
+
+* SVD based versions of `lstsq_qr` and `qr_lstsq`
+(and a QR based version of `lstsq` for completeness).
+* `Gufunc` version of `pinv`.
+* Versions of `inv`/`pinv` that return/use LU/QR/SVD factors.
+* Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors.

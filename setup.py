@@ -5,6 +5,11 @@ Created on Fri May  4 18:22:44 2018
 @author: Subhy
 """
 import os.path as osp
+try:
+    import setuptools
+    assert setuptools
+except ImportError:
+    pass
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration, get_numpy_include_dirs
 from numpy.distutils.misc_util import get_info as get_misc_info
@@ -18,7 +23,7 @@ def in_src(name):
 
 
 # =========================================================================
-config = Configuration()
+config = Configuration(package_name='numpy_linalg')
 
 inc_dirs = [get_python_inc()]
 if inc_dirs[0] != get_python_inc(plat_specific=1):

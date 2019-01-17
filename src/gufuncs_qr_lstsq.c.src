@@ -360,8 +360,7 @@ typedef struct geqrf_params_struct
     void *A; /* A is (M,N) of base type */
     void *T; /* T is (K,) of base type */
     void *B; /* B is (N,NC) of base type */
-    void *WR; /* WR is (N*B,) of base type, work for _ge{qr,lq}f */
-    void *WQ; /* WQ is (N*B,) of base type, work for _orgqr,_ge{qr,lq}s */
+    void *W; /* WR is (N*B,) of base type, work for _ge{qr,lq}f or _orgqr,_ge{qr,lq}s*/
     void *BZ; /* BZ is (N-M,NC) of base type, zeroed for _gelqs */
 
     fortran_int M;
@@ -371,8 +370,7 @@ typedef struct geqrf_params_struct
     fortran_int NC;
     fortran_int LDA;
     fortran_int LDB;
-    fortran_int LWR; /* LWR is lwork for _ge{qr,lq}f */
-    fortran_int LWQ; /* LWQ is lwork for _orgqr,_ge{qr,lq}s */
+    fortran_int LW;
     fortran_int INFO;
 } GEQRF_PARAMS_t;
 
@@ -395,7 +393,7 @@ call_@geqrf@(GEQRF_PARAMS_t *params)
 {
     // A,T are modified by ?GEQRF to carry QR info
     LAPACK(@geqrf@)(&params->M, &params->N, params->A, &params->LDA,
-                    params->T, params->WR, &params->LWR, &params->INFO);
+                    params->T, params->W, &params->LW, &params->INFO);
 }
 
 static NPY_INLINE void
@@ -403,7 +401,7 @@ call_@orgqr@(GEQRF_PARAMS_t *params)
 {
     // A is modified by ?ORGQR to carry Q
     LAPACK(@orgqr@)(&params->M, &params->NC, &params->K, params->A, &params->LDA,
-                    params->T, params->WQ, &params->LWQ, &params->INFO);
+                    params->T, params->W, &params->LW, &params->INFO);
 }
 
 /***************************************************************************
@@ -419,9 +417,9 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
 {
     npy_uint8 *mem_buff = NULL;
     npy_uint8 *mem_buff2 = NULL;
-    npy_uint8 *a, *b, *c, *d;
-    fortran_int M, N, NC, K, ld, LWR, LWQ;
-    size_t safe_M, safe_NC, safe_K, safe_LWR, safe_LWQ;
+    npy_uint8 *a, *b;
+    fortran_int M, N, NC, K, ld, LW, LWR, LWQ;
+    size_t safe_M, safe_NC, safe_K, safe_LW;
     @ftyp@ work_size;
 
     M = (fortran_int)M_in;
@@ -450,21 +448,15 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
     params->K = K;
     params->NC = NC;
     params->LDA = ld;
-    params->LWR = -1;
-    params->LWQ = -1;
+    params->W = &work_size;
+    params->LW = -1;
     params->INFO = 0;
-    params->WR = &work_size;
-    params->WQ = NULL;
-    if (do_org) {
-        params->WQ = &work_size;
-    }
 
     call_@geqrf@(params);
     if (params->INFO < 0) {
         goto error;
     }
     LWR = @TYPE@_real_int(work_size);
-    safe_LWR = LWR;
 
     if (do_org) {
         call_@orgqr@(params);
@@ -475,22 +467,17 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
         work_size = @zero@;
     }
     LWQ = @TYPE@_real_int(work_size);
-    safe_LWQ = LWQ;
 
-    mem_buff2 = malloc(safe_LWR * sizeof(@ftyp@)
-                    + safe_LWQ * sizeof(@ftyp@));
+    LW = fortran_int_max(LWR, LWQ);
+    safe_LW = LW;
+
+    mem_buff2 = malloc(safe_LW * sizeof(@ftyp@));
     if (!mem_buff2) {
         goto error;
     }
-    c = mem_buff2;
-    d = c + safe_LWR * sizeof(@ftyp@);
 
-    params->WR = c;
-    params->LWR = LWR;
-    params->LWQ = LWQ;
-    if (do_org) {
-        params->WQ = d;
-    }
+    params->W = mem_buff2;
+    params->LW = LW;
 
     return 1;
   error:
@@ -511,7 +498,7 @@ release_@geqrf@(GEQRF_PARAMS_t *params)
 {
     /* 1st memory block base is in A, second in WR */
     free(params->A);
-    free(params->WR);
+    free(params->W);
     memset(params, 0, sizeof(*params));
 }
 
@@ -1052,7 +1039,7 @@ call_@gelqf@(GEQRF_PARAMS_t *params)
 {
     // A,T are modified by ?GEQRF to carry LQ info
     LAPACK(@gelqf@)(&params->M, &params->N, params->A, &params->LDA,
-                    params->T, params->WR, &params->LWR, &params->INFO);
+                    params->T, params->W, &params->LW, &params->INFO);
 }
 
 // the version of lapack that I have doesn't include _geqrs, so:
@@ -1066,7 +1053,7 @@ call_@geqrs@(GEQRF_PARAMS_t *params)
     // B is modified by ?ORMQR to carry Q^T B
     LAPACK(@ormqr@)(&char_L, &@trans@, &params->M, &params->NC, &params->K,
                     params->A, &params->LDA, params->T, params->B, &params->LDB,
-                    params->WQ, &params->LWQ, &params->INFO);
+                    params->W, &params->LW, &params->INFO);
     // B is modified by ?TRSM to carry R^-1 B
     LAPACK(@trsm@)(&char_L, &char_U, &char_N, &char_N,
                     &params->N, &params->NC, &@one@,
@@ -1093,7 +1080,7 @@ call_@gelqs@(GEQRF_PARAMS_t *params)
     // B is modified by ?ORMLQ to carry Q^T B
     LAPACK(@ormlq@)(&char_L, &@trans@, &params->N, &params->NC, &params->K,
                     params->A, &params->LDA, params->T, params->B, &params->LDB,
-                    params->WQ, &params->LWQ, &params->INFO);
+                    params->W, &params->LW, &params->INFO);
 }
 
 // needed to compute lwork
@@ -1103,14 +1090,12 @@ call_@ormqr@(GEQRF_PARAMS_t *params)
     // B is modified by ?ORMQR to carry Q^T B
     LAPACK(@ormqr@)(&char_L, &@trans@, &params->M, &params->NC, &params->K,
                     params->A, &params->LDA, params->T, params->B, &params->LDB,
-                    params->WQ, &params->LWQ, &params->INFO);
+                    params->W, &params->LW, &params->INFO);
 }
 
 /***************************************************************************
 * Initialize the parameters to use in the lapack functions _geqrf & _orgqr *
 * Handles buffer allocation.
-* First: initialize for geqrf only
-* Second: initialize for _geqrf and _orgqr
 ****************************************************************************/
 static NPY_INLINE int
 init_@geqrs@(GEQRF_PARAMS_t *params,
@@ -1119,8 +1104,8 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     npy_uint8 *mem_buff = NULL;
     npy_uint8 *mem_buff2 = NULL;
     npy_uint8 *a, *b, *c, *d;
-    fortran_int M, N, NC, K, MN, lda, ldb, MNx, LWQ, LWR;
-    size_t safe_M, safe_N, safe_NC, safe_K, safe_MNx, safe_LWQ, safe_LWR;
+    fortran_int M, N, NC, K, MN, lda, ldb, MNx, LW, LWQ, LWR;
+    size_t safe_M, safe_N, safe_NC, safe_K, safe_MNx, safe_LW;
     @ftyp@ work_size;
 
     M = (fortran_int)M_in;
@@ -1158,14 +1143,9 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     params->MN = MN;
     params->LDA = lda;
     params->LDB = ldb;
-    params->LWR = -1;
-    params->LWQ = -1;
+    params->W = &work_size;
+    params->LW = -1;
     params->INFO = 0;
-    params->WQ = &work_size;
-    params->WR = NULL;
-    if (do_qrf) {
-        params->WR = &work_size;
-    }
 
     // _geqrs doesn't allow workspace queries,
     // but it only uses 'work' in _ormqr, which does.
@@ -1174,7 +1154,6 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
         goto error;
     }
     LWQ = @TYPE@_real_int(work_size);
-    safe_LWQ = LWQ;
 
     if (do_qrf) {
         call_@geqrf@(params);
@@ -1185,21 +1164,16 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
         work_size = @zero@;
     }
     LWR = @TYPE@_real_int(work_size);
-    safe_LWR = LWR;
 
-    mem_buff2 = malloc(safe_LWQ * sizeof(@ftyp@)
-                    + safe_LWR * sizeof(@ftyp@));
+    LW = fortran_int_max(LWR, LWQ);
+    safe_LW = LW;
+
+    mem_buff2 = malloc(safe_LW * sizeof(@ftyp@));
     if (!mem_buff2) {
         goto error;
     }
-    a = mem_buff2;
-    b = a + safe_LWQ * sizeof(@ftyp@);
-    params->WQ = a;
-    params->LWQ = LWQ;
-    params->LWR = LWR;
-    if (do_qrf) {
-        params->WR = b;
-    }
+    params->W = mem_buff2;
+    params->LW = LW;
 
     return 1;
   error:
@@ -1219,7 +1193,7 @@ release_@geqrs@(GEQRF_PARAMS_t *params)
 {
     /* 1st memory block base is in A, second in WQ */
     free(params->A);
-    free(params->WQ);
+    free(params->W);
     memset(params, 0, sizeof(*params));
 }
 

@@ -5,9 +5,10 @@
 This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
 matrix division. The main way of using this is via the `lnarray` class
-(the `qr` function is the only other thing I find useful here). All of the
-functions will work with `numpy.ndarray` objects as well. Furthermore,
-`matmul` is implemented with a `gufunc` which should make broadcasting faster.
+(the `lstsq` and `qr` function are the only other things I find useful here).
+All of the functions will work with `numpy.ndarray` objects as well.
+Furthermore, `matmul` is implemented with a `gufunc` which should make
+broadcasting faster.
 
 The `lnarray` class has properties `t` for transposing, `h` for
 conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
@@ -32,23 +33,22 @@ To get the actual inverse matrices you can call the objects:
 >>> x = y.pinv()
 ```
 
+## Requirements
+
+* Python 3.6
+* Numpy 1.15
+* C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
+(see [below](#building-the-cpython-modules))
+* BLAS/Lapack distribution that was present when the binaries were built
+
 ## Classes
 
 * `lnarray`:  
     Subclass of `numpy.ndarray` with properties such as `pinv/inv` for matrix
     division, `t` and `h` for transposing stacks of matrices, `r`, `c` and `s`
     for dealing with stacks of vectors and scalars.
-* `pinvarray`:  
-    Provides interface for matrix division when it is matrix multiplied (@).
-    Returned by `lnarray.pinv`. It calls `lstsq` behind the scenes.
-    Does not actually pseudoinvert the matrix unless it is explicitly called.
-    Other operations, such as addition are not defined. This object contains a
-    reference to the original array, so in place modifications of a `pinvarray`
-    object will affect the original `lnarray` object.
-    I think it is best not to store these objects in variables, and call on
-    `lnarray.pinv` on the rhs instead.
 * `invarray`:  
-    Provides interface for matrix division when it is matrix multiplied (@).
+    Performs exact matrix division when it is matrix multiplied (@).
     Returned by `lnarray.inv`. It calls `solve` behind the scenes.
     Does not actually invert the matrix unless it is explicitly called.
     Other operations, such as addition are not defined. This object contains a
@@ -56,6 +56,15 @@ To get the actual inverse matrices you can call the objects:
     object will affect the original `lnarray` object.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
+* `pinvarray`:  
+    Performs least-squares matrix division when it is matrix multiplied (@).
+    Returned by `lnarray.pinv`. It calls `lstsq` behind the scenes.
+    Does not actually pseudoinvert the matrix unless it is explicitly called.
+    Other operations, such as addition are not defined. This object contains a
+    reference to the original array, so in place modifications of a `pinvarray`
+    object will affect the original `lnarray` object.
+    I think it is best not to store these objects in variables, and call on
+    `lnarray.pinv` on the rhs instead.
 
 ## Functions
 
@@ -95,6 +104,27 @@ To get the actual inverse matrices you can call the objects:
 * `qr`:  
     QR decomposition with broadcasting and subclass passing. Does not implement
     the deprecated modes of `numpy.linalg.qr`.
+
+The following operations will do the right thing, but may be better avoided:
+```python
+>>> matmul(invarray, invarray)
+>>> solve(invarray, lnarray)
+>>> solve(lnarray, invarray)
+>>> solve(invarray, invarray)
+>>> rsolve(invarray, lnarray)
+>>> rsolve(lnarray, invarray)
+>>> rsolve(invarray, invarray)
+>>> lstsq(pinvarray, lnarray)
+>>> lstsq(pinvarray, pinvarray)
+>>> rlstsq(lnarray, pinvarray)
+>>> rlstsq(pinvarray, pinvarray)
+```
+The following are not defined:
+```python
+>>> matmul(pinvarray, pinvarray)
+>>> lstsq(lnarray, pinvarray)
+>>> rlstsq(pinvarray, lnarray)
+```
 
 ## GUfuncs
 
@@ -177,13 +207,6 @@ These implement the functions above.
 >>> u = x @ y.t
 >>> v = (x.r @ y[:, None, ...].t).ur
 ```
-
-## Requirements
-
-* Python 3.6
-* Numpy 1.15
-* C compiler or prebuilt binaries in `numpy_linalg.gufuncs` (see below)
-* BLAS/Lapack distribution that was present when the binaries were built
 
 ## Building the CPython modules
 

@@ -474,12 +474,11 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     _unary_ufuncs = {np.positive, np.negative}
 
     def __init__(self, to_invert: lnarray):
-        if isinstance(to_invert, lnarray) and not isinstance(to_invert,
-                                                             lnmatrix):
+        if isinstance(to_invert, lnarray):
             # don't want to mess up subclasses, so that `pinv` returns input
             self._to_invert = to_invert
         else:
-            # in case input is `lnmatrix`, `ndarray` or `array_like`
+            # in case input is `ndarray` or `array_like`
             self._to_invert = np.asarray(to_invert).view(lnarray)
         self._inverted = None
 

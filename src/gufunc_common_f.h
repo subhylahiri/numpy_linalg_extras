@@ -50,20 +50,16 @@ Copyright/licence info for that file:
 */
 
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
-
-#include "Python.h"
-#include "numpy/ndarraytypes.h"
-#include "numpy/arrayobject.h"
-#include "numpy/ufuncobject.h"
-#include "numpy/npy_math.h"
-#include "numpy/npy_3kcompat.h"
-// #include "npy_config.h"
+#define FORTRAN_TYPES 1
+#include "gufunc_common.h"
 
 /*
 *****************************************************************************
 **                         Fortran types                                   **
 *****************************************************************************
 */
+
+/* Aliases for fortran data types */
 typedef struct { float r, i; } f2c_complex;
 typedef struct { double r, i; } f2c_doublecomplex;
 
@@ -73,6 +69,7 @@ typedef double            fortran_doublereal;
 typedef f2c_complex       fortran_complex;
 typedef f2c_doublecomplex fortran_doublecomplex;
 
+/* comples number types with choice of interface */
 typedef union {
     fortran_complex f;
     npy_cfloat npy;
@@ -84,9 +81,6 @@ typedef union {
     npy_cdouble npy;
     double array[2];
 } DOUBLECOMPLEX_t;
-
-#define FORTRAN_TYPES 1
-#include "gufunc_common.h"
 
 /*
 *****************************************************************************
@@ -146,6 +140,7 @@ typedef struct linearize_data_struct
     npy_intp conj;
 } LINEARIZE_DATA_t;
 
+/* Set all parameters */
 static NPY_INLINE void
 init_linearize_data_exc(LINEARIZE_DATA_t *lin_data,
                         npy_intp rows,
@@ -163,6 +158,8 @@ init_linearize_data_exc(LINEARIZE_DATA_t *lin_data,
     lin_data->conj = conj;
 }
 
+/* Set all parameters
+assuming no conjugate needed */
 static NPY_INLINE void
 init_linearize_data_ex(LINEARIZE_DATA_t *lin_data,
                         npy_intp rows,
@@ -175,6 +172,8 @@ init_linearize_data_ex(LINEARIZE_DATA_t *lin_data,
                             row_strides, column_strides, output_lead_dim, 0);
 }
 
+/* Set all parameters
+assuming we use the whole matrix on BLAS/Lapack side */
 static NPY_INLINE void
 init_linearize_datac(LINEARIZE_DATA_t *lin_data,
                     npy_intp rows,
@@ -185,8 +184,11 @@ init_linearize_datac(LINEARIZE_DATA_t *lin_data,
 {
     init_linearize_data_exc(lin_data, rows, columns, row_strides, column_strides,
                             columns, conj);
-}
 
+                        }
+/* Set all parameters
+assuming no conjugate needed
+assuming we use the whole matrix on BLAS/Lapack side */
 static NPY_INLINE void
 init_linearize_data(LINEARIZE_DATA_t *lin_data,
     npy_intp rows,
@@ -198,6 +200,8 @@ init_linearize_data(LINEARIZE_DATA_t *lin_data,
 }
 
 
+/* Set all parameters
+for vactors */
 static NPY_INLINE void
 init_linearize_vdatac(LINEARIZE_DATA_t *lin_data,
                     npy_intp len,
@@ -207,6 +211,9 @@ init_linearize_vdatac(LINEARIZE_DATA_t *lin_data,
     init_linearize_datac(lin_data, len, len, strides, strides, conj);
 }
 
+/* Set all parameters
+for vactors
+assuming no conjugate needed */
 static NPY_INLINE void
 init_linearize_vdata(LINEARIZE_DATA_t *lin_data,
                     npy_intp len,

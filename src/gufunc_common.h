@@ -65,29 +65,50 @@ Copyright/licence info for that file:
 *****************************************************************************
 **                         Outer loop macros                               **
 *****************************************************************************
+Macros for looping over non-core dimensions provided by numpy
 */
 
+/* Declare and initialise loop variables:
+    dN = length of non-core dimension
+    N_ = loop variable
+    s0 = stride along non-core dimension of first argument
+When number of ufunc inputs + outputs == 1 */
 #define INIT_OUTER_LOOP_1         \
     npy_intp dN = *dimensions++;  \
     npy_intp N_;                  \
     npy_intp s0 = *steps++;
 
+/* Declare and initialise loop variables:
+    s1 = stride along non-core dimension of second argument
+When number of ufunc inputs + outputs == 2 */
 #define INIT_OUTER_LOOP_2   \
     INIT_OUTER_LOOP_1       \
     npy_intp s1 = *steps++;
 
+/* Declare and initialise loop variables:
+    s2 = stride along non-core dimension of third argument
+When number of ufunc inputs + outputs == 3 */
 #define INIT_OUTER_LOOP_3   \
     INIT_OUTER_LOOP_2       \
     npy_intp s2 = *steps++;
 
+/* Declare and initialise loop variables:
+    s3 = stride along non-core dimension of fourth argument
+When number of ufunc inputs + outputs == 4 */
 #define INIT_OUTER_LOOP_4   \
     INIT_OUTER_LOOP_3       \
     npy_intp s3 = *steps++;
 
+/* Declare and initialise loop variables:
+    s4 = stride along non-core dimension of fifth argument
+When number of ufunc inputs + outputs == 5 */
 #define INIT_OUTER_LOOP_5   \
     INIT_OUTER_LOOP_4       \
     npy_intp s4 = *steps++;
 
+/* Declare and initialise loop variables:
+    s5 = stride along non-core dimension of sixth argument
+When number of ufunc inputs + outputs == 6 */
 #define INIT_OUTER_LOOP_6   \
     INIT_OUTER_LOOP_5       \
     npy_intp s5 = *steps++;
@@ -95,34 +116,48 @@ Copyright/licence info for that file:
 #define BEGIN_OUTER_LOOP        \
     for (N_ = 0; N_ < dN; N_++) {
 
+/* Start of loop over non-core dimension */
 #define BEGIN_OUTER_LOOP_2  BEGIN_OUTER_LOOP
 #define BEGIN_OUTER_LOOP_3  BEGIN_OUTER_LOOP
 #define BEGIN_OUTER_LOOP_4  BEGIN_OUTER_LOOP
 #define BEGIN_OUTER_LOOP_5  BEGIN_OUTER_LOOP
 #define BEGIN_OUTER_LOOP_6  BEGIN_OUTER_LOOP
 
+/* End of loop over non-core dimension */
 #define END_OUTER_LOOP  }
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 1 */
 #define END_OUTER_LOOP_1  \
     args[0] += s0;        \
     END_OUTER_LOOP
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 2 */
 #define END_OUTER_LOOP_2  \
     args[1] += s1;        \
     END_OUTER_LOOP_1
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 3 */
 #define END_OUTER_LOOP_3  \
     args[2] += s2;        \
     END_OUTER_LOOP_2
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 4 */
 #define END_OUTER_LOOP_4  \
     args[3] += s3;        \
     END_OUTER_LOOP_3
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 5 */
 #define END_OUTER_LOOP_5  \
     args[4] += s4;        \
     END_OUTER_LOOP_4
 
+/* End of loop over non-core dimension
+When number of ufunc inputs + outputs == 6 */
 #define END_OUTER_LOOP_6  \
     args[5] += s5;        \
     END_OUTER_LOOP_5
@@ -133,6 +168,8 @@ Copyright/licence info for that file:
 *****************************************************************************
 */
 
+/* Get current floating-point error status (to be reset if no new errors)
+and set invalid value to false */
 static NPY_INLINE int
 get_fp_invalid_and_clear(void)
 {
@@ -141,6 +178,8 @@ get_fp_invalid_and_clear(void)
     return !!(status & NPY_FPE_INVALID);
 }
 
+/* Reset floating-point error status if no new errors
+else set invalid value to true */
 static NPY_INLINE void
 set_fp_invalid_or_clear(int error_occurred)
 {
@@ -168,6 +207,7 @@ npy_int_max(npy_intp x, npy_intp y) {
  return x > y ? x : y;
 }
 
+/* comples number types with choice of interface */
 #ifndef FORTRAN_TYPES
 typedef union {
     npy_cfloat npy;
@@ -180,6 +220,7 @@ typedef union {
 } DOUBLECOMPLEX_t;
 #endif
 
+/* Constants for use as template parameters (numpy .src processing) */
 static float s_one;
 static float s_zero;
 static float s_minus_one;
@@ -276,8 +317,10 @@ static void init_constants(void)
 **                             Ufunc definition                            **
 *****************************************************************************
 */
+/* For the 'data' argument for ufunc creation */
 static void *null_data_array[] = { (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL };
 
+/* For the 'types' argument for ufunc creation */
 static char ufn_types_2_2[] = { NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE };
 static char ufn_types_2_3[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
@@ -316,6 +359,7 @@ static char ufn_types_5_3[] = { NPY_INT, NPY_INT, NPY_INT,
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
                                 NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE };
 
+/* For the 'func' argument for ufunc creation */
 #define FUNC_ARRAY_NAME(NAME) NAME ## _funcs
 
 #define GUFUNC_FUNC_ARRAY_REAL(NAME)                    \
@@ -352,6 +396,7 @@ static char ufn_types_5_3[] = { NPY_INT, NPY_INT, NPY_INT,
         CDOUBLE_ ## NAME                                \
     }
 
+/* for collecting arguments for ufunc creation */
 typedef struct gufunc_descriptor_struct {
     char *name;
     char *signature;
@@ -363,6 +408,7 @@ typedef struct gufunc_descriptor_struct {
     char *types;
 } GUFUNC_DESCRIPTOR_t;
 
+/* Creating ufuncs and adding them to the module dict */
 static int
 addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
             int gufunc_count, const char *version_string)

@@ -43,15 +43,7 @@ Copyright/licence info for that file:
 #define GUF_INCLUDE
 
 #undef NO_FORTRAN
-/*
-*****************************************************************************
-**                              Includes                                   **
-*****************************************************************************
-*/
-
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
-#define FORTRAN_TYPES 1
-#include "gufunc_common.h"
 
 /*
 *****************************************************************************
@@ -81,6 +73,16 @@ typedef union {
     npy_cdouble npy;
     double array[2];
 } DOUBLECOMPLEX_t;
+
+/*
+*****************************************************************************
+**                              Includes                                   **
+*****************************************************************************
+Needs to come after typedefs
+*/
+
+#define FORTRAN_TYPES 1
+#include "gufunc_common.h"
 
 /*
 *****************************************************************************
@@ -173,7 +175,7 @@ init_linearize_data_ex(LINEARIZE_DATA_t *lin_data,
 }
 
 /* Set all parameters
-assuming we use the whole matrix on BLAS/Lapack side */
+assuming we use the whole buffer to store matrix on BLAS/Lapack side */
 static NPY_INLINE void
 init_linearize_datac(LINEARIZE_DATA_t *lin_data,
                     npy_intp rows,
@@ -188,7 +190,7 @@ init_linearize_datac(LINEARIZE_DATA_t *lin_data,
                         }
 /* Set all parameters
 assuming no conjugate needed
-assuming we use the whole matrix on BLAS/Lapack side */
+assuming we use the whole buffer to store matrix on BLAS/Lapack side */
 static NPY_INLINE void
 init_linearize_data(LINEARIZE_DATA_t *lin_data,
     npy_intp rows,
@@ -201,7 +203,7 @@ init_linearize_data(LINEARIZE_DATA_t *lin_data,
 
 
 /* Set all parameters
-for vactors */
+for vectors */
 static NPY_INLINE void
 init_linearize_vdatac(LINEARIZE_DATA_t *lin_data,
                     npy_intp len,
@@ -212,7 +214,7 @@ init_linearize_vdatac(LINEARIZE_DATA_t *lin_data,
 }
 
 /* Set all parameters
-for vactors
+for vectors
 assuming no conjugate needed */
 static NPY_INLINE void
 init_linearize_vdata(LINEARIZE_DATA_t *lin_data,

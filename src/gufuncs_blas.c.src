@@ -34,25 +34,13 @@ Copyright/licence info for that file:
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*              Table of Contents
-49.  Includes
-60.  Docstrings
-101. BLAS/LAPACK calling macros
-133. Data rearrangement functions
-285. NORM
-393. MATMUL
-655. Ufunc definition
-679. Module initialization stuff
-*/
-
-/*
+*
 *****************************************************************************
 **                            Includes                                     **
 *****************************************************************************
 */
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
 
-#include "gufunc_common_f.h"
 #include "rearrange_data.h"
 
 static const char* gufuncs_blas_version_string = "0.1.1";
@@ -100,7 +88,7 @@ PyDoc_STRVAR(norm__doc__,
 
 /*
 *****************************************************************************
-**                   BLAS/Lapack calling macros                            **
+**                   BLAS/Lapack declarations                              **
 *****************************************************************************
 */
 
@@ -135,7 +123,7 @@ FNAME(@gemm@)(char tra[], char trb[], int *m, int *n, int *k,
 **                              NORM                                        **
 ******************************************************************************
 */
-
+// to hold arguments to BLAS _nrm2
 typedef struct nrm2_params_struct
 {
     void *X; /* X is (N,) of base type */
@@ -159,7 +147,6 @@ typedef struct nrm2_params_struct
 static NPY_INLINE @rtyp@
 call_@norm@(NRM2_PARAMS_t *params)
 {
-  // Y carries difference
     return BLAS(@norm@)(&params->N, params->X, &params->INCX);
 }
 
@@ -167,12 +154,12 @@ call_@norm@(NRM2_PARAMS_t *params)
 * Initialize the parameters to use in for the lapack function _nrm2 *
 * Handles buffer allocation
 *********************************************************************/
-
+/*initialise parameters for BLAS
+ N = length of vector */
 static NPY_INLINE int
 init_@TYPE@_nrm2(NRM2_PARAMS_t *params, npy_intp N_in)
 {
     npy_uint8 *mem_buff = NULL;
-    npy_uint8 *a;
     size_t safe_N = N_in;
     fortran_int N = (fortran_int)N_in;
 
@@ -180,9 +167,8 @@ init_@TYPE@_nrm2(NRM2_PARAMS_t *params, npy_intp N_in)
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;
 
-    params->X = a;
+    params->X = mem_buff;
     params->N = N;
     params->INCX = 1;
 
@@ -202,7 +188,7 @@ init_@TYPE@_nrm2(NRM2_PARAMS_t *params, npy_intp N_in)
 static NPY_INLINE void
 release_@TYPE@_nrm2(NRM2_PARAMS_t *params)
 {
-    /* memory block base is in Y */
+    /* memory block base is in X */
     free(params->X);
     memset(params, 0, sizeof(*params));
 }
@@ -217,21 +203,21 @@ static void
 {
 INIT_OUTER_LOOP_2
 
-    npy_intp len_n = *dimensions++;  // dimensions of inner
+    npy_intp len_n = *dimensions++;  // dimensions of vector
     npy_intp stride_n = *steps++;  // 1st arg
     NRM2_PARAMS_t params;
     LINEARIZE_DATA_t y_in;
 
-    if(init_@TYPE@_nrm2(&params, len_n)) {
-        init_linearize_vdata(&y_in, len_n, stride_n);
+    if(init_@TYPE@_nrm2(&params, len_n)) {  // allocate buffer, init params
+        init_linearize_vdata(&y_in, len_n, stride_n);  // init size data
 
         BEGIN_OUTER_LOOP
 
-            linearize_@TYPE@_vec(params.X, args[0], &y_in);
-            *(@rtyp@ *)args[1] = call_@norm@(&params);
+            linearize_@TYPE@_vec(params.X, args[0], &y_in);  // copy to buffer
+            *(@rtyp@ *)args[1] = call_@norm@(&params);  // call BLAS
 
         END_OUTER_LOOP_2
-        release_@TYPE@_nrm2(&params);
+        release_@TYPE@_nrm2(&params);  // deallocate buffer
     }
 
 }
@@ -243,6 +229,7 @@ INIT_OUTER_LOOP_2
 **                               MATMUL                                     **
 ******************************************************************************
 */
+// to hold arguments to BLAS _gemm
 typedef struct gemm_params_struct
 {
   void *A; /* A is scalar of base type */
@@ -273,7 +260,7 @@ typedef struct gemm_params_struct
 /****************************************
 * Calling BLAS/Lapack function _gemm    *
 *****************************************/
-
+// Z -> A*X.Y + B*Z, need A=1, B=0
 static NPY_INLINE void
 call_@matm@(GEMM_PARAMS_t *params)
 {
@@ -287,7 +274,10 @@ call_@matm@(GEMM_PARAMS_t *params)
 * Initialize the parameters to use in for the lapack function _gemm *
 * Handles buffer allocation
 *********************************************************************/
-
+/* initialise parameters for BLAS
+    M: left dimension
+    N: right dimension
+    K: inner dimension */
 static NPY_INLINE int
 init_@TYPE@_matm(GEMM_PARAMS_t *params, npy_intp M_in, npy_intp N_in, npy_intp K_in)
 {
@@ -312,13 +302,13 @@ init_@TYPE@_matm(GEMM_PARAMS_t *params, npy_intp M_in, npy_intp N_in, npy_intp K
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;
-    b = a + safe_M * safe_K * sizeof(@ftyp@);
-    c = b + safe_K * safe_N * sizeof(@ftyp@);
+    a = mem_buff;  // X at start of buffer
+    b = a + safe_M * safe_K * sizeof(@ftyp@);  // Y after leaving space for X
+    c = b + safe_K * safe_N * sizeof(@ftyp@);  // Z after leaving space for Y
 
     params->TRANSX = 'N';
     params->TRANSY = 'N';
-    params->A = &@one@;
+    params->A = &@one@;  // Z -> A*X.Y + B*Z, need A=1, B=0
     params->B = &@zero@;
     params->X = a;
     params->Y = b;
@@ -375,18 +365,19 @@ INIT_OUTER_LOOP_3
     GEMM_PARAMS_t params;
     LINEARIZE_DATA_t x_in, y_in, z_out;
 
-    if(init_@TYPE@_matm(&params, len_m, len_n, len_k)) {
+    if(init_@TYPE@_matm(&params, len_m, len_n, len_k)) {  // allocate buffer
+        // initialise size parameters
         init_linearize_data(&x_in, len_k, len_m, stride_x_k, stride_x_m);
         init_linearize_data(&y_in, len_n, len_k, stride_y_n, stride_y_k);
         init_linearize_data(&z_out, len_n, len_m, stride_z_n, stride_z_m);
 
         BEGIN_OUTER_LOOP
-            linearize_@TYPE@_matrix(params.X, args[0], &x_in);
+            linearize_@TYPE@_matrix(params.X, args[0], &x_in);  // copy inputs
             linearize_@TYPE@_matrix(params.Y, args[1], &y_in);
-            call_@matm@(&params);
-            delinearize_@TYPE@_matrix(args[2], params.Z, &z_out);
+            call_@matm@(&params);  // call BLAS
+            delinearize_@TYPE@_matrix(args[2], params.Z, &z_out);  // copy output
         END_OUTER_LOOP_3
-        release_@TYPE@_matm(&params);
+        release_@TYPE@_matm(&params);  // deallocate buffer
     }
 }
 
@@ -433,29 +424,34 @@ INIT_OUTER_LOOP_3
         const char *ip_x= args[0];  //  1st arg
         const char *ip_y= args[1];  //  2nd arg
         char *op_z = args[2];       //  output
+        /* ip_x, etc are char*, pointer to 1st byte of element
+        (@typ@ *)ip_x, etc cast to @typ@*, pointer to whole element
+        *(@typ@ *)ip_x, etc is @typ@, the actual element */
 
-        for (m = 0; m < len_m; m++) {
-            for (p = 0; p < len_p; p++) {
-                *(@typ@ *)op_z = @zero@;
+        for (m = 0; m < len_m; m++) {  // left index
+            for (p = 0; p < len_p; p++) {  // right index
+                *(@typ@ *)op_z = @zero@;  // initialise at zero
 
-                for (n = 0; n < len_n; n++) {
+                for (n = 0; n < len_n; n++) {  // inner index
+                    // add x*y to z
                     *(@typ@ *)op_z += *(@typ@ *)ip_x * *(@typ@ *)ip_y;
 
-                    ip_x += stride_x_n;
+                    ip_x += stride_x_n;  // next element along inner dimension
                     ip_y += stride_y_n;
                 }
-                ip_x -= iback_x_n;
+                ip_x -= iback_x_n;  // back to start of inner dimension
                 ip_y -= iback_y_n;
 
-                ip_y += stride_y_p;
+                ip_y += stride_y_p;  // next element along right dimension
                 op_z += stride_z_p;
             }
-            ip_y -= iback_y_p;
+            ip_y -= iback_y_p;  // back to start of right dimension
             op_z -= iback_z_p;
 
-            ip_x += stride_x_m;
+            ip_x += stride_x_m;  // next element along left dimension
             op_z += stride_z_m;
         }
+        // don't need to go back to start of left dimension, get it from args[]
 
     END_OUTER_LOOP_3
 }
@@ -478,6 +474,8 @@ static void
 {
     /*swap (X,Y) for (Y,X)
     x,y here are not the same as X,Y  in docstring: x=Y, y=X */
+    // args = {y, x, z}
+    // rargs = {x, y, z}
     char *rargs[] = {args[1], args[0], args[2]};
     // dimensions = {N, len_k, len_n, len_m};
     // rdimensions[] = {N, len_m, len_k, len_n};
@@ -506,15 +504,18 @@ static void
 *****************************************************************************
 */
 
+// types argumrnt for creating 'norm' ufunc
 static char ufn_types_norm[] = { NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_FLOAT,
                                 NPY_CDOUBLE, NPY_DOUBLE };
 
+// array of functions for each ufunc loop
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(matmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(rmatmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(norm);
 
+// info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
     { "matmul", "(m,k),(k,n)->(m,n)", matmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(matmul), ufn_types_5_3 },
@@ -530,10 +531,12 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
 *****************************************************************************
 */
 
+// Methods to add to module (none, we add ufuncs after creating them)
 static PyMethodDef GUfuncs_BLAS_Methods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+// arguments for module creation
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "_gufuncs_blas",
@@ -546,6 +549,7 @@ static struct PyModuleDef moduledef = {
         NULL
 };
 
+// create module
 PyObject *PyInit__gufuncs_blas(void)
 {
     PyObject *m;

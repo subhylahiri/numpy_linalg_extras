@@ -408,7 +408,13 @@ typedef struct gufunc_descriptor_struct {
     char *types;
 } GUFUNC_DESCRIPTOR_t;
 
-/* Creating ufuncs and adding them to the module dict */
+/* Creating ufuncs and adding them to the module dict .
+To be called in PyInit__gufuncs_<module name>.
+    module: module object from PyModule_Create
+    guf_descriptors[]: array of GUFUNC_DESCRIPTOR_t above
+    gufunc_count: length of guf_descriptors[]
+    version_string: char array containing version number.
+*/
 static int
 addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
             int gufunc_count, const char *version_string)
@@ -416,6 +422,7 @@ addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
     PyObject *dictionary;
     PyObject *version;
 
+    // module's dictionary (__dir__)
     dictionary = PyModule_GetDict(module);  // borrowed reference
 
     version = PyString_FromString(version_string);  // new reference
@@ -425,13 +432,16 @@ addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
     PyObject *f;
     int i;
     for (i = 0; i < gufunc_count; i++) {
+        // current gufunc descriptor
         const GUFUNC_DESCRIPTOR_t* d = &guf_descriptors[i];
+        // create gufunc object (new reference)
         f = PyUFunc_FromFuncAndDataAndSignature(d->funcs, null_data_array, d->types,
                                                 d->ntypes, d->nin, d->nout, PyUFunc_None,
                                                 d->name, d->doc, 0, d->signature);
         if (f == NULL) {
             return -1;
         }
+        // add gufunc object to module's dictionary
         PyDict_SetItemString(dictionary, d->name, f);
         Py_DECREF(f);
     }

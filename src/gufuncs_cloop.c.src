@@ -32,18 +32,6 @@ Copyright/licence info for that file:
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*              Table of Contents
-50.  Includes
-61.  Docstrings
-114. UFUNC LOOPS
-    119. matmul
-    208. rmatmul
-    242. norm
-    306. rtrue_divide
-417. Ufunc definition
-439. Module initialization stuff
-*/
-
 /*
 *****************************************************************************
 **                            Includes                                     **
@@ -122,6 +110,7 @@ PyDoc_STRVAR(rtruedivide__doc__,
     #TYPE=CFLOAT,CDOUBLE#
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
 */
+// z -> z + x * y, for complex numbers
 static void
 @TYPE@_add_product_scalar(const @typ@ *x_in, const @typ@ *y_in, @typ@ *z_out)
 {
@@ -150,8 +139,8 @@ INIT_OUTER_LOOP_3
     npy_intp len_m = *dimensions++;  // dimensions of left
     npy_intp len_n = *dimensions++;  // dimensions of inner
     npy_intp len_p = *dimensions++;  // dimensions of right
-    npy_intp stride_x_m = *steps++;  // 1st arg
-    npy_intp stride_x_n = *steps++;
+    npy_intp stride_x_m = *steps++;  // 1st arg, row
+    npy_intp stride_x_n = *steps++;  // 1st arg, col
     npy_intp stride_y_n = *steps++;  // 2nd arg
     npy_intp stride_y_p = *steps++;
     npy_intp stride_z_m = *steps++;  // output
@@ -162,39 +151,43 @@ INIT_OUTER_LOOP_3
     npy_intp iback_y_p = len_p * stride_y_p;  // step back at end of loop
     npy_intp iback_z_p = len_p * stride_z_p;
 
-    BEGIN_OUTER_LOOP
+    BEGIN_OUTER_LOOP_3
 
         const char *ip_x= args[0];  //  1st arg
         const char *ip_y= args[1];  //  2nd arg
         char *op_z = args[2];       //  output
+        /* ip_x, etc are char*, pointer to 1st byte of element
+        (@typ@ *)ip_x, etc cast to @typ@*, pointer to whole element
+        *(@typ@ *)ip_x, etc is @typ@, the actual element */
 
-        for (m = 0; m < len_m; m++) {
-            for (p = 0; p < len_p; p++) {
-                *(@typ@ *)op_z = @zero@;
+        for (m = 0; m < len_m; m++) {  // left index
+            for (p = 0; p < len_p; p++) {  // right index
+                *(@typ@ *)op_z = @zero@;  // initialise at zero
 
-                for (n = 0; n < len_n; n++) {
+                for (n = 0; n < len_n; n++) {  // inner index
+                    // add x*y to z
 #if @cmplx@
                         @TYPE@_add_product_scalar((@typ@ *)ip_x, (@typ@ *)ip_y, (@typ@ *)op_z);
 #else
                         *(@typ@ *)op_z += *(@typ@ *)ip_x * *(@typ@ *)ip_y;
 #endif
 
-
-                    ip_x += stride_x_n;
+                    ip_x += stride_x_n;  // next element along inner dimension
                     ip_y += stride_y_n;
                 }
-                ip_x -= iback_x_n;
+                ip_x -= iback_x_n;  // back to start of inner dimension
                 ip_y -= iback_y_n;
 
-                ip_y += stride_y_p;
+                ip_y += stride_y_p;  // next element along right dimension
                 op_z += stride_z_p;
             }
-            ip_y -= iback_y_p;
+            ip_y -= iback_y_p;  // back to start of right dimension
             op_z -= iback_z_p;
 
-            ip_x += stride_x_m;
+            ip_x += stride_x_m;  // next element along left dimension
             op_z += stride_z_m;
         }
+        // don't need to go back to start of left dimension, get it from args[]
 
     END_OUTER_LOOP_3
 }
@@ -211,6 +204,8 @@ static void
 {
     /*swap (X,Y) for (Y,X)
     x,y here are not the same as X,Y  in docstring: x=Y, y=X */
+    // args = {y, x, z}
+    // rargs = {x, y, z}
     char *rargs[] = {args[1], args[0], args[2]};
     // dimensions = {N, len_n, len_p, len_m};
     // rdimensions[] = {N, len_m, len_n, len_p};
@@ -242,6 +237,7 @@ static void
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
     #rtyp=npy_float,npy_double#
 */
+// r -> r + |x|^2
 static void
 @TYPE@_add_abs_sq(const @typ@ *x_in, @rtyp@ *r_out)
 {
@@ -271,20 +267,23 @@ INIT_OUTER_LOOP_2
     npy_intp n;
     @rtyp@ normsq;
 
-    BEGIN_OUTER_LOOP
+    BEGIN_OUTER_LOOP_2
 
         const char *ip_x= args[0];  //  1st arg
         char *op_r = args[1];       //  output
-        normsq = @zero@;
+        normsq = @zero@;            // initialise at zero
 
-        for (n = 0; n < len_n; n++) {
+        for (n = 0; n < len_n; n++) {  // loop along vector dimension
+            /* ip_x, etc are char*, pointer to 1st byte of element
+            (@typ@ *)ip_x, etc cast to @typ@*, pointer to whole element
+            *(@typ@ *)ip_x, etc is @typ@, the actual element */
 #if @cmplx@
-                @TYPE@_add_abs_sq((@typ@ *)ip_x, &normsq);
+            @TYPE@_add_abs_sq((@typ@ *)ip_x, &normsq);
 #else
-                normsq += *(@typ@ *)ip_x * *(@typ@ *)ip_x;
+            normsq += *(@typ@ *)ip_x * *(@typ@ *)ip_x;
 #endif
 
-            ip_x += stride_n;
+            ip_x += stride_n;  // next element along vector dimension
         }
         *(@rtyp@ *)op_r = @sqrt@(normsq);
 
@@ -301,6 +300,7 @@ INIT_OUTER_LOOP_2
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
     #rtyp=npy_float,npy_double#
 */
+// r -> x/y, complex numbers
 static void
 @TYPE@_div(const @typ@ *x_in, const @typ@ *y_in, @typ@ *r_out)
 {
@@ -325,7 +325,7 @@ static void
               void *NPY_UNUSED(func))
 {
     INIT_OUTER_LOOP_3
-    BEGIN_OUTER_LOOP
+    BEGIN_OUTER_LOOP_3
 #if @cmplx@
             @TYPE@_div((@typ@ *)args[1], (@typ@ *)args[0], (@typ@ *)args[2]);
 #else
@@ -342,16 +342,19 @@ static void
 *****************************************************************************
 */
 
+// types argumrnt for creating 'norm' ufunc
 static char ufn_types_norm[] = { NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_FLOAT,
                                 NPY_CDOUBLE, NPY_DOUBLE };
 
+// array of functions for each ufunc loop
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(matmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(rmatmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(norm);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rtrue_divide);
 
+// info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
     { "matmul", "(m,n),(n,p)->(m,p)", matmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(matmul), ufn_types_5_3 },
@@ -369,10 +372,12 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
 *****************************************************************************
 */
 
+// Methods to add to module (none, we add ufuncs after creating them)
 static PyMethodDef GUfuncs_Cloop_Methods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+// arguments for module creation
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "_gufuncs_cloop",
@@ -385,6 +390,7 @@ static struct PyModuleDef moduledef = {
         NULL
 };
 
+// create module
 PyObject *PyInit__gufuncs_cloop(void)
 {
     PyObject *m;

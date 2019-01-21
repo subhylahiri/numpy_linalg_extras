@@ -34,7 +34,7 @@ Copyright/licence info for that file:
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-*
+/*
 *****************************************************************************
 **                            Includes                                     **
 *****************************************************************************
@@ -123,7 +123,7 @@ FNAME(@gemm@)(char tra[], char trb[], int *m, int *n, int *k,
 **                              NORM                                        **
 ******************************************************************************
 */
-// to hold arguments to BLAS _nrm2
+// to hold arguments for BLAS _nrm2
 typedef struct nrm2_params_struct
 {
     void *X; /* X is (N,) of base type */
@@ -229,7 +229,7 @@ INIT_OUTER_LOOP_2
 **                               MATMUL                                     **
 ******************************************************************************
 */
-// to hold arguments to BLAS _gemm
+// to hold arguments for BLAS _gemm
 typedef struct gemm_params_struct
 {
   void *A; /* A is scalar of base type */

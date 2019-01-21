@@ -41,7 +41,6 @@ Copyright/licence info for that file:
 */
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
 
-#include "gufunc_common_f.h"
 #include "rearrange_data.h"
 
 static const char* gufuncs_lu_solve_version_string = "0.1.0";
@@ -281,6 +280,7 @@ FNAME(@getrs@)(char *trans, int *n, int *nrhs,
 **                                 LU                                       **
 ******************************************************************************
 */
+// to hold arguments for Lapack _gesv, _getrf, _getrs
 typedef struct gesv_params_struct
 {
     void *A; /* A is (M,N) of base type */
@@ -325,6 +325,9 @@ call_@getrf@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _getrf          *
 * Handles buffer allocation
 ****************************************************************************/
+// M: number of rows
+// N: number of columns
+// K: min(M,N)
 static NPY_INLINE int
 init_@getrf@(GESV_PARAMS_t *params, npy_intp M_in, npy_intp N_in)
 {
@@ -341,22 +344,22 @@ init_@getrf@(GESV_PARAMS_t *params, npy_intp M_in, npy_intp N_in)
     safe_N = N_in;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)
-                    + safe_K * sizeof(fortran_int));
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  // for A
+                    + safe_K * sizeof(fortran_int));    // for IPIV
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;
-    b = a + safe_M * safe_N * sizeof(@ftyp@);
+    a = mem_buff;                              // store A at start of buffer
+    b = a + safe_M * safe_N * sizeof(@ftyp@);  // store IPIV after space for A
 
     params->A = a;
-    params->B = NULL;
+    params->B = NULL;               // no RHS for _getrf
     params->IPIV = (fortran_int*)b;
     params->M = M;
     params->N = N;
-    params->NRHS = N;
+    params->NRHS = N;               // not used in _getrf
     params->LDA = lda;
-    params->LDB = 1;
+    params->LDB = 1;                // not used in _getrf
     params->INFO = 0;
     params->TRANS = 'N';
 
@@ -407,7 +410,8 @@ static void
     LINEARIZE_DATA_t a_in, l_out, u_out, ipiv_out;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
-    if(init_@getrf@(&params, len_m, len_n)) {
+    if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_data(&l_out, len_k, len_m, stride_l_c, stride_l_r);
         init_linearize_data_ex(&u_out, len_n, len_k, stride_u_c, stride_u_r, len_m);
@@ -415,15 +419,15 @@ static void
 
         BEGIN_OUTER_LOOP_4
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
-            call_@getrf@(&params);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
+            call_@getrf@(&params);  // call Lapack
             not_ok = params.INFO;
             if (not_ok < 0) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &l_out);
                 nan_@TYPE@_matrix(args[2], &u_out);
             } else {
-                zero_@TYPE@_triu(args[1], &l_out);
+                zero_@TYPE@_triu(args[1], &l_out);  // copy outputs
                 eye_@TYPE@_matrix(args[1], &l_out);
                 delinearize_@TYPE@_tril(args[1], params.A, &l_out);
 
@@ -433,7 +437,7 @@ static void
                 delinearize_INT_vec(args[3], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_4
-        release_@getrf@(&params);
+        release_@getrf@(&params);  // deallocate buffer
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -461,21 +465,22 @@ static void
     LINEARIZE_DATA_t a_in, f_out, ipiv_out;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
-    if(init_@getrf@(&params, len_m, len_n)) {
+    if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_data(&f_out, len_n, len_m, stride_f_c, stride_f_r);
         init_linearize_vdata(&ipiv_out, len_k, stride_ip);
 
         BEGIN_OUTER_LOOP_3
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
             call_@getrf@(&params);
             not_ok = params.INFO;
             if (not_ok < 0) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &f_out);
             } else {
-                delinearize_@TYPE@_matrix(args[1], params.A, &f_out);
+                delinearize_@TYPE@_matrix(args[1], params.A, &f_out);  // copy outputs
                 delinearize_INT_vec(args[2], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_3
@@ -510,6 +515,10 @@ call_@laswp@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _laswp          *
 * Handles buffer allocation
 ****************************************************************************/
+// M: number of rows
+// N: number of columns
+// K: min(M,N)
+// direction: +/- 1, perform pivots in forward/reverse order
 static NPY_INLINE int
 init_@laswp@(GESV_PARAMS_t *params,
             npy_intp M_in, npy_intp N_in, npy_intp K_in, npy_intp direction)
@@ -527,23 +536,23 @@ init_@laswp@(GESV_PARAMS_t *params,
     safe_N = N_in;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)
-                    + safe_K * sizeof(fortran_int));
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  // for A
+                    + safe_K * sizeof(fortran_int));    // for IPIV
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;
-    b = a + safe_M * safe_N * sizeof(@ftyp@);
+    a = mem_buff;                              // store A at start of buffer
+    b = a + safe_M * safe_N * sizeof(@ftyp@);  // store IPIV after space for A
 
     params->A = a;
-    params->B = NULL;
+    params->B = NULL;               // not used in _getrf
     params->IPIV = (fortran_int*)b;
     params->M = K;
     params->N = N;
-    params->NRHS = N;
+    params->NRHS = N;                // not used in _getrf
     params->LDA = lda;
-    params->LDB = 1;
-    params->INFO = (fortran_int)direction;
+    params->LDB = 1;                 // not used in _getrf
+    params->INFO = (fortran_int)direction;  // using INFO to store direction
     params->TRANS = 'N';
 
     return 1;
@@ -577,19 +586,20 @@ do_@TYPE@_pivot(char **args, npy_intp *dimensions, npy_intp *steps,
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, ipiv_in, p_out;
 
-    if(init_@laswp@(&params, len_m, len_n, len_k, direction)) {
+    if(init_@laswp@(&params, len_m, len_n, len_k, direction)) {  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_vdata(&ipiv_in, len_k, stride_ip);
         init_linearize_data(&p_out, len_n, len_m, stride_p_c, stride_p_r);
 
         BEGIN_OUTER_LOOP_3
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_INT_vec(params.IPIV, args[1], &ipiv_in);
-            call_@laswp@(&params);
-            delinearize_@TYPE@_matrix(args[2], params.A, &p_out);
+            call_@laswp@(&params);  // call Lapack
+            delinearize_@TYPE@_matrix(args[2], params.A, &p_out);  // copy output
         END_OUTER_LOOP_3
-        release_@getrf@(&params);
+        release_@getrf@(&params);  // deallocate buffer
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -597,6 +607,7 @@ do_@TYPE@_pivot(char **args, npy_intp *dimensions, npy_intp *steps,
 /************************
 * Outer GUfunc loop     *
 *************************/
+// functions for different choice of direction
 
 // pivot_signature = "(m,n),(k)->(m,n)";
 
@@ -607,7 +618,7 @@ static void
     do_@TYPE@_pivot(args, dimensions, steps, 1);
 }
 
-// rsolve_signature = "(m,n),(k)->(m,n)"
+// rpivot_signature = "(m,n),(k)->(m,n)"
 
 static void
 @TYPE@_rpivot(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -641,6 +652,9 @@ call_@gesv@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _gesv           *
 * Handles buffer allocation
 ****************************************************************************/
+// N: size of A (square), rows of B
+// NRHS: columns of B
+// trans: 'N/T', use transpose of A? (can't transpose manually because of pivot)
 static NPY_INLINE int
 init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
 {
@@ -656,15 +670,15 @@ init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
     safe_N = N_in;
     safe_NRHS = NRHS_in;
 
-    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)
-                    + safe_N * safe_NRHS * sizeof(@ftyp@)
-                    + safe_N * sizeof(fortran_int));
+    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      // for A
+                    + safe_N * safe_NRHS * sizeof(@ftyp@)   // for B
+                    + safe_N * sizeof(fortran_int));        // for IPIV
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;
-    b = a + safe_N * safe_N * sizeof(@ftyp@);
-    c = b + safe_N * safe_NRHS * sizeof(@ftyp@);
+    a = mem_buff;                                   // store A at start of buffer
+    b = a + safe_N * safe_N * sizeof(@ftyp@);       // store B after space for A
+    c = b + safe_N * safe_NRHS * sizeof(@ftyp@);    // store IPIV after space for B
 
     params->A = a;
     params->B = b;
@@ -686,19 +700,6 @@ init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
 
     return 0;
 }
-
-// /************************
-// * Deallocate buffer     *
-// *************************/
-//
-// static NPY_INLINE void
-// release_@gesv@(GESV_PARAMS_t *params)
-// {
-//     /* 1st memory block base is in A */
-//     free(params->A);
-//     memset(params, 0, sizeof(*params));
-// }
-
 
 /************************
 * Inner GUfunc loop     *
@@ -723,25 +724,26 @@ static void
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, 'N')){
+    if(init_@gesv@(&params, len_n, len_nrhs, 'N')){  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
 
         BEGIN_OUTER_LOOP
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            call_@gesv@(&params);
+            call_@gesv@(&params);                               // call Lapack
             not_ok = params.INFO;
             if (not_ok) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);
+                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);  // copy output
             }
         END_OUTER_LOOP_3
-        release_@getrf@(&params);
+        release_@getrf@(&params);  // deallocate buffer
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -758,6 +760,8 @@ static void
 {
     /*swap (A,B) for (B^T,A^T)
     a,b here are not the same as A,B  in docstring: a=B^T, b=A^T */
+    // args = {b, a, x}
+    // rargs = {a, b, x}
     char *rargs[] = {args[1], args[0], args[2]};
     // dimensions = {N, len_nrhs, len_n};
     // rdimensions[] = {N, len_n, len_nrhs};
@@ -826,7 +830,8 @@ static void
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out, af_out, ipiv_out;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, trans)){
+    if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
@@ -835,9 +840,9 @@ static void
 
         BEGIN_OUTER_LOOP_5
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            call_@getrf@(&params);
+            call_@getrf@(&params);  // call Lapack
             call_@getrs@(&params);
             not_ok = params.INFO;
             if (not_ok) {
@@ -845,12 +850,12 @@ static void
                 nan_@TYPE@_matrix(args[2], &x_out);
                 nan_@TYPE@_matrix(args[3], &af_out);
             } else {
-                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);
+                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);  // copy outputs
                 delinearize_@TYPE@_matrix(args[3], params.A, &af_out);
                 delinearize_INT_vec(args[4], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_5
-        release_@getrf@(&params);
+        release_@getrf@(&params);  // deallocate buffer
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -875,7 +880,10 @@ static void
             void *NPY_UNUSED(func))
 {
     /*swap (A,B,X,Af,P) for (B^T,A,X^T,Af,P)
-    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T */
+    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T
+    can't transpose A manually because of pivot */
+    // args = {b, a, x, lu, ipiv}
+    // rargs = {a, b, x, lu, ipiv}
     char *rargs[] = {args[1], args[0], args[2], args[3], args[4]};
     // dimensions = {N, len_nrhs, len_n};
     // rdimensions[] = {N, len_n, len_nrhs};
@@ -922,7 +930,8 @@ static void
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out, ipiv_in;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, trans)){
+    if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
+        // initialise shape data
         init_linearize_data(&a_in, len_n, len_n, stride_af_c, stride_af_r);
         init_linearize_vdata(&ipiv_in, len_n, stride_ip);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
@@ -930,19 +939,19 @@ static void
 
         BEGIN_OUTER_LOOP_4
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_INT_vec(params.IPIV, args[1], &ipiv_in);
             linearize_@TYPE@_matrix(params.B, args[2], &b_in);
-            call_@getrs@(&params);
+            call_@getrs@(&params);  // call Lapack
             not_ok = params.INFO;
             if (not_ok) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[3], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[3], params.B, &x_out);
+                delinearize_@TYPE@_matrix(args[3], params.B, &x_out);  // copy output
             }
         END_OUTER_LOOP_4
-        release_@getrf@(&params);
+        release_@getrf@(&params);  // deallocate buffer
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -967,7 +976,10 @@ static void
             void *NPY_UNUSED(func))
 {
     /*swap (A,P,B,X) for (B^T,A,P,X^T)
-    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T */
+    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T
+    can't transpose A manually because of pivot */
+    // args = {b, x, lu, ipiv, x}
+    // rargs = {lu, ipiv, b, x}
     char *rargs[] = {args[1], args[2], args[0], args[3]};
     // dimensions = {N, len_nrhs, len_n};
     // rdimensions[] = {N, len_n, len_nrhs};
@@ -997,6 +1009,7 @@ static void
 */
 
 
+// array of functions for each ufunc loop
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(solve);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rsolve);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(solve_lu);
@@ -1008,6 +1021,7 @@ GUFUNC_FUNC_ARRAY_REAL_COMPLEX(lu_raw);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(pivot);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rpivot);
 
+// types argumrnt for creating 'lu' ufuncs
 static char ufn_types_pivot_3[] = { NPY_FLOAT, NPY_INT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_INT, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_INT, NPY_CFLOAT,
@@ -1033,6 +1047,7 @@ static char ufn_types_lu_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
                                 NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT };
 
+// info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
     { "solve", "(n,n),(n,nrhs)->(n,nrhs)", solve__doc__, 4, 2, 1,
         FUNC_ARRAY_NAME(solve), ufn_types_4_3 },
@@ -1066,10 +1081,12 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
 *****************************************************************************
 */
 
+// Methods to add to module (none, we add ufuncs after creating them)
 static PyMethodDef GUfuncs_LUSOLVE_Methods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+// arguments for module creation
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_gufuncs_lu_solve",
@@ -1082,6 +1099,7 @@ static struct PyModuleDef moduledef = {
     NULL
 };
 
+// create module
 PyObject *PyInit__gufuncs_lu_solve(void)
 {
     PyObject *m;

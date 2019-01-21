@@ -44,6 +44,14 @@ Copyright/licence info for that file:
 
 #undef NO_FORTRAN
 #define NPY_NO_DEPRECATED_API NPY_API_VERSION
+/*
+*****************************************************************************
+**                              Includes                                   **
+*****************************************************************************
+Needs to come before typedefs
+*/
+#include "Python.h"
+#include "numpy/ndarraytypes.h"
 
 /*
 *****************************************************************************

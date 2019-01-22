@@ -1594,7 +1594,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
 *          Inner GUfunc loop          *
 ***************************************/
 
-// lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(m,n),(k)";
+// pinv_signature = "(m,n)->(n,m)";
 static int
 do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, npy_intp underconstrained)
 {
@@ -1619,7 +1619,7 @@ do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, npy_intp underconstrained)
     return 0;
 }
 
-// lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(m,n),(k)";
+// pinvqr_signature = "(m,n)->(n,m),(m,n),(k)";
 static int
 save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
                 GEQRF_PARAMS_t *params, npy_intp underconstrained)
@@ -1647,6 +1647,157 @@ save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
     return 0;
 }
 
+/**************************************
+*          Outer GUfunc loop          *
+***************************************/
+
+// pinv_signature = "(m,n)->(n,m)";
+
+static void
+@TYPE@_pinv(char **args, npy_intp *dimensions, npy_intp *steps,
+                void *NPY_UNUSED(func))
+{
+INIT_OUTER_LOOP_2
+    npy_intp len_m = *dimensions++;  // rows of a, columns of x
+    npy_intp len_n = *dimensions++;  // columns of a, rows of x
+    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp stride_a_c = *steps++;
+    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_c = *steps++;
+    int error_occurred = get_fp_invalid_and_clear();
+    GEQRF_PARAMS_t params;
+    LINEARIZE_DATA_t a_in, x_out;
+    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+
+    if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
+        // initialise shape data
+        init_linearize_data(&a_in, len_n, len_m, stride_in_c, stride_in_r);
+        // need to conjugate-transpose params.A to get X
+        init_linearize_data_exc(&x_out, len_m, len_n, stride_out_r, stride_out_c, len_m, 1);
+
+        BEGIN_OUTER_LOOP_2
+            int not_ok;
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
+            not_ok = do_@TYPE@_qrfi(&params, underconstrained);  // call Lapack
+            if (not_ok) {
+                error_occurred = 1;
+                nan_@TYPE@_matrix(args[1], &x_out);
+            } else {
+                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);  // copy output
+            }
+        END_OUTER_LOOP_2
+        release_@geqrf@(&params);  // deallocate buffer
+    }
+    set_fp_invalid_or_clear(error_occurred);
+}
+
+/**************************************
+*               PINVQR                *
+***************************************/
+
+// pinvqr_signature = "(m,n)->(n,m),(m,n),(k)";
+
+static void
+@TYPE@_pinv_qr(char **args, npy_intp *dimensions, npy_intp *steps,
+                void *NPY_UNUSED(func))
+{
+INIT_OUTER_LOOP_4
+    npy_intp len_m = *dimensions++;  // rows of a, b
+    npy_intp len_n = *dimensions++;  // columns of a, rows of x
+    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp stride_a_c = *steps++;
+    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_c = *steps++;
+    npy_intp stride_f_r = *steps++;  // rows
+    npy_intp stride_f_c = *steps++;
+    npy_intp stride_tau = *steps++;
+    int error_occurred = get_fp_invalid_and_clear();
+    GEQRF_PARAMS_t params;
+    LINEARIZE_DATA_t a_in, x_out, a_out, tau_out;
+    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+    npy_intp len_k = npy_int_min(len_m, len_n);
+
+    if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
+        // initialise shape data
+        init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
+        // need to conjugate-transpose params.A to get X
+        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
+        init_linearize_data(&a_out, len_n, len_m, stride_f_c, stride_f_r);
+        init_linearize_vdata(&tau_out, len_k, stride_tau);
+
+        BEGIN_OUTER_LOOP_4
+            int not_ok;
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
+            // call Lapack, copy A output
+            not_ok = save_@TYPE@_qrfi(args[2], &a_out, &params, underconstrained);
+            if (not_ok) {
+                error_occurred = 1;
+                nan_@TYPE@_matrix(args[1], &x_out);
+                nan_@TYPE@_matrix(args[2], &a_out);
+                nan_@TYPE@_vec(args[3], &tau_out);
+            } else {
+                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);  // copy other outputs
+                delinearize_@TYPE@_vec(args[3], params.T, &tau_out);
+            }
+        END_OUTER_LOOP_4
+        release_@geqrf@(&params);  // deallocate buffer
+    }
+    set_fp_invalid_or_clear(error_occurred);
+}
+
+
+/**************************************
+*               QRPINV                *
+***************************************/
+
+// qrpinv_signature = "(m,n),(k)->(n,m)";
+
+static void
+@TYPE@_qr_pinv(char **args, npy_intp *dimensions, npy_intp *steps,
+                void *NPY_UNUSED(func))
+{
+INIT_OUTER_LOOP_3
+    npy_intp len_m = *dimensions++;  // rows of a, b
+    npy_intp len_n = *dimensions++;  // columns of a, rows of x
+    npy_intp len_k = *dimensions++;  // columns of a, rows of x
+    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp stride_a_c = *steps++;
+    npy_intp stride_tau = *steps++;
+    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_c = *steps++;
+    int error_occurred = get_fp_invalid_and_clear();
+    GEQRF_PARAMS_t params;
+    LINEARIZE_DATA_t a_in, tau_in, x_out;
+    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+    npy_intp len_k = npy_int_min(len_m, len_n);
+
+    if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
+        // initialise shape data
+        init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
+        init_linearize_vdata(&tau_out, len_k, stride_tau);
+        // need to conjugate-transpose params.A to get X
+        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
+
+        BEGIN_OUTER_LOOP
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
+            linearize_@TYPE@_vec(params.T, args[1], &tau_in);
+            // Solve least squares problem
+            if (underconstrained) {
+                call_@gelqi@(params);
+            } else {
+                call_@geqri@(params);
+            }
+            if (params.INFO < 0) {
+                error_occurred = 1;
+                nan_@TYPE@_matrix(args[2], &x_out);
+            } else {
+                delinearize_@TYPE@_matrix(args[2], params.A, &x_out);  // copy output
+            }
+        END_OUTER_LOOP_3
+        release_@geqrf@(&params);  // deallocate buffer
+    }
+    set_fp_invalid_or_clear(error_occurred);
+}
 
 
 /**end repeat**/

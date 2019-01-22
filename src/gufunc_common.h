@@ -251,6 +251,7 @@ static char char_C;
 static char char_F;
 static char char_L;
 static char char_N;
+static char char_R;
 static char char_T;
 static char char_U;
 
@@ -308,6 +309,7 @@ static void init_constants(void)
     char_F = 'F';
     char_L = 'L';
     char_N = 'N';
+    char_R = 'R';
     char_T = 'T';
     char_U = 'U';
 }

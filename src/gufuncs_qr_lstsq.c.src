@@ -568,8 +568,8 @@ INIT_OUTER_LOOP_3
             BEGIN_OUTER_LOOP
                 int not_ok;
                 linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input to buffer
-                not_ok = do_@TYPE@_qr(args[0], args[1], args[2], &params,
-                                   &a_in, &q_out, &r_out);  // call Lapack, copy out
+                not_ok = do_@TYPE@_qr(args[1], args[2], &params,
+                                    &q_out, &r_out);  // call Lapack, copy out
                 if (not_ok) {
                     error_occurred = 1;
                     nan_@TYPE@_matrix(args[1], &q_out);
@@ -653,7 +653,7 @@ INIT_OUTER_LOOP_3
     LINEARIZE_DATA_t a_in, r_out, tau_out;
     npy_intp len_nc = complete ? len_m : len_n;
 
-    if(len_m < len_nc) {//signature demands a wide matrix for q, impossible for qr_n.
+    if(len_m < len_nc) {//signature demands a wide matrix for q, impossible when orthogonal.
         // PyErr_SetString(PyExc_ValueError, "qr_n can only be called when m >= n.");
         error_occurred = 1;
         init_linearize_data_ex(&r_out, len_n, len_m, stride_r_m, stride_r_n, len_m);

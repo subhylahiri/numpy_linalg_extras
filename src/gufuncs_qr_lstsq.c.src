@@ -578,8 +578,8 @@ INIT_OUTER_LOOP_3
             BEGIN_OUTER_LOOP
                 int not_ok;
                 linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input to buffer
-                not_ok = do_@TYPE@_qr(args[0], args[1], args[2], &params,
-                                   &a_in, &q_out, &r_out);  // call Lapack, copy out
+                not_ok = do_@TYPE@_qr(args[1], args[2], &params,
+                                   &q_out, &r_out);  // call Lapack, copy out
                 if (not_ok) {
                     error_occurred = 1;
                     nan_@TYPE@_matrix(args[1], &q_out);
@@ -1518,9 +1518,9 @@ init_@geqri@(GEQRF_PARAMS_t *params,
 {
     npy_uint8 *mem_buff = NULL;
     npy_uint8 *mem_buff2 = NULL;
-    npy_uint8 *a, *b, *c, *d;
-    fortran_int M, N, NC, K, MN, lda, ldb, MNx, LW, LWQ, LWR;
-    size_t safe_M, safe_N, safe_NC, safe_K, safe_MNx, safe_LW;
+    npy_uint8 *a, *b, *c;
+    fortran_int M, N, K, lda, LW, LWQ, LWR;
+    size_t safe_M, safe_N, safe_K, safe_LW;
     @ftyp@ work_size;
 
     M = (fortran_int)M_in;
@@ -1671,9 +1671,9 @@ INIT_OUTER_LOOP_2
 
     if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
         // initialise shape data
-        init_linearize_data(&a_in, len_n, len_m, stride_in_c, stride_in_r);
+        init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         // need to conjugate-transpose params.A to get X
-        init_linearize_data_exc(&x_out, len_m, len_n, stride_out_r, stride_out_c, len_m, 1);
+        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
 
         BEGIN_OUTER_LOOP_2
             int not_ok;
@@ -1769,12 +1769,12 @@ INIT_OUTER_LOOP_3
     GEQRF_PARAMS_t params;
     LINEARIZE_DATA_t a_in, tau_in, x_out;
     npy_intp underconstrained = len_m < len_n ? 1 : 0;
-    npy_intp len_k = npy_int_min(len_m, len_n);
+    len_k = npy_int_min(len_m, len_n);
 
     if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
-        init_linearize_vdata(&tau_out, len_k, stride_tau);
+        init_linearize_vdata(&tau_in, len_k, stride_tau);
         // need to conjugate-transpose params.A to get X
         init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
 
@@ -1783,9 +1783,9 @@ INIT_OUTER_LOOP_3
             linearize_@TYPE@_vec(params.T, args[1], &tau_in);
             // Solve least squares problem
             if (underconstrained) {
-                call_@gelqi@(params);
+                call_@gelqi@(&params);
             } else {
-                call_@geqri@(params);
+                call_@geqri@(&params);
             }
             if (params.INFO < 0) {
                 error_occurred = 1;

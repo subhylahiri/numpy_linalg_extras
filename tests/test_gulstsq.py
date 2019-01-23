@@ -124,7 +124,7 @@ class TestQRPinv(utn.TestCaseNumpy):
         with self.subTest(msg='q q^T'):
             self.assertArrayAllClose(self.id_big[sctype], eyet)
 
-    @utn.loop_test()
+    @utn.loop_test(msg='r')
     def test_qr_r(self, sctype):
         """Check that qr_rm, qr_rn return the expected values
         """
@@ -137,7 +137,7 @@ class TestQRPinv(utn.TestCaseNumpy):
             rr = gfl.qr_n(self.tall[sctype])[1]
             self.assertArrayAllClose(r, rr)
 
-    @utn.loop_test(attr_inds=1)
+    @utn.loop_test(msg='rawm', attr_inds=slice(2))
     def test_qr_rawm(self, sctype):
         """Check that qr_rawm returns the expected values
         """
@@ -159,7 +159,7 @@ class TestQRPinv(utn.TestCaseNumpy):
         with self.subTest(msg='h_m'):
             self.assertArrayAllClose(r, self.wide[sctype])
 
-    @utn.loop_test(attr_inds=1)
+    @utn.loop_test(msg='rawn', attr_inds=slice(2))
     def test_qr_rawn(self, sctype):
         """Check that qr_rawn returns the expected values
         """
@@ -180,8 +180,9 @@ class TestQRPinv(utn.TestCaseNumpy):
         with self.subTest(msg='h_n'):
             self.assertArrayAllClose(r, self.tall[sctype])
 
+    @utn.loop_test(msg='pinv')
     def test_pinv_val(self, sctype):
-        """Check that pinv gufuncs all return arrays with the expected shape
+        """Check that pinv gufuncs all return arrays with the expected values
         """
         with self.subTest(msg='wide'):
             wide_p = gfl.pinv(self.wide[sctype])

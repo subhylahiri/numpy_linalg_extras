@@ -106,3 +106,4 @@ src/gufuncs_cloop.c
 src/gufuncs_lu_solve.c
 src/gufuncs_qr_lstsq.c
 src/rearrange_data.c
+src/.cquery

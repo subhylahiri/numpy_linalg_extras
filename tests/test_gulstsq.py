@@ -6,7 +6,7 @@ import numpy as np
 import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-from numpy_linalg import transpose
+from numpy_linalg import transpose, dagger
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
@@ -80,7 +80,7 @@ class TestQRPinv(utn.TestCaseNumpy):
             self.assertEqual(wide_p.shape, (120, 10, 16, 5))
         with self.subTest(msg='tall,-qr'):
             tall_p = gfl.qr_pinv(tall_f, tall_tau)
-            self.assertEqual(tall_p.shape, (120, 10, 16, 5))
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
 
     @utn.loop_test(msg='wide')
     def test_qr_wide(self, sctype):
@@ -88,8 +88,8 @@ class TestQRPinv(utn.TestCaseNumpy):
         """
         q, r = gfl.qr_m(self.wide[sctype])
         wide = q @ r
-        eye = transpose(q.conj()) @ q
-        eyet = q @ transpose(q.conj())
+        eye = dagger(q) @ q
+        eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(wide, self.wide[sctype])
         with self.subTest(msg='q^T q'):
@@ -103,7 +103,7 @@ class TestQRPinv(utn.TestCaseNumpy):
         """
         q, r = gfl.qr_n(self.tall[sctype])
         tall = q @ r
-        eye = transpose(q.conj()) @ q
+        eye = dagger(q) @ q
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(tall, self.tall[sctype])
         with self.subTest(msg='q^T q'):
@@ -115,8 +115,8 @@ class TestQRPinv(utn.TestCaseNumpy):
         """
         q, r = gfl.qr_m(self.tall[sctype])
         tall = q @ r
-        eye = transpose(q.conj()) @ q
-        eyet = q @ transpose(q.conj())
+        eye = dagger(q) @ q
+        eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(tall, self.tall[sctype])
         with self.subTest(msg='q^T q'):
@@ -137,7 +137,7 @@ class TestQRPinv(utn.TestCaseNumpy):
             rr = gfl.qr_n(self.tall[sctype])[1]
             self.assertArrayAllClose(r, rr)
 
-    @utn.loop_test(msg='rawm', attr_inds=slice(2))
+    @utn.loop_test(msg='rawm')
     def test_qr_rawm(self, sctype):
         """Check that qr_rawm returns the expected values
         """
@@ -147,19 +147,18 @@ class TestQRPinv(utn.TestCaseNumpy):
         h = transpose(ht)
         v = np.tril(h[..., :n], -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = gfb.norm(v, axis=-2)**2 * tau
+        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
         r = np.triu(h)
         with self.subTest(msg='raw_m'):
             self.assertArrayAllClose(r, rr)
-            self.assertArrayAllClose(vn[..., :-1], 2)
-            self.assertArrayAllClose(vn[..., -1], 0)
-        for k in range(2, n+1):
-            vr = v[..., None, :, -k] @ r
-            r -= tau[..., None, None, -k] * v[..., -k, None] * vr
+            self.assertArrayAllClose(vn, 2 * tau.real)
+        for k in range(1, n+1):
+            vv = v[..., -k, None]
+            r -= tau[..., None, None, -k] * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_m'):
             self.assertArrayAllClose(r, self.wide[sctype])
 
-    @utn.loop_test(msg='rawn', attr_inds=slice(2))
+    @utn.loop_test(msg='rawn')
     def test_qr_rawn(self, sctype):
         """Check that qr_rawn returns the expected values
         """
@@ -169,17 +168,18 @@ class TestQRPinv(utn.TestCaseNumpy):
         h = transpose(ht)
         v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = gfb.norm(v, axis=-2)**2 * tau
+        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
         r = np.triu(h)
         with self.subTest(msg='raw_n'):
             self.assertArrayAllClose(r[..., :5, :], rr)
-            self.assertArrayAllClose(vn, 2)
+            self.assertArrayAllClose(vn, 2 * tau.real)
         for k in range(1, n+1):
-            vr = v[..., None, :, -k] @ r
+            vr = v[..., None, :, -k].conj() @ r
             r -= tau[..., None, None, -k] * v[..., -k, None] * vr
         with self.subTest(msg='h_n'):
             self.assertArrayAllClose(r, self.tall[sctype])
 
+    # @unittest.skip('nothing works')
     @utn.loop_test(msg='pinv')
     def test_pinv_val(self, sctype):
         """Check that pinv gufuncs all return arrays with the expected values
@@ -194,9 +194,9 @@ class TestQRPinv(utn.TestCaseNumpy):
                                      self.id_small[sctype])
         with self.subTest(msg='wide,+qr'):
             wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.wide[sctype])
-            qrf, tau = gfl.qr_rawm(self.wide[sctype])
+            qrf, tau = gfl.qr_rawn(self.wide[sctype].conj().swapaxes(-1, -2))
             self.assertArrayAllClose(wide_pq, wide_p)
-            self.assertArrayAllClose(wide_f, qrf.swapaxes(-1, -2))
+            self.assertArrayAllClose(wide_f, qrf.conj())
             self.assertArrayAllClose(wide_tau, tau)
         with self.subTest(msg='tall,+qr'):
             tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.tall[sctype])
@@ -209,7 +209,7 @@ class TestQRPinv(utn.TestCaseNumpy):
             self.assertArrayAllClose(wide_qp, wide_p)
         with self.subTest(msg='tall,-qr'):
             tall_qp = gfl.qr_pinv(tall_f, tall_tau)
-            self.assertArrayAllClose(tall_qp, wide_p)
+            self.assertArrayAllClose(tall_qp, tall_p)
 
 
 # =============================================================================
@@ -241,10 +241,10 @@ class TestLstsq(utn.TestCaseNumpy):
             self.x[sctype] = utn.randn_asa((2, 8, 5), sctype)
             self.y[sctype] = utn.randn_asa((8, 2), sctype)
             self.z[sctype] = utn.randn_asa((3, 1, 8, 4), sctype)
-            self.wt[sctype] = transpose(self.w[sctype]).conj()
-            self.xt[sctype] = transpose(self.x[sctype]).conj()
-            self.yt[sctype] = transpose(self.y[sctype]).conj()
-            self.zt[sctype] = transpose(self.z[sctype]).conj()
+            self.wt[sctype] = dagger(self.w[sctype])
+            self.xt[sctype] = dagger(self.x[sctype])
+            self.yt[sctype] = dagger(self.y[sctype])
+            self.zt[sctype] = dagger(self.z[sctype])
 
 
 class TestLstsqShape(TestLstsq):

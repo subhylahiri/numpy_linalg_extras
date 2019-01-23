@@ -14,8 +14,8 @@ errstate = utn.errstate(invalid='raise')
 # =============================================================================
 
 
-class TestQR(utn.TestCaseNumpy):
-    """Testing gufuncs_lapack.qr_*
+class TestQRPinv(utn.TestCaseNumpy):
+    """Testing gufuncs_lapack.qr_*, pinv, pinv_qr and qr_pinv
     """
 
     def setUp(self):
@@ -55,6 +55,32 @@ class TestQR(utn.TestCaseNumpy):
             h, tau = gfl.qr_rawn(self.tall['d'])
             self.assertEqual(h.shape, (120, 10, 5, 16))
             self.assertEqual(tau.shape, (120, 10, 5))
+
+    def test_pinv_shape(self):
+        """Check that pinv gufuncs all return arrays with the expected shape
+        """
+        with self.subTest(msg='wide'):
+            wide_p = gfl.pinv(self.wide['d'])
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+        with self.subTest(msg='tall'):
+            tall_p = gfl.pinv(self.tall['d'])
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+        with self.subTest(msg='wide,+qr'):
+            wide_p, wide_f, wide_tau = gfl.pinv_qrm(self.wide['d'])
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+            self.assertEqual(wide_f.shape, (120, 10, 5, 16))
+            self.assertEqual(wide_tau.shape, (120, 10, 5))
+        with self.subTest(msg='tall,+qr'):
+            tall_p, tall_f, tall_tau = gfl.pinv_qrn(self.tall['d'])
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+            self.assertEqual(tall_f.shape, (120, 10, 16, 5))
+            self.assertEqual(tall_tau.shape, (120, 10, 5))
+        with self.subTest(msg='wide,-qr'):
+            wide_p = gfl.qr_pinv(wide_f, wide_tau)
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+        with self.subTest(msg='tall,-qr'):
+            tall_p = gfl.qr_pinv(tall_f, tall_tau)
+            self.assertEqual(tall_p.shape, (120, 10, 16, 5))
 
     @utn.loop_test(msg='wide')
     def test_qr_wide(self, sctype):
@@ -153,6 +179,36 @@ class TestQR(utn.TestCaseNumpy):
             r -= tau[..., None, None, -k] * v[..., -k, None] * vr
         with self.subTest(msg='h_n'):
             self.assertArrayAllClose(r, self.tall[sctype])
+
+    def test_pinv_val(self, sctype):
+        """Check that pinv gufuncs all return arrays with the expected shape
+        """
+        with self.subTest(msg='wide'):
+            wide_p = gfl.pinv(self.wide[sctype])
+            self.assertArrayAllClose(self.wide[sctype] @ wide_p,
+                                     self.id_small[sctype])
+        with self.subTest(msg='tall'):
+            tall_p = gfl.pinv(self.tall[sctype])
+            self.assertArrayAllClose(tall_p @ self.tall[sctype],
+                                     self.id_small[sctype])
+        with self.subTest(msg='wide,+qr'):
+            wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.wide[sctype])
+            qrf, tau = gfl.qr_rawm(self.wide[sctype])
+            self.assertArrayAllClose(wide_pq, wide_p)
+            self.assertArrayAllClose(wide_f, qrf.swapaxes(-1, -2))
+            self.assertArrayAllClose(wide_tau, tau)
+        with self.subTest(msg='tall,+qr'):
+            tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.tall[sctype])
+            qrf, tau = gfl.qr_rawn(self.tall[sctype])
+            self.assertArrayAllClose(tall_pq, tall_p)
+            self.assertArrayAllClose(tall_f, qrf.swapaxes(-1, -2))
+            self.assertArrayAllClose(tall_tau, tau)
+        with self.subTest(msg='wide,-qr'):
+            wide_qp = gfl.qr_pinv(wide_f, wide_tau)
+            self.assertArrayAllClose(wide_qp, wide_p)
+        with self.subTest(msg='tall,-qr'):
+            tall_qp = gfl.qr_pinv(tall_f, tall_tau)
+            self.assertArrayAllClose(tall_qp, wide_p)
 
 
 # =============================================================================

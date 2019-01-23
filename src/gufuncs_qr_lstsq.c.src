@@ -119,7 +119,7 @@ PyDoc_STRVAR(qrraw__doc__,
 ******************/
 
 PyDoc_STRVAR(lstsq__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"lstsq(A: ndarray, B: ndarray) -> (X: ndarray)\n\n"
 "Least-square solution of linear system.\n\n"
 "Find the least-square solution of the equation `AX = B` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version does not return `residuals`, \n"
@@ -135,7 +135,7 @@ PyDoc_STRVAR(lstsq__doc__,
 "    Matrix of solution vectors.");
 
 PyDoc_STRVAR(rlstsq__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"rlstsq(A: ndarray, B: ndarray) -> (X: ndarray)\n\n"
 "Least-square solution of reversed linear system.\n\n"
 "Find the least-square solution of the equation `A = XB` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version does not return `residuals`, \n"
@@ -155,7 +155,7 @@ PyDoc_STRVAR(rlstsq__doc__,
 ***********************/
 
 PyDoc_STRVAR(lstsq_qr__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"lstsq_qr(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, TAU: ndarray)\n\n"
 "Least-square solution of linear system.\n\n"
 "Find the least-square solution of the equation `AX = B` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does \n"
@@ -183,7 +183,7 @@ PyDoc_STRVAR(lstsq_qr__doc__,
 );
 
 PyDoc_STRVAR(rlstsq_qr__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"rlstsq_qr(A: ndarray, B: ndarray) -> (X: ndarray, BF: ndarray, TAU: ndarray)\n\n"
 "Least-square solution of reversed linear system.\n\n"
 "Find the least-square solution of the equation `A = XB` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does \n"
@@ -215,7 +215,7 @@ PyDoc_STRVAR(rlstsq_qr__doc__,
 **************************/
 
 PyDoc_STRVAR(qr_lstsq__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"qr_lstsq(AF: ndarray, TAU: ndarray, B: ndarray) -> (X: ndarray)\n\n"
 "Least-square solution of linear system.\n\n"
 "Find the least-square solution of the equation `AX = B` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does \n"
@@ -242,7 +242,7 @@ PyDoc_STRVAR(qr_lstsq__doc__,
 );
 
 PyDoc_STRVAR(rqr_lstsq__doc__,
-//"lstsq(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"lstsq(A: ndarray, BF: ndarray, TAU: ndarray) -> (X: ndarray)\n\n"
 "Least-square solution of reversed linear system.\n\n"
 "Find the least-square solution of the equation `A = XB` for `X`. \n"
 "Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does \n"
@@ -266,6 +266,73 @@ PyDoc_STRVAR(rqr_lstsq__doc__,
 "See Also\n--------\n"
 "qr in 'raw' mode."
 );
+
+
+/*************************
+*          PINV          *
+**************************/
+
+PyDoc_STRVAR(pinv__doc__,
+//"pinv(A: ndarray) -> (AP: ndarray)\n\n"
+"Moore-Penrose pseudoinverse.\n\n"
+"Find the inverse of `A` in the space orthogonal to its null-space. \n"
+"Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does \n"
+"not work with rank deficient matrices, `A`.\n\n"
+"Parameters\n-----------\n"
+"A: ndarray (...,M,N)\n"
+"    Matrix.\n\n"
+"Returns\n-------\n"
+"AP: ndarray (...,N,M)\n"
+"    Psudoinverse of `A`."
+);
+
+PyDoc_STRVAR(pinv_qr__doc__,
+//"lstsq_qr(A: ndarray) -> (AP: ndarray, AF: ndarray, TAU: ndarray)\n\n"
+"Moore-Penrose pseudoinverse.\n\n"
+"Find the inverse of `A` in the space orthogonal to its null-space. \n"
+"Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does \n"
+"not work with rank deficient matrices, `A`.\n\n"
+"This version returns the QR/LQ factors of `A` for future use.\n\n"
+"Parameters\n-----------\n"
+"A: ndarray (...,M,N)\n"
+"    Matrix.\n\n"
+"Returns\n-------\n"
+"AP: ndarray (...,N,M)\n"
+"    Psudoinverse of `A`.\n"
+"AF: ndarray (...,M,N)\n"
+"    QR/LQ factors of `A`, with `Q` in Householder form.\n"
+"TAU: ndarray[int] (...,K)\n"
+"    Householder weights for `Q`, `K=min(M,N)`.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `pinv_qrm` or `pinv_qrn`. \n"
+"You will merely waste memory from keeping unused elements of `TAU`.\n"
+"See Also\n--------\n"
+"qr in 'raw' mode."
+);
+
+PyDoc_STRVAR(qr_pinv__doc__,
+//"lstsq_qr(AF: ndarray, TAU: ndarray) -> (AP: ndarray)\n\n"
+"Moore-Penrose pseudoinverse.\n\n"
+"Find the inverse of `A` in the space orthogonal to its null-space. \n"
+"Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does \n"
+"not work with rank deficient matrices, `A`.\n\n"
+"This version uses the QR/LQ factors of `A` from previous use of `pinv_qrm/n`\n"
+"or `(r)lstsq_qrm/n`.\n\n"
+"Parameters\n-----------\n"
+"AF: ndarray (...,M,N)\n"
+"    QR/LQ factors of `A`, with `Q` in Householder form.\n"
+"TAU: ndarray[int] (...,K)\n"
+"    Householder weights for `Q`, `K=min(M,N)`.\n\n"
+"Returns\n-------\n"
+"AP: ndarray (...,N,M)\n"
+"    Psudoinverse of `A`.\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `pinv_qrm` or `pinv_qrn`. \n"
+"You will merely waste memory from keeping unused elements of `TAU`.\n"
+"See Also\n--------\n"
+"qr in 'raw' mode."
+);
+
 
 /*
 *****************************************************************************
@@ -318,16 +385,6 @@ FNAME(@orglq@)(int *m, int *n, int *k,
             @typ@ *a, int *lda, @typ@ *tau,
             @typ@ *work, int * lwork, int *info);
 
-/* least square solution of a x = b for x from svd*/
-extern void
-FNAME(@gelsd@)(int *m, int *n, int *nrhs,
-    @typ@ *a, int *lda, @typ@ *b, int *ldb,
-    @rtyp@ *s, @rtyp@ *rcond, int *rank,
-    @typ@ *work, int *lwork,
-#if @cmplx@
-    @rtyp@ *rwork,
-#endif
-    int *iwork, int *info);
 /* least square solution of a x = b for x from qr/lq */
 /* multiply b by q from qr/lq */
 extern void
@@ -353,6 +410,16 @@ FNAME(@trsm@)(char *side, char *uplo, char *trans, char *diag,
 // FNAME(@gelqs@)(int *m, int *n, int *nrhs,
 //             @typ@ *a, int *lda, @typ@ *tau, @typ@ *b, int *ldb,
 //             @typ@ *work, int *lwork, int *info);
+/* least square solution of a x = b for x from svd*/
+extern void
+FNAME(@gelsd@)(int *m, int *n, int *nrhs,
+    @typ@ *a, int *lda, @typ@ *b, int *ldb,
+    @rtyp@ *s, @rtyp@ *rcond, int *rank,
+    @typ@ *work, int *lwork,
+    #if @cmplx@
+    @rtyp@ *rwork,
+    #endif
+    int *iwork, int *info);
 /**end repeat**/
 
 /*
@@ -1022,17 +1089,6 @@ static void
 
 /**end repeat**/
 
-/*
-*****************************************************************************
-**                         LSTSQQR                                          **
-*****************************************************************************
-*/
-
-// lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(m,n),(k)";
-// rlstsqqr_signature = "(nrhs,m),(n,m)->(nrhs,n),(n,m),(k)"
-// lstsqqrd_signature = "(m,n),(k),(m,nrhs)->(n,nrhs)";
-// rlstsqqrd_signature = "(nrhs,m),(n,m),(k)->(nrhs,n)"
-
 /**begin repeat
     #TYPE = FLOAT, DOUBLE, CFLOAT, CDOUBLE#
     #typ = npy_float, npy_double, npy_cfloat, npy_cdouble#
@@ -1044,8 +1100,8 @@ static void
     #gelqs = sgelqs, dgelqs, cgelqs, zgelqs#
     #gelqi = sgelqi, dgelqi, cgelqi, zgelqi#
     #ormqr = sormqr, dormqr, cunmqr, zunmqr#
-    #ormlq = sormlq, dormlq, cunmlq, zunmlq#
     #orgqr = sorgqr, dorgqr, cungqr, zungqr#
+    #ormlq = sormlq, dormlq, cunmlq, zunmlq#
     #orglq = sorglq, dorglq, cunglq, zunglq#
     #trsm = strsm, dtrsm, ctrsm, ztrsm#
     #laset = slaset, dlaset, claset, zlaset#
@@ -1055,6 +1111,18 @@ static void
     #trans = char_T, char_T, char_C, char_C#
     #cmplx = 0, 0, 1, 1#
 */
+
+/*
+*****************************************************************************
+**                         LSTSQQR                                         **
+*****************************************************************************
+*/
+
+// lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(m,n),(k)";
+// rlstsqqr_signature = "(nrhs,m),(n,m)->(nrhs,n),(n,m),(k)"
+// lstsqqrd_signature = "(m,n),(k),(m,nrhs)->(n,nrhs)";
+// rlstsqqrd_signature = "(nrhs,m),(n,m),(k)->(nrhs,n)"
+
 
 /************************************************************
 * Calling BLAS/Lapack functions _ge{qr,lq}f and _ge{qr,lq}s *
@@ -1493,7 +1561,7 @@ call_@gelqi@(GEQRF_PARAMS_t *params)
     // copy L to B
     LAPACK(@lacpy@)(&char_L, &params->M, &params->M,
                     params->A, &params->LDA, params->B, &params->LDB);
-    // A is modified by ?ORGQR to carry Q
+    // A is modified by ?ORGLQ to carry Q
     LAPACK(@orglq@)(&params->M, &params->N, &params->K, params->A, &params->LDA,
                     params->T, params->W, &params->LW, &params->INFO);
                     // A is modified by ?TRSM to carry L^-T Q
@@ -1503,6 +1571,15 @@ call_@gelqi@(GEQRF_PARAMS_t *params)
     LAPACK(@trsm@)(&char_L, &char_L, &@trans@, &char_N,
                     &params->M, &params->N, &@one@,
                     params->B, &params->LDB, params->A, &params->LDA);
+}
+
+// needed to compute lwork
+static NPY_INLINE void
+call_@orglq@(GEQRF_PARAMS_t *params)
+{
+    // A is modified by ?ORGLQ to carry Q
+    LAPACK(@orglq@)(&params->M, &params->NC, &params->K, params->A, &params->LDA,
+                    params->T, params->W, &params->LW, &params->INFO);
 }
 
 /***************************************************************************
@@ -1548,7 +1625,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     params->BZ = NULL;
     params->M = M;
     params->N = N;
-    params->NC = 1;
+    params->NC = N;     // used in workspace query below
     params->K = K;
     params->MN = 1;
     params->LDA = lda;
@@ -1557,14 +1634,22 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     params->LW = -1;
     params->INFO = 0;
 
-    call_@orgqr@(params);
+    if (M <= N) {
+        call_@orglq@(params);
+    } else{
+        call_@orgqr@(params);
+    }
     if (params->INFO < 0) {
         goto error;
     }
     LWQ = @TYPE@_real_int(work_size);  // enough workspace for _orgqr
 
     if (do_qrf) {
-        call_@geqrf@(params);
+        if (M <= N) {
+            call_@gelqf@(params);
+        } else{
+            call_@geqrf@(params);
+        }
         if (params->INFO < 0) {
             goto error;
         }
@@ -1675,7 +1760,7 @@ INIT_OUTER_LOOP_2
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         // need to conjugate-transpose params.A to get X
-        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
+        init_linearize_data_exc(&x_out, len_n, len_m, stride_x_r, stride_x_c, len_m, 1);
 
         BEGIN_OUTER_LOOP_2
             int not_ok;
@@ -1723,7 +1808,7 @@ INIT_OUTER_LOOP_4
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         // need to conjugate-transpose params.A to get X
-        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
+        init_linearize_data_exc(&x_out, len_n, len_m, stride_x_r, stride_x_c, len_m, 1);
         init_linearize_data(&a_out, len_n, len_m, stride_f_c, stride_f_r);
         init_linearize_vdata(&tau_out, len_k, stride_tau);
 
@@ -1773,12 +1858,12 @@ INIT_OUTER_LOOP_3
     npy_intp underconstrained = len_m < len_n ? 1 : 0;
     len_k = npy_int_min(len_m, len_n);
 
-    if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
+    if(init_@geqri@(&params, len_m, len_n, 0)){  // allocate buffer
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_vdata(&tau_in, len_k, stride_tau);
         // need to conjugate-transpose params.A to get X
-        init_linearize_data_exc(&x_out, len_m, len_n, stride_x_r, stride_x_c, len_m, 1);
+        init_linearize_data_exc(&x_out, len_n, len_m, stride_x_r, stride_x_c, len_m, 1);
 
         BEGIN_OUTER_LOOP
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
@@ -1823,20 +1908,9 @@ GUFUNC_FUNC_ARRAY_REAL_COMPLEX(lstsq_qr);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rlstsq_qr);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(qr_lstsq);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rqr_lstsq);
-
-// types argumrnt for creating 'solve' ufuncs
-static char ufn_types_solve_4[] = { NPY_FLOAT, NPY_INT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_INT, NPY_DOUBLE, NPY_DOUBLE,
-                                NPY_CFLOAT, NPY_INT, NPY_CFLOAT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE, NPY_CDOUBLE };
-static char ufn_types_rsolve_4[] = { NPY_FLOAT, NPY_FLOAT, NPY_INT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_INT, NPY_DOUBLE,
-                                NPY_CFLOAT, NPY_CFLOAT, NPY_INT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE };
-static char ufn_types_solve_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_INT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_INT,
-                                NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT };
+GUFUNC_FUNC_ARRAY_REAL_COMPLEX(pinv);
+GUFUNC_FUNC_ARRAY_REAL_COMPLEX(pinv_qr);
+GUFUNC_FUNC_ARRAY_REAL_COMPLEX(qr_pinv);
 
 // info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
@@ -1867,7 +1941,15 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
     { "qr_lstsq", "(m,n),(k),(m,nrhs)->(n,nrhs)", qr_lstsq__doc__, 4, 3, 1,
         FUNC_ARRAY_NAME(qr_lstsq), ufn_types_4_4 },
     { "rqr_lstsq", "(nrhs,m),(n,m),(k)->(nrhs,n)", rqr_lstsq__doc__, 4, 3, 1,
-        FUNC_ARRAY_NAME(rqr_lstsq), ufn_types_4_4 }
+        FUNC_ARRAY_NAME(rqr_lstsq), ufn_types_4_4 },
+    { "pinv", "(m,n)->(n,m)", pinv__doc__, 4, 1, 1,
+        FUNC_ARRAY_NAME(pinv), ufn_types_4_2 },
+    { "pinv_qrm", "(m,n)->(n,m),(m,n),(m)", pinv_qr__doc__, 4, 1, 3,
+        FUNC_ARRAY_NAME(pinv_qr), ufn_types_4_4 },
+    { "pinv_qrn", "(m,n)->(n,m),(m,n),(n)", pinv_qr__doc__, 4, 1, 3,
+        FUNC_ARRAY_NAME(pinv_qr), ufn_types_4_4 },
+    { "qr_pinv", "(m,n),(k)->(n,m)", qr_pinv__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(qr_pinv), ufn_types_4_3 },
 };
 
 /*
@@ -1909,7 +1991,7 @@ PyObject *PyInit__gufuncs_qr_lstsq(void)
     import_ufunc();
 
     /* Load the ufunc operators into the module's namespace */
-    int failure = addUfuncs(m, gufunc_descriptors, gufuncs_qr_lstsq_version_string);
+    int failure = addUfuncs(m, gufunc_descriptors, 18, gufuncs_qr_lstsq_version_string);
 
     if (PyErr_Occurred() || failure) {
         PyErr_SetString(PyExc_RuntimeError,

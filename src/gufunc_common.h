@@ -419,7 +419,7 @@ To be called in PyInit__gufuncs_<module name>.
 */
 static int
 addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
-            int gufunc_count, const char *version_string)
+            const char *version_string)
 {
     PyObject *dictionary;
     PyObject *version;
@@ -433,7 +433,8 @@ addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
 
     PyObject *f;
     int i;
-    for (i = 0; i < gufunc_count; i++) {
+    int gufunc_num = sizeof(*guf_descriptors) / sizeof(guf_descriptors[0]);
+    for (i = 0; i < gufunc_num; i++) {
         // current gufunc descriptor
         const GUFUNC_DESCRIPTOR_t* d = &guf_descriptors[i];
         // create gufunc object (new reference)

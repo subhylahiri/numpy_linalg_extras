@@ -1467,12 +1467,12 @@ static void
 calculate pseudoinverse from QR/LQ
 */
 
-// _geqri doesn't exist, so we fake it. output is (conjugate) transpose of answer
+// _geqri doesn't exist, so we fake it. output is conjugate-transpose of answer
 static NPY_INLINE void
 call_@geqri@(GEQRF_PARAMS_t *params)
 {
     // copy R to B
-    LAPACK(@lacpy@)(&char_U, &params->M, &params->N,
+    LAPACK(@lacpy@)(&char_U, &params->N, &params->N,
                     params->A, &params->LDA, params->B, &params->LDB);
     // A is modified by ?ORGQR to carry Q
     LAPACK(@orgqr@)(&params->M, &params->N, &params->K, params->A, &params->LDA,
@@ -1486,12 +1486,12 @@ call_@geqri@(GEQRF_PARAMS_t *params)
                     params->B, &params->LDB, params->A, &params->LDA);
 }
 
-// _gelqi doesn't exist, so we fake it. output is (conjugate) transpose of answer
+// _gelqi doesn't exist, so we fake it. output is conjugate-transpose of answer
 static NPY_INLINE void
 call_@gelqi@(GEQRF_PARAMS_t *params)
 {
     // copy L to B
-    LAPACK(@lacpy@)(&char_L, &params->M, &params->N,
+    LAPACK(@lacpy@)(&char_L, &params->M, &params->M,
                     params->A, &params->LDA, params->B, &params->LDB);
     // A is modified by ?ORGQR to carry Q
     LAPACK(@orglq@)(&params->M, &params->N, &params->K, params->A, &params->LDA,
@@ -1519,7 +1519,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     npy_uint8 *mem_buff = NULL;
     npy_uint8 *mem_buff2 = NULL;
     npy_uint8 *a, *b, *c;
-    fortran_int M, N, K, lda, LW, LWQ, LWR;
+    fortran_int M, N, K, lda, ldb, LW, LWQ, LWR;
     size_t safe_M, safe_N, safe_K, safe_LW;
     @ftyp@ work_size;
 
@@ -1527,22 +1527,24 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     N = (fortran_int)N_in;
     K = fortran_int_min(M, N);  // for tau
     lda = fortran_int_max(M, 1);
+    ldb = fortran_int_max(K, 1);
     safe_M = M;
     safe_N = N;
     safe_K = K;
 
     mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)      // for A
                     + safe_K * sizeof(@ftyp@)               // for tau
-                    + safe_M * safe_N * sizeof(@ftyp@));    // for R
+                    + safe_K * safe_K * sizeof(@ftyp@));    // for R/L
     if (!mem_buff) {
         goto error;
     }
     a = mem_buff;                               // store A at start of buffer
     b = a + safe_M * safe_N * sizeof(@ftyp@);   // store tau after space for A
+    c = b + safe_K * sizeof(@ftyp@);            // store R/L after space for A,tau
 
     params->A = a;
     params->T = b;
-    params->B = c;      // to temporarily store R
+    params->B = c;      // to temporarily store R/L
     params->BZ = NULL;
     params->M = M;
     params->N = N;
@@ -1550,7 +1552,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     params->K = K;
     params->MN = 1;
     params->LDA = lda;
-    params->LDB = lda;
+    params->LDB = ldb;
     params->W = &work_size;
     params->LW = -1;
     params->INFO = 0;
@@ -1598,7 +1600,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
 static int
 do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, npy_intp underconstrained)
 {
-    // QR decompose
+    // QR/LQ decompose
     if (underconstrained) {
         call_@gelqf@(params);
     } else {
@@ -1624,7 +1626,7 @@ static int
 save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
                 GEQRF_PARAMS_t *params, npy_intp underconstrained)
 {
-    // QR decompose
+    // QR/LQ decompose
     if (underconstrained) {
         call_@gelqf@(params);
     } else {
@@ -1632,7 +1634,7 @@ save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
     }
     if (params->INFO) {
       return 1;
-    } else {
+    } else {  // copy QR/LQ factors before they are destroyed
         delinearize_@TYPE@_matrix(A, params->A, a_out);
     }
     // Solve least squares problem
@@ -1907,7 +1909,7 @@ PyObject *PyInit__gufuncs_qr_lstsq(void)
     import_ufunc();
 
     /* Load the ufunc operators into the module's namespace */
-    int failure = addUfuncs(m, gufunc_descriptors, 14, gufuncs_qr_lstsq_version_string);
+    int failure = addUfuncs(m, gufunc_descriptors, gufuncs_qr_lstsq_version_string);
 
     if (PyErr_Occurred() || failure) {
         PyErr_SetString(PyExc_RuntimeError,

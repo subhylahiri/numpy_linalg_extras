@@ -38,6 +38,8 @@ Functions
 ---------
 transpose
     Transpose last two indices.
+dagger
+    Conjugate-transpose last two indices.
 col
     Treat multi-dim array as a stack of column vectors.
 row

@@ -171,6 +171,13 @@ These implement the functions above.
 * `gufuncs.qr_lstsq`:  
 * `gufuncs.rqr_lstsq`:  
     Use QR decomposition in `raw` form from previous use.
+* pinv
+    Moore-Penrose pseudoinverse.
+* pinv_qrm
+* pinv_qrn
+    Also return QR decomposition in `raw` form for future use.
+* qr_pinv
+    Use QR decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
 * `gufuncs.rtrue_tivide`:  
     Reversed versions of `matmul` and `np.true_divide`. Used by `pinvarray` and

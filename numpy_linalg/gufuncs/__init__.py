@@ -27,6 +27,12 @@ lstsq_qrm, lstsq_qrn, rlstsq_qrm, rlstsq_qrn
     Also return QR factors for use next time.
 qr_lstsq, rqr_lstsq
     Use QR factors from previous time.
+pinv
+    Moore-Penrose pseudoinverse.
+pinv_qrm, pinv_qrn
+    Also return QR factors for use next time.
+qr_pinv
+    Use QR factors from previous time.
 norm
     Vector 2-norm.
 lu_*
@@ -73,12 +79,12 @@ The following variables, for internal use, are useful for determining the
 behaviour of 1D arrays, pinvarrays and invarrays in linear algebraic functions:
 
 solve_family, solve_lu_family, lu_solve_family:
-    2x2 lists of gufuncs used to interpret behaviour of `invarrays` in them.
+    2x2 tuples of gufuncs used to interpret behaviour of `invarrays` in them.
     Member[x][y] interprets first/second argument as a divisor if x/y is True.
 lstsq_family, lstsq_qrm_family, lstsq_qrn_family, qr_lstsq_family:
-    2x2 lists of gufuncs used to interpret behaviour of `pinvarrays` in them.
+    2x2 tuples of gufuncs used to interpret behaviour of `pinvarrays` in them.
 truediv_family:
-    2x2 list of ufuncs used to interpret behaviour of `(p)invarrays` in them.
+    2x2 tuples of ufuncs used to interpret behaviour of `(p)invarrays` in them.
     Member[x][y] interprets second/first argument as a divisor if x/y is False.
 inverse_arguments:
     dict `{gufunc: Tuple[bool]}` describing gufunc's position in its family.
@@ -99,13 +105,15 @@ from ._gufuncs_lu_solve import (lu_m, lu_n, lu_rawm, lu_rawn, solve, rsolve,
                                 pivot, rpivot)
 from ._gufuncs_qr_lstsq import (qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
                                 lstsq, rlstsq, lstsq_qrm, lstsq_qrn,
-                                rlstsq_qrm, rlstsq_qrn, qr_lstsq, rqr_lstsq)
+                                rlstsq_qrm, rlstsq_qrn, qr_lstsq, rqr_lstsq,
+                                pinv, pinv_qrm, pinv_qrn, qr_pinv)
 # fool pyflakes
 assert norm
 assert pivot
 assert rpivot
 assert any((lu_m, lu_n, lu_rawm, lu_rawn))
 assert any((qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn))
+assert any((pinv, pinv_qrm, pinv_qrn, qr_pinv))
 # =============================================================================
 # Error handling
 # =============================================================================

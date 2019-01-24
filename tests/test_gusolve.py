@@ -181,6 +181,7 @@ class TestSolve(utn.TestCaseNumpy):
         self.w = {}
         self.v = {}
         self.yt = {}
+        self.ones = {}
         for sctype in self.sctype:
             self.x[sctype] = utn.randn_asa((2, 5, 5), sctype)
             self.y[sctype] = utn.randn_asa((5, 2), sctype)
@@ -188,6 +189,7 @@ class TestSolve(utn.TestCaseNumpy):
             self.w[sctype] = utn.randn_asa((3, 1, 1, 5), sctype)
             self.v[sctype] = utn.randn_asa((4, 5), sctype)
             self.yt[sctype] = transpose(self.y[sctype])
+            self.ones[sctype] = utn.ones_asa((5, 3), sctype)
 
 
 class TestSolveShape(TestSolve):
@@ -273,14 +275,13 @@ class TestSolveVal(TestSolve):
             self.assertArrayAllClose(self.x[sctype] @ b, self.z[sctype])
 
     @unittest.expectedFailure
-    @utn.errstate(invalid='raise')
+    @errstate
     @utn.loop_test(msg='rank')
     def test_rank(self, sctype):
         """Check if solve raises an exception when divisor is rank deficient
         """
-        yy = self.y[sctype] @ self.yt[sctype]
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.solve(yy, self.z[sctype])
+            gfl.solve(self.ones[sctype], self.z[sctype])
 
 
 # =============================================================================

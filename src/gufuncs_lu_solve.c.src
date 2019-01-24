@@ -618,15 +618,15 @@ init_@laswp@(GESV_PARAMS_t *params,
     b = a + safe_M * safe_N * sizeof(@ftyp@);  // store IPIV after space for A
 
     params->A = a;
-    params->B = NULL;               // not used in _getrf
     params->IPIV = (fortran_int*)b;
     params->M = K;
     params->N = N;
-    params->NRHS = N;                // not used in _getrf
     params->LDA = lda;
-    params->LDB = 1;                 // not used in _getrf
     params->INFO = (fortran_int)direction;  // using INFO to store direction
-    params->TRANS = 'N';
+    params->B = NULL;               // not used in _laswp
+    params->NRHS = N;                // not used in _laswp
+    params->LDB = 1;                 // not used in _laswp
+    params->TRANS = 'N';             // not used in _laswp
 
     return 1;
 
@@ -712,12 +712,22 @@ static void
 *   Calling BLAS/Lapack functions _gesv   *
 *******************************************/
 
+//singularity check
+static NPY_INLINE void
+call_@trchk@(GESV_PARAMS_t *params)
+{
+    // diag of A checked for zeros
+    LAPACK(@trchk@)(&params->N, params->A, &params->LDA, &params->INFO);
+}
+
 static NPY_INLINE void
 call_@gesv@(GESV_PARAMS_t *params)
 {
     // A,B are modified by ?GESV to carry LU info & X
     LAPACK(@gesv@)(&params->N, &params->NRHS, params->A, &params->LDA,
                    params->IPIV, params->B, &params->LDB, &params->INFO);
+    // check for singularity
+    call_@trchk@(params);
 }
 
 /***************************************************************************
@@ -726,7 +736,7 @@ call_@gesv@(GESV_PARAMS_t *params)
 ****************************************************************************/
 // N: size of A (square), rows of B
 // NRHS: columns of B
-// trans: 'N/T', use transpose of A? (can't transpose manually because of pivot)
+// trans: 'N/T', use transpose of A? (can't transpose manually w/ lu due to pivot)
 static NPY_INLINE int
 init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
 {
@@ -868,6 +878,11 @@ static void
 static NPY_INLINE void
 call_@getrs@(GESV_PARAMS_t *params)
 {
+    // check for singularity
+    call_@trchk@(params);
+    if (params->INFO) {
+        return;
+    }
     // B is modified by ?GETRS to carry X
     LAPACK(@getrs@)(&params->TRANS, &params->N, &params->NRHS,
                     params->A, &params->LDA, params->IPIV,
@@ -911,7 +926,7 @@ static void
         BEGIN_OUTER_LOOP_5
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            call_@getrf@(&params);  // call Lapack
+            call_@getrf@(&params);  // call Lapack, can't use _gesv with trans
             call_@getrs@(&params);
             if (params.INFO) {
                 error_occurred = 1;
@@ -1083,7 +1098,7 @@ static void
 static NPY_INLINE void
 call_@getri@(GESV_PARAMS_t *params)
 {
-    // A,B are modified by ?GESV to carry LU info & X
+    // A is modified by ?GETRI to carry inverse of X, B used as workspace
     LAPACK(@getri@)(&params->N, params->A, &params->LDA, params->IPIV,
                     params->B, &params->LDB, &params->INFO);
 }
@@ -1118,13 +1133,12 @@ init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
     params->A = NULL;  // not using for workspace query
     params->IPIV = NULL;
 
-    call_@getri@(params);
+    call_@getri@(params);  // workspace query
+    LW = @TYPE@_real_int(work_size);  // enough workspace for _getri
     safe_LW = LW;
 
-    LW = @TYPE@_real_int(work_size);  // enough workspace for _getri
-
     mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      // for A
-                    + safe_LW * sizeof(@ftyp@)   // for B
+                    + safe_LW * sizeof(@ftyp@)              // for B (W)
                     + safe_N * sizeof(fortran_int));        // for IPIV
     if (!mem_buff) {
         goto error;
@@ -1134,7 +1148,7 @@ init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
     c = b + safe_LW * sizeof(@ftyp@);    // store IPIV after space for A,W
 
     params->LDB = LW;  // we use B for workspace
-    params->A = a;  // not using for workspace query
+    params->A = a;
     params->B = b;  // we use B for workspace
     params->IPIV = (fortran_int *)c;
 

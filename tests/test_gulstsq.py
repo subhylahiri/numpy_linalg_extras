@@ -234,6 +234,7 @@ class TestLstsq(utn.TestCaseNumpy):
         self.xt = {}
         self.yt = {}
         self.zt = {}
+        self.ones = {}
         for sctype in self.sctype:
             self.u[sctype] = utn.randn_asa((5, 4), sctype)
             self.v[sctype] = utn.randn_asa((4, 5), sctype)
@@ -245,6 +246,7 @@ class TestLstsq(utn.TestCaseNumpy):
             self.xt[sctype] = dagger(self.x[sctype])
             self.yt[sctype] = dagger(self.y[sctype])
             self.zt[sctype] = dagger(self.z[sctype])
+            self.ones[sctype] = utn.ones_asa((8, 3), sctype)
 
 
 class TestLstsqShape(TestLstsq):
@@ -406,9 +408,8 @@ class TestLstsqVal(TestLstsq):
     def test_rank(self, sctype):
         """Check if lstsq_qr raises an exception when divisor is rank deficient
         """
-        yy = self.y[sctype] @ self.yt[sctype]
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.lstsq_qr(yy, self.z[sctype])
+            gfl.lstsq_qr(self.ones[sctype], self.z[sctype])
 
 
 # =============================================================================

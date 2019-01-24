@@ -112,6 +112,14 @@ delinearize_INT_vec(void *dst_in,
 }
 /*
 *****************************************************************************
+**                          Singularity checks                             **
 *****************************************************************************
 */
+
+void FNAME(strchk)(int *n, float *a, int *lda, int *info);
+void FNAME(dtrchk)(int *n, double *a, int *lda, int *info);
+void FNAME(ctrchk)(int *n, f2c_complex *a, int *lda, int *info);
+void FNAME(ztrchk)(int *n, f2c_doublecomplex *a, int *lda, int *info);
+
+
 #endif

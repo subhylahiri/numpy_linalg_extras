@@ -51,7 +51,8 @@ qr_*
 rtrue_tivide
     Reversed division (only useful to implement binary operators).
 
-They raise `ValueError` instead of `LinAlgError`, except when using `lnarrays`.
+They raise `FloatingPointError` or warnings instead of `LinAlgError`,
+except when using `lnarrays`.
 
 `numpy.linalg` broadcasting rules apply. 1D arrays are not dealt with here (but
 see `lnarray` class).

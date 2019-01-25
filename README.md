@@ -52,7 +52,7 @@ To get the actual inverse matrices you can call the objects:
     Returned by `lnarray.inv`. It calls `solve` behind the scenes.
     Does not actually invert the matrix unless it is explicitly called.
     Other operations, such as addition are not defined. This object contains a
-    reference to the original array, so in place modifications of a `pinvarray`
+    reference to the original array, so in place modifications of an `invarray`
     object will affect the original `lnarray` object.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
@@ -170,6 +170,13 @@ These implement the functions above.
     Also return QR decomposition in `raw` form for future use.
 * `gufuncs.qr_lstsq`:  
 * `gufuncs.rqr_lstsq`:  
+    Use QR decomposition in `raw` form from previous use.
+* pinv
+    Moore-Penrose pseudoinverse.
+* pinv_qrm
+* pinv_qrn
+    Also return QR decomposition in `raw` form for future use.
+* qr_pinv
     Use QR decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
 * `gufuncs.rtrue_tivide`:  

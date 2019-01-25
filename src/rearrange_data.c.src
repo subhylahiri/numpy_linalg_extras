@@ -55,6 +55,8 @@ Copyright/licence info for that file:
     #copy = scopy, dcopy, ccopy, zcopy#
     #lacgv = clacgv, zlacgv, clacgv, zlacgv#
     #cmplx = 0, 0, 1, 1#
+    #trchk = strchk, dtrchk, ctrchk, ztrchk#
+    #TYPE = FLOAT, DOUBLE, CFLOAT, CDOUBLE#
 */
 
 /* copy vector x into y */
@@ -68,6 +70,70 @@ FNAME(@copy@)(int *n,
 extern void
 FNAME(@lacgv@)(int *n, @typ@ *x, int *incx);
 #endif
+
+/*
+*  =====================================================================
+SUBROUTINE ?TRCHK( N, A, LDA, INFO )
+*
+*  -- BLAS/LAPACK-style routine --
+*     Subhaneil Lahiri, January 2019
+*
+*     .. Scalar Arguments ..
+ INTEGER            INFO, LDA, N
+*     ..
+*     .. Array Arguments ..
+ @TYPE@             A( LDA, N )
+*     ..
+*
+*  Purpose
+*  =======
+*
+*  ?TRCHK checks if any of the diagonal elements of A is zero,
+*  thus rendering the triangular matrix singular.
+*
+*  This method works for both upper and lower diagonal matrices.
+*
+*  Arguments
+*  =========
+*
+*  N       (input) INTEGER
+*          The order of the matrix A.  N >= 0.
+*
+*  A       (input) @TYPE@ array, dimension (LDA,N)
+*          The matrix A. Only its diagonal elements are accessed.
+*
+*  LDA     (input) INTEGER
+*          The leading dimension of the array A.  LDA >= max(1,N).
+*
+*  INFO    (output) INTEGER
+*          = 0:  successful exit
+*          < 0:  if INFO = -i, the i-th argument had an illegal value
+*          > 0:  if INFO = i, A(i,i) is exactly zero; the matrix is
+*                singular and its inverse cannot be computed.
+*
+*  =====================================================================
+*/
+void FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info) {
+    @typ@ *diag_ptr = a;
+    if (*n < 0) {  // check if N is legal
+        *info = -1;
+        return;
+    }
+    if (*lda < *n) {  // check if LDA is legal (LDA < 0 => LDA < N)
+        *info = -3;
+        return;
+    }
+    for (int i = 0; i < *n; i++, diag_ptr += *lda + 1) {
+#if @cmplx@
+        if (diag_ptr->r == 0 && diag_ptr->i == 0) {  // check if A(i,i) is legal
+#else
+        if (*diag_ptr == 0) {  // check if A(i,i) is legal
+#endif
+            *info = i + 1;
+            return;
+        }
+    }
+}
 
 /**end repeat**/
 

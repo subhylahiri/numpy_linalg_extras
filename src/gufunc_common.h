@@ -251,6 +251,7 @@ static char char_C;
 static char char_F;
 static char char_L;
 static char char_N;
+static char char_R;
 static char char_T;
 static char char_U;
 
@@ -308,6 +309,7 @@ static void init_constants(void)
     char_F = 'F';
     char_L = 'L';
     char_N = 'N';
+    char_R = 'R';
     char_T = 'T';
     char_U = 'U';
 }
@@ -417,7 +419,7 @@ To be called in PyInit__gufuncs_<module name>.
 */
 static int
 addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
-            int gufunc_count, const char *version_string)
+            int gufunc_num, const char *version_string)
 {
     PyObject *dictionary;
     PyObject *version;
@@ -431,7 +433,8 @@ addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
 
     PyObject *f;
     int i;
-    for (i = 0; i < gufunc_count; i++) {
+    // int gufunc_num = sizeof(*guf_descriptors) / sizeof(guf_descriptors[0]);
+    for (i = 0; i < gufunc_num; i++) {
         // current gufunc descriptor
         const GUFUNC_DESCRIPTOR_t* d = &guf_descriptors[i];
         // create gufunc object (new reference)

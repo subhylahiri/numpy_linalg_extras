@@ -6,7 +6,7 @@ import numpy as np
 import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-from numpy_linalg import transpose
+from numpy_linalg import transpose, dagger
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
@@ -14,8 +14,8 @@ errstate = utn.errstate(invalid='raise')
 # =============================================================================
 
 
-class TestQR(utn.TestCaseNumpy):
-    """Testing gufuncs_lapack.qr_*
+class TestQRPinv(utn.TestCaseNumpy):
+    """Testing gufuncs_lapack.qr_*, pinv, pinv_qr and qr_pinv
     """
 
     def setUp(self):
@@ -56,14 +56,40 @@ class TestQR(utn.TestCaseNumpy):
             self.assertEqual(h.shape, (120, 10, 5, 16))
             self.assertEqual(tau.shape, (120, 10, 5))
 
+    def test_pinv_shape(self):
+        """Check that pinv gufuncs all return arrays with the expected shape
+        """
+        with self.subTest(msg='wide'):
+            wide_p = gfl.pinv(self.wide['d'])
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+        with self.subTest(msg='tall'):
+            tall_p = gfl.pinv(self.tall['d'])
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+        with self.subTest(msg='wide,+qr'):
+            wide_p, wide_f, wide_tau = gfl.pinv_qrm(self.wide['d'])
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+            self.assertEqual(wide_f.shape, (120, 10, 5, 16))
+            self.assertEqual(wide_tau.shape, (120, 10, 5))
+        with self.subTest(msg='tall,+qr'):
+            tall_p, tall_f, tall_tau = gfl.pinv_qrn(self.tall['d'])
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+            self.assertEqual(tall_f.shape, (120, 10, 16, 5))
+            self.assertEqual(tall_tau.shape, (120, 10, 5))
+        with self.subTest(msg='wide,-qr'):
+            wide_p = gfl.qr_pinv(wide_f, wide_tau)
+            self.assertEqual(wide_p.shape, (120, 10, 16, 5))
+        with self.subTest(msg='tall,-qr'):
+            tall_p = gfl.qr_pinv(tall_f, tall_tau)
+            self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+
     @utn.loop_test(msg='wide')
     def test_qr_wide(self, sctype):
         """Check that qr_m returns the expected values on wide matrices
         """
         q, r = gfl.qr_m(self.wide[sctype])
         wide = q @ r
-        eye = transpose(q.conj()) @ q
-        eyet = q @ transpose(q.conj())
+        eye = dagger(q) @ q
+        eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(wide, self.wide[sctype])
         with self.subTest(msg='q^T q'):
@@ -77,7 +103,7 @@ class TestQR(utn.TestCaseNumpy):
         """
         q, r = gfl.qr_n(self.tall[sctype])
         tall = q @ r
-        eye = transpose(q.conj()) @ q
+        eye = dagger(q) @ q
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(tall, self.tall[sctype])
         with self.subTest(msg='q^T q'):
@@ -89,8 +115,8 @@ class TestQR(utn.TestCaseNumpy):
         """
         q, r = gfl.qr_m(self.tall[sctype])
         tall = q @ r
-        eye = transpose(q.conj()) @ q
-        eyet = q @ transpose(q.conj())
+        eye = dagger(q) @ q
+        eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
             self.assertArrayAllClose(tall, self.tall[sctype])
         with self.subTest(msg='q^T q'):
@@ -98,7 +124,7 @@ class TestQR(utn.TestCaseNumpy):
         with self.subTest(msg='q q^T'):
             self.assertArrayAllClose(self.id_big[sctype], eyet)
 
-    @utn.loop_test()
+    @utn.loop_test(msg='r')
     def test_qr_r(self, sctype):
         """Check that qr_rm, qr_rn return the expected values
         """
@@ -111,7 +137,7 @@ class TestQR(utn.TestCaseNumpy):
             rr = gfl.qr_n(self.tall[sctype])[1]
             self.assertArrayAllClose(r, rr)
 
-    @utn.loop_test(attr_inds=1)
+    @utn.loop_test(msg='rawm')
     def test_qr_rawm(self, sctype):
         """Check that qr_rawm returns the expected values
         """
@@ -121,19 +147,18 @@ class TestQR(utn.TestCaseNumpy):
         h = transpose(ht)
         v = np.tril(h[..., :n], -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = gfb.norm(v, axis=-2)**2 * tau
+        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
         r = np.triu(h)
         with self.subTest(msg='raw_m'):
             self.assertArrayAllClose(r, rr)
-            self.assertArrayAllClose(vn[..., :-1], 2)
-            self.assertArrayAllClose(vn[..., -1], 0)
-        for k in range(2, n+1):
-            vr = v[..., None, :, -k] @ r
-            r -= tau[..., None, None, -k] * v[..., -k, None] * vr
+            self.assertArrayAllClose(vn, 2 * tau.real)
+        for k in range(1, n+1):
+            vv = v[..., -k, None]
+            r -= tau[..., None, None, -k] * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_m'):
             self.assertArrayAllClose(r, self.wide[sctype])
 
-    @utn.loop_test(attr_inds=1)
+    @utn.loop_test(msg='rawn')
     def test_qr_rawn(self, sctype):
         """Check that qr_rawn returns the expected values
         """
@@ -143,16 +168,48 @@ class TestQR(utn.TestCaseNumpy):
         h = transpose(ht)
         v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = gfb.norm(v, axis=-2)**2 * tau
+        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
         r = np.triu(h)
         with self.subTest(msg='raw_n'):
             self.assertArrayAllClose(r[..., :5, :], rr)
-            self.assertArrayAllClose(vn, 2)
+            self.assertArrayAllClose(vn, 2 * tau.real)
         for k in range(1, n+1):
-            vr = v[..., None, :, -k] @ r
+            vr = v[..., None, :, -k].conj() @ r
             r -= tau[..., None, None, -k] * v[..., -k, None] * vr
         with self.subTest(msg='h_n'):
             self.assertArrayAllClose(r, self.tall[sctype])
+
+    # @unittest.skip('nothing works')
+    @utn.loop_test(msg='pinv')
+    def test_pinv_val(self, sctype):
+        """Check that pinv gufuncs all return arrays with the expected values
+        """
+        with self.subTest(msg='wide'):
+            wide_p = gfl.pinv(self.wide[sctype])
+            self.assertArrayAllClose(self.wide[sctype] @ wide_p,
+                                     self.id_small[sctype])
+        with self.subTest(msg='tall'):
+            tall_p = gfl.pinv(self.tall[sctype])
+            self.assertArrayAllClose(tall_p @ self.tall[sctype],
+                                     self.id_small[sctype])
+        with self.subTest(msg='wide,+qr'):
+            wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.wide[sctype])
+            qrf, tau = gfl.qr_rawn(self.wide[sctype].conj().swapaxes(-1, -2))
+            self.assertArrayAllClose(wide_pq, wide_p)
+            self.assertArrayAllClose(wide_f, qrf.conj())
+            self.assertArrayAllClose(wide_tau, tau)
+        with self.subTest(msg='tall,+qr'):
+            tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.tall[sctype])
+            qrf, tau = gfl.qr_rawn(self.tall[sctype])
+            self.assertArrayAllClose(tall_pq, tall_p)
+            self.assertArrayAllClose(tall_f, qrf.swapaxes(-1, -2))
+            self.assertArrayAllClose(tall_tau, tau)
+        with self.subTest(msg='wide,-qr'):
+            wide_qp = gfl.qr_pinv(wide_f, wide_tau)
+            self.assertArrayAllClose(wide_qp, wide_p)
+        with self.subTest(msg='tall,-qr'):
+            tall_qp = gfl.qr_pinv(tall_f, tall_tau)
+            self.assertArrayAllClose(tall_qp, tall_p)
 
 
 # =============================================================================
@@ -177,6 +234,7 @@ class TestLstsq(utn.TestCaseNumpy):
         self.xt = {}
         self.yt = {}
         self.zt = {}
+        self.ones = {}
         for sctype in self.sctype:
             self.u[sctype] = utn.randn_asa((5, 4), sctype)
             self.v[sctype] = utn.randn_asa((4, 5), sctype)
@@ -184,10 +242,11 @@ class TestLstsq(utn.TestCaseNumpy):
             self.x[sctype] = utn.randn_asa((2, 8, 5), sctype)
             self.y[sctype] = utn.randn_asa((8, 2), sctype)
             self.z[sctype] = utn.randn_asa((3, 1, 8, 4), sctype)
-            self.wt[sctype] = transpose(self.w[sctype]).conj()
-            self.xt[sctype] = transpose(self.x[sctype]).conj()
-            self.yt[sctype] = transpose(self.y[sctype]).conj()
-            self.zt[sctype] = transpose(self.z[sctype]).conj()
+            self.wt[sctype] = dagger(self.w[sctype])
+            self.xt[sctype] = dagger(self.x[sctype])
+            self.yt[sctype] = dagger(self.y[sctype])
+            self.zt[sctype] = dagger(self.z[sctype])
+            self.ones[sctype] = utn.ones_asa((8, 3), sctype)
 
 
 class TestLstsqShape(TestLstsq):
@@ -349,9 +408,8 @@ class TestLstsqVal(TestLstsq):
     def test_rank(self, sctype):
         """Check if lstsq_qr raises an exception when divisor is rank deficient
         """
-        yy = self.y[sctype] @ self.yt[sctype]
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.lstsq_qr(yy, self.z[sctype])
+            gfl.lstsq_qr(self.ones[sctype], self.z[sctype])
 
 
 # =============================================================================

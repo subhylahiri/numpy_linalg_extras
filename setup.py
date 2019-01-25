@@ -35,7 +35,7 @@ lapack_info = get_sys_info('lapack_opt', 0)  # and {}
 npymath_info = get_misc_info("npymath")
 all_info = {k: lapack_info[k] + npymath_info[k] for k in lapack_info.keys()}
 rearrange = in_src('rearrange_data.c.src')
-module_loc = 'numpy_linalg.gufuncs.'
+module_loc = 'gufuncs.'
 
 # =============================================================================
 config.add_extension(module_loc + '_gufuncs_cloop',

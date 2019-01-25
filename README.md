@@ -253,6 +253,4 @@ system-wide.
 
 * SVD based versions of `lstsq_qr` and `qr_lstsq`
 (and a QR based version of `lstsq` for completeness).
-* `Gufunc` version of `pinv`.
-* Versions of `inv`/`pinv` that return/use LU/QR/SVD factors.
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors.

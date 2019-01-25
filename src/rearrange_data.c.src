@@ -123,7 +123,7 @@ void FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info) {
         *info = -3;
         return;
     }
-    for (int i = 0; i < *n; i++) {
+    for (int i = 0; i < *n; i++, diag_ptr += *lda + 1) {
 #if @cmplx@
         if (diag_ptr->r == 0 && diag_ptr->i == 0) {  // check if A(i,i) is legal
 #else
@@ -132,7 +132,6 @@ void FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info) {
             *info = i + 1;
             return;
         }
-        diag_ptr += *lda + 1;  // right 1 and down 1
     }
 }
 

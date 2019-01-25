@@ -501,8 +501,7 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
                 npy_intp M_in, npy_intp N_in, npy_intp NC_in, npy_int do_org)
 {
     npy_uint8 *mem_buff = NULL;
-    npy_uint8 *mem_buff2 = NULL;
-    npy_uint8 *a, *b;
+    npy_uint8 *a, *b, *c;
     fortran_int M, N, NC, K, ld, LW, LWR, LWQ;
     size_t safe_M, safe_NC, safe_K, safe_LW;
     @ftyp@ work_size;
@@ -516,16 +515,8 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
     safe_NC = fortran_int_max(NC, N);
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_NC * sizeof(@ftyp@)  // for A
-                   + safe_K * sizeof(@ftyp@));          // for tau (T)
-    if (!mem_buff) {
-        goto error;
-    }
-    a = mem_buff;                               // store A at start of buffer
-    b = a + safe_M * safe_NC * sizeof(@ftyp@);  // store tau after space for A
-
-    params->A = a;
-    params->T = b;
+    params->A = NULL;   // not needed for workspace query
+    params->T = NULL;   // not needed for workspace query
     params->B = NULL;   // no rhs for _geqrf
     params->BZ = NULL;  // no rhs for _geqrf
     params->M = M;
@@ -533,18 +524,18 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
     params->K = K;
     params->NC = NC;
     params->LDA = ld;
-    params->W = &work_size;
-    params->LW = -1;
+    params->W = &work_size; // for workspace query
+    params->LW = -1;        // for workspace query
     params->INFO = 0;
 
-    call_@geqrf@(params);
+    call_@geqrf@(params);   // workspace query 1
     if (params->INFO < 0) {
         goto error;
     }
     LWR = @TYPE@_real_int(work_size);   // workspace size for _geqrf
 
     if (do_org) {
-        call_@orgqr@(params);
+        call_@orgqr@(params);   // workspace query 2
         if (params->INFO < 0) {
             goto error;
         }
@@ -556,18 +547,24 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
     LW = fortran_int_max(LWR, LWQ);     // enough workspace for either
     safe_LW = LW;
 
-    mem_buff2 = malloc(safe_LW * sizeof(@ftyp@));
-    if (!mem_buff2) {
+    mem_buff = malloc(safe_M * safe_NC * sizeof(@ftyp@) // for A
+                   + safe_K * sizeof(@ftyp@)            // for tau (T)
+                   + safe_LW * sizeof(@ftyp@));         // for W
+    if (!mem_buff) {
         goto error;
     }
+    a = mem_buff;                               // store A at start of buffer
+    b = a + safe_M * safe_NC * sizeof(@ftyp@);  // store tau after space for A
+    c = b + safe_K * sizeof(@ftyp@);            // store W after space for A,tau
 
-    params->W = mem_buff2;
+    params->A = a;
+    params->T = b;
+    params->W = c;
     params->LW = LW;
 
     return 1;
   error:
-    free(params->A);
-    free(mem_buff2);
+    free(mem_buff);
     memset(params, 0, sizeof(*params));
     // PyErr_NoMemory();
 
@@ -581,9 +578,8 @@ init_@geqrf@(GEQRF_PARAMS_t *params,
 static NPY_INLINE void
 release_@geqrf@(GEQRF_PARAMS_t *params)
 {
-    /* 1st memory block base is in A, second in W */
+    /* memory block base is in A */
     free(params->A);
-    free(params->W);
     memset(params, 0, sizeof(*params));
 }
 
@@ -1224,9 +1220,9 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     npy_intp M_in, npy_intp N_in, npy_intp NC_in, npy_int do_qrf)
 {
     npy_uint8 *mem_buff = NULL;
-    npy_uint8 *mem_buff2 = NULL;
-    npy_uint8 *a, *b, *c, *d;
-    fortran_int M, N, NC, K, MN, lda, ldb, MNx, LW, LWQ, LWR;
+    // npy_uint8 *mem_buff2 = NULL;
+    npy_uint8 *a, *b, *c, *d, *e;
+    fortran_int M, N, NC, K, MN, MNx, lda, ldb, LW, LWQ, LWR;
     size_t safe_M, safe_N, safe_NC, safe_K, safe_MNx, safe_LW;
     @ftyp@ work_size;
 
@@ -1243,21 +1239,10 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     safe_MNx = MNx;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)      // for A
-                    + safe_K * sizeof(@ftyp@)               // for tau
-                    + safe_MNx * safe_NC * sizeof(@ftyp@)); // for B,X
-    if (!mem_buff) {
-        goto error;
-    }
-    a = mem_buff;                               // store A at start of buffer
-    b = a + safe_M * safe_N * sizeof(@ftyp@);   // store tau after space for A
-    c = b + safe_K * sizeof(@ftyp@);            // store B after space for A,tau
-    d = c + safe_M * sizeof(@ftyp@);            // part of B that needs zeroing starts here
-
-    params->A = a;
-    params->T = b;
-    params->B = c;
-    params->BZ = d;
+    params->A = NULL;   // not needed for workspace query
+    params->T = NULL;   // not needed for workspace query
+    params->B = NULL;   // not needed for workspace query
+    params->BZ = NULL;  // not needed for workspace query
     params->M = M;
     params->N = N;
     params->NC = NC;
@@ -1265,36 +1250,49 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     params->MN = MN;
     params->LDA = lda;
     params->LDB = ldb;
-    params->W = &work_size;
-    params->LW = -1;
+    params->W = &work_size; // for workspace query
+    params->LW = -1;        // for workspace query
     params->INFO = 0;
 
     // _geqrs doesn't allow workspace queries,
     // but it only uses 'work' in _ormqr, which does.
-    call_@ormqr@(params);
+    call_@ormqr@(params);       // workspace query 1
     if (params->INFO < 0) {
         goto error;
     }
     LWQ = @TYPE@_real_int(work_size);
 
     if (do_qrf) {
-        call_@geqrf@(params);
+        call_@geqrf@(params);   // workspace query 2
         if (params->INFO < 0) {
             goto error;
         }
+        LWR = @TYPE@_real_int(work_size);
     } else {
-        work_size = @zero@;
+        LWR = 0;
     }
-    LWR = @TYPE@_real_int(work_size);
 
     LW = fortran_int_max(LWR, LWQ); // enough workspace for _ormqr or _geqrf
     safe_LW = LW;
 
-    mem_buff2 = malloc(safe_LW * sizeof(@ftyp@));   // for W
-    if (!mem_buff2) {
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)      // for A
+                    + safe_K * sizeof(@ftyp@)               // for tau
+                    + safe_MNx * safe_NC * sizeof(@ftyp@)   // for B,X
+                    + safe_LW * sizeof(@ftyp@));            // for W
+    if (!mem_buff) {
         goto error;
     }
-    params->W = mem_buff2;
+    a = mem_buff;                                   // store A at start of buffer
+    b = a + safe_M * safe_N * sizeof(@ftyp@);       // store tau after space for A
+    c = b + safe_K * sizeof(@ftyp@);                // store B after space for A,tau
+    d = c + safe_M * sizeof(@ftyp@);                // part of B that needs zeroing starts here
+    e = c + safe_MNx * safe_NC * sizeof(@ftyp@);    // store W after space for A,tau,B
+
+    params->A = a;
+    params->T = b;
+    params->B = c;
+    params->BZ = d;
+    params->W = e;
     params->LW = LW;
 
     return 1;
@@ -1313,9 +1311,8 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
 static NPY_INLINE void
 release_@geqrs@(GEQRF_PARAMS_t *params)
 {
-    /* 1st memory block base is in A, second in WQ */
+    /* memory block base is in A */
     free(params->A);
-    free(params->W);
     memset(params, 0, sizeof(*params));
 }
 
@@ -1369,8 +1366,8 @@ INIT_OUTER_LOOP_5
     LINEARIZE_DATA_t a_in, b_in, x_out, a_out, tau_out;
     int underconstrained = (len_m < len_n) ? 1 : 0;
     //length of tau
-    npy_intp len_k = underconstrained ? len_m : len_n; // min
-    npy_intp len_mn = len_m + len_n - len_k; // max
+    npy_intp len_k = npy_int_min(len_m, len_n); // min
+    npy_intp len_mn = npy_int_max(len_m, len_n); // max
     //don't worry if the wrong choice of lstsq_qrm/lstsq_qrn was made.
     //We'll just leave the extra elements of tau unset.
 
@@ -1469,14 +1466,16 @@ INIT_OUTER_LOOP_4
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
-    LINEARIZE_DATA_t a_in, b_in, x_out, tau_in;
+    LINEARIZE_DATA_t a_in, b_in, tau_in, x_out;
 
-    npy_intp len_mn = len_m + len_n - len_k; // max
-    if(len_mn < len_k) {//a and tau made from wrong choice of lstsq_qrm/lstsq_qrn
-        //nevermind, we'll just ignore the extra elements of tau
-        len_k = len_mn;
-        len_mn = len_m + len_n - len_k; // max
-    }
+    // if a and tau made from wrong choice of lstsq_qrm/lstsq_qrn,
+    // len_k changes here. We'll just ignore the extra elements of tau
+    len_k = npy_int_min(len_m, len_n);
+    npy_intp len_mn = npy_int_max(len_m, len_n); // max
+    // if(len_mn < len_k) {
+    //     len_k = len_mn;
+    //     len_mn = len_m + len_n - len_k; // max
+    // }
     if(init_@geqrs@(&params, len_m, len_n, len_nrhs, 0)){ // allocate buffer
         // initialise shape data
         init_linearize_datac(&a_in, len_n, len_m, stride_a_c, stride_a_r, conj);
@@ -1489,10 +1488,10 @@ INIT_OUTER_LOOP_4
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_vec(params.T, args[1], &tau_in);
             linearize_@TYPE@_matrix(params.B, args[2], &b_in);
-            if (len_k == len_n) {
-                call_@geqrs@(&params);                          // call Lapack
+            if (len_m < len_n) {
+                call_@gelqs@(&params);                          // call Lapack
             } else {
-                call_@gelqs@(&params);
+                call_@geqrs@(&params);                          // call Lapack
             }
             not_ok = params.INFO;
             if (not_ok) {
@@ -1628,8 +1627,7 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     npy_intp M_in, npy_intp N_in, npy_int do_qrf)
 {
     npy_uint8 *mem_buff = NULL;
-    npy_uint8 *mem_buff2 = NULL;
-    npy_uint8 *a, *b, *c;
+    npy_uint8 *a, *b, *c, *d;
     fortran_int M, N, K, lda, ldb, LW, LWQ, LWR;
     size_t safe_M, safe_N, safe_K, safe_LW;
     @ftyp@ work_size;
@@ -1643,20 +1641,10 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     safe_N = N;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)      // for A
-                    + safe_K * sizeof(@ftyp@)               // for tau
-                    + safe_K * safe_K * sizeof(@ftyp@));    // for R/L
-    if (!mem_buff) {
-        goto error;
-    }
-    a = mem_buff;                               // store A at start of buffer
-    b = a + safe_M * safe_N * sizeof(@ftyp@);   // store tau after space for A
-    c = b + safe_K * sizeof(@ftyp@);            // store R/L after space for A,tau
-
-    params->A = a;
-    params->T = b;
-    params->B = c;      // to temporarily store R/L
-    params->BZ = NULL;
+    params->A = NULL;   // not neededfor workspace query
+    params->T = NULL;   // not neededfor workspace query
+    params->B = NULL;   // not neededfor workspace query
+    params->BZ = NULL;  // not needed at all
     params->M = M;
     params->N = N;
     params->NC = N;     // used in workspace query below
@@ -1664,14 +1652,14 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     params->MN = 1;
     params->LDA = lda;
     params->LDB = ldb;
-    params->W = &work_size;
-    params->LW = -1;
+    params->W = &work_size; // for workspace query
+    params->LW = -1;        // for workspace query
     params->INFO = 0;
 
     if (M <= N) {
-        call_@orglq@(params);
+        call_@orglq@(params);   // workspace query 1, wide
     } else{
-        call_@orgqr@(params);
+        call_@orgqr@(params);   // workspace query 1, tall
     }
     if (params->INFO < 0) {
         goto error;
@@ -1680,9 +1668,9 @@ init_@geqri@(GEQRF_PARAMS_t *params,
 
     if (do_qrf) {
         if (M <= N) {
-            call_@gelqf@(params);
+            call_@gelqf@(params);   // workspace query 2, wide
         } else{
-            call_@geqrf@(params);
+            call_@geqrf@(params);   // workspace query 2, tall
         }
         if (params->INFO < 0) {
             goto error;
@@ -1695,11 +1683,22 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     LW = fortran_int_max(LWR, LWQ); // enough workspace for _orgqr or _geqrf
     safe_LW = LW;
 
-    mem_buff2 = malloc(safe_LW * sizeof(@ftyp@));   // for W
-    if (!mem_buff2) {
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)      // for A
+                    + safe_K * sizeof(@ftyp@)               // for tau
+                    + safe_K * safe_K * sizeof(@ftyp@)      // for R/L
+                    + safe_LW * sizeof(@ftyp@));            // for W
+    if (!mem_buff) {
         goto error;
     }
-    params->W = mem_buff2;
+    a = mem_buff;                               // store A at start of buffer
+    b = a + safe_M * safe_N * sizeof(@ftyp@);   // store tau after space for A
+    c = b + safe_K * sizeof(@ftyp@);            // store R/L after space for A,tau
+    d = c + safe_K * safe_K * sizeof(@ftyp@);   // store W after space for A,tau,R/L
+
+    params->A = a;
+    params->T = b;
+    params->B = c;  // to temporarily store R/L
+    params->W = d;  // workspace
     params->LW = LW;
 
     return 1;

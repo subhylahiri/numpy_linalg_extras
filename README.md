@@ -1,6 +1,6 @@
 # Numpy linear algebra enhancements
 
-[Instructions for building the CPython modules below](#building-the-cpython-modules)
+[Instructions for building the C modules below](#building-the-cpython-modules)
 
 This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
@@ -32,6 +32,60 @@ To get the actual inverse matrices you can call the objects:
 >>> x = y.inv()
 >>> x = y.pinv()
 ```
+
+## Rationale
+
+Consider the following expression that appeared in my work:
+`$ A = \xi Z Q Z w $`, where `$ Z = (e \xi - W)^{-1} $`
+
+In Matlab, I can evaluate this with:
+```matlab
+Zi = ev * xi - W
+A = (xi / Zi) * Q * (Zi \ w);
+```
+Prior to Python 3.5 and Numpy 1.10, avoiding `inv`, I'd have to write it like this:
+```python
+Zi = np.dot(ev, xi) - W
+A = np.dot(np.dot(np.linalg.solve(Zi.T, xi).T, Q), np.linalg.solve(Zi, w))
+```
+or
+```python
+S = np.linalg.solve(Zi.T, xi).T.dot(Q).dot(np.linalg.solve(Zi, w))
+```
+Things do get better in Python 3.5 and Numpy 1.10:
+```python
+A = np.linalg.solve(Zi.T, xi).T @ Q @np.linalg.solve(Zi, w)
+```
+If I want it to broadcast I'd also have to replace `.T` with `.swapaxes(-2, -1)`.
+Using this package, I can write it as
+```python
+A = xi @ Zi.inv @ Q @ (Zi.inv @ w)
+```
+or even
+```python
+Z = (ev @ xi - W).inv
+A = xi @ Z @ Q @ (Z @ w)
+```
+The parentheses in the last expression are only there for efficiency,
+it would still work without them.
+Note that the `.inv` appears in the same place as the `$^{-1}$` in the
+mathematical expression above.
+
+To do this, I reimplemented several `numpy` functions, some of them in `C`.
+This wheel reinvention was for one of the following reasons:
+1. The `numpy` version doesn't broadcast.
+1. The `numpy` version doesn't work well with subclasses.
+1. The underlying `gufunc` is not part of the public API, so I didn't want to
+rely on it.
+1. I needed a `gufunc` version of `lstq` that doesn't require an `rcond` input
+and doesn't return any  diagnostic information.
+1. Completeness.
+
+I did not reimplement several `numpy.linalg` functions for one of the following
+reasons:
+1. There's no way to make it fit with the standard broadcasting rules
+(e.g. `dot`, `tensordot`).
+1. The `numpy.linalg` version already does everything I need.
 
 ## Requirements
 
@@ -215,7 +269,7 @@ These implement the functions above.
 >>> v = (x.r @ y[:, None, ...].t).ur
 ```
 
-## Building the CPython modules
+## Building the C modules
 
 You will need to have the appropriate C compilers. On Linux, you should already have them.
 On Windows, [see here](https://wiki.python.org/moin/WindowsCompilers).
@@ -240,7 +294,7 @@ Uninstalling MKL).
 If your BLAS/Lapack distribution is installed somewhere `numpy` isn't expecting,
 you can provide directions in a [site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
 
-Once you have all of the above, you can build the CPython modules in-place:
+Once you have all of the above, you can build the C modules in-place:
 ```
 > python setup.py build_ext
 ```

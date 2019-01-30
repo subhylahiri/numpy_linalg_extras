@@ -180,7 +180,7 @@ class TestQRPinv(utn.TestCaseNumpy):
             self.assertArrayAllClose(r, self.tall[sctype])
 
     # @unittest.skip('nothing works')
-    @utn.loop_test(msg='pinv')
+    @utn.loop_test(msg='pinv', attr_inds=3)
     def test_pinv_val(self, sctype):
         """Check that pinv gufuncs all return arrays with the expected values
         """

@@ -145,10 +145,10 @@ class TestShape(TestLinalg):
         self.assertEqual(luf.shape + piv.shape, (2, 3, 3, 2, 3))
         luf, piv = la.lu(self.x['d'], 'raw')
         self.assertEqual((luf.ndim, piv.ndim), (3, 2))
-        self.assertEqual(luf.shape + piv.shape, (2, 5, 3, 2, 3))
+        self.assertEqual(luf.shape + piv.shape, (2, 3, 5, 2, 3))
         luf, piv = la.lu(self.y['d'], 'raw')
         self.assertEqual((luf.ndim, piv.ndim), (2, 1))
-        self.assertEqual(luf.shape + piv.shape, (3, 5, 3))
+        self.assertEqual(luf.shape + piv.shape, (5, 3, 3))
 
 
 class TestValue(TestLinalg):
@@ -236,15 +236,18 @@ class TestValue(TestLinalg):
         """
         low, up, piv = la.lu(self.w[sctype], 'separate')
         luf, piv = la.lu(self.w[sctype], 'raw')
+        luf = la.transpose(luf)
         self.assertArrayAllClose(low @ up, gf.pivot(self.w[sctype], piv))
         self.assertArrayAllClose(np.tril(low, -1), np.tril(luf, -1))
         self.assertArrayAllClose(up, np.triu(luf))
         low, up, piv = la.lu(self.x[sctype], 'separate')
         luf, piv = la.lu(self.x[sctype], 'raw')
+        luf = la.transpose(luf)
         self.assertArrayAllClose(np.tril(low, -1), np.tril(luf, -1))
         self.assertArrayAllClose(up, np.triu(luf)[:, :3])
         low, up, piv = la.lu(self.y[sctype], 'separate')
         luf, piv = la.lu(self.y[sctype], 'raw')
+        luf = la.transpose(luf)
         self.assertArrayAllClose(np.tril(low, -1), np.tril(luf, -1)[:, :3])
         self.assertArrayAllClose(up, np.triu(luf))
 

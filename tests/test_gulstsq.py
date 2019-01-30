@@ -68,12 +68,12 @@ class TestQRPinv(utn.TestCaseNumpy):
         with self.subTest(msg='wide,+qr'):
             wide_p, wide_f, wide_tau = gfl.pinv_qrm(self.wide['d'])
             self.assertEqual(wide_p.shape, (120, 10, 16, 5))
-            self.assertEqual(wide_f.shape, (120, 10, 5, 16))
+            self.assertEqual(wide_f.shape, (120, 10, 16, 5))
             self.assertEqual(wide_tau.shape, (120, 10, 5))
         with self.subTest(msg='tall,+qr'):
             tall_p, tall_f, tall_tau = gfl.pinv_qrn(self.tall['d'])
             self.assertEqual(tall_p.shape, (120, 10, 5, 16))
-            self.assertEqual(tall_f.shape, (120, 10, 16, 5))
+            self.assertEqual(tall_f.shape, (120, 10, 5, 16))
             self.assertEqual(tall_tau.shape, (120, 10, 5))
         with self.subTest(msg='wide,-qr'):
             wide_p = gfl.qr_pinv(wide_f, wide_tau)
@@ -194,15 +194,15 @@ class TestQRPinv(utn.TestCaseNumpy):
                                      self.id_small[sctype])
         with self.subTest(msg='wide,+qr'):
             wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.wide[sctype])
-            qrf, tau = gfl.qr_rawn(self.wide[sctype].conj().swapaxes(-1, -2))
+            qrf, tau = gfl.qr_rawm(self.wide[sctype])
             self.assertArrayAllClose(wide_pq, wide_p)
-            self.assertArrayAllClose(wide_f, qrf.conj())
+            self.assertArrayAllClose(wide_f, qrf)
             self.assertArrayAllClose(wide_tau, tau)
         with self.subTest(msg='tall,+qr'):
             tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.tall[sctype])
             qrf, tau = gfl.qr_rawn(self.tall[sctype])
             self.assertArrayAllClose(tall_pq, tall_p)
-            self.assertArrayAllClose(tall_f, qrf.swapaxes(-1, -2))
+            self.assertArrayAllClose(tall_f, qrf)
             self.assertArrayAllClose(tall_tau, tau)
         with self.subTest(msg='wide,-qr'):
             wide_qp = gfl.qr_pinv(wide_f, wide_tau)
@@ -273,11 +273,11 @@ class TestLstsqShape(TestLstsq):
         # overconstrained
         a, xf, tau = gfl.lstsq_qrm(self.x['d'], self.y['d'])
         self.assertArrayEqual(a.shape, (2, 5, 2))
-        self.assertArrayEqual(xf.shape, (2, 8, 5))
+        self.assertArrayEqual(xf.shape, (2, 5, 8))
         self.assertArrayEqual(tau.shape, (2, 8))
         a, xf, tau = gfl.lstsq_qrn(self.x['d'], self.y['d'])
         self.assertArrayEqual(a.shape, (2, 5, 2))
-        self.assertArrayEqual(xf.shape, (2, 8, 5))
+        self.assertArrayEqual(xf.shape, (2, 5, 8))
         self.assertArrayEqual(tau.shape, (2, 5))
         # overconstrained
         b = gfl.qr_lstsq(xf, tau, self.z['d'])
@@ -292,11 +292,11 @@ class TestLstsqShape(TestLstsq):
         # underconstrained
         a, xf, tau = gfl.rlstsq_qrm(self.w['d'], self.x['d'])
         self.assertArrayEqual(a.shape, (3, 2, 1, 8))
-        self.assertArrayEqual(xf.shape, (3, 2, 8, 5))
+        self.assertArrayEqual(xf.shape, (3, 2, 5, 8))
         self.assertArrayEqual(tau.shape, (3, 2, 5))
         a, xf, tau = gfl.rlstsq_qrn(self.w['d'], self.x['d'])
         self.assertArrayEqual(a.shape, (3, 2, 1, 8))
-        self.assertArrayEqual(xf.shape, (3, 2, 8, 5))
+        self.assertArrayEqual(xf.shape, (3, 2, 5, 8))
         self.assertArrayEqual(tau.shape, (3, 2, 8))
         # underconstrained
         b = gfl.rqr_lstsq(self.v['d'], xf, tau)

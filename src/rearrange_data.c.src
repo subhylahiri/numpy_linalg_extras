@@ -611,4 +611,30 @@ nan_@TYPE@_vec(void *dst_in, const LINEARIZE_DATA_t* data)
     }
 }
 
+
+/************************
+*  Triangular matrices  *
+*************************/
+
+/*
+Copying upper triangular part matrices from contiguous fortran to numpy
+
+This function does fill the lower triangle with zeros.
+*/
+void
+delinearize_@TYPE@_trilu(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data,
+                        int lower)
+{
+    if (lower) {
+        zero_@TYPE@_triu(dst_in, data);                     // Zero out L
+        delinearize_@TYPE@_tril(dst_in, src_in, data);   // Copy triangular L from buffer
+    } else {
+        zero_@TYPE@_tril(dst_in, data);                     // Zero out R
+        delinearize_@TYPE@_triu(dst_in, src_in, data);   // Copy triangular R from buffer
+    }
+}
+
+
 /**end repeat**/

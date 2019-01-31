@@ -5,7 +5,7 @@
 This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
 matrix division. The main way of using this is via the `lnarray` class
-(the `lstsq` and `qr` function are the only other things I find useful here).
+(the `lstsq` and `qr` functions are the only other things I find useful here).
 All of the functions will work with `numpy.ndarray` objects as well.
 Furthermore, `matmul` is implemented with a `gufunc` which should make
 broadcasting faster.
@@ -38,7 +38,7 @@ To get the actual inverse matrices you can call the objects:
 Consider the following expression that appeared in my work:
 `$ A = \xi Z Q Z w $`, where `$ Z = (e \xi - W)^{-1} $`
 
-In Matlab, I can evaluate this with:
+In Matlab, I can compute this with:
 ```matlab
 Zi = ev * xi - W
 A = (xi / Zi) * Q * (Zi \ w);
@@ -72,20 +72,20 @@ Note that the `.inv` appears in the same place as the `$^{-1}$` in the
 mathematical expression above.
 
 To do this, I reimplemented several `numpy` functions, some of them in `C`.
-This wheel reinvention was for one of the following reasons:
-1. The `numpy` version doesn't broadcast.
-1. The `numpy` version doesn't work well with subclasses.
+In each case, this wheel reinvention was done for one of the following reasons:
+1. The `numpy` version doesn't broadcast (e.g. `lstsq`, `qr`).
+1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
 rely on it.
 1. I needed a `gufunc` version of `lstq` that doesn't require an `rcond` input
 and doesn't return any  diagnostic information.
-1. Completeness.
+1. Completeness (e.g. `inv`).
 
 I did not reimplement several `numpy.linalg` functions for one of the following
 reasons:
 1. There's no way to make it fit with the standard broadcasting rules
 (e.g. `dot`, `tensordot`).
-1. The `numpy.linalg` version already does everything I need.
+1. The `numpy.linalg` version already does everything I need (e.g. `eig`, `svd`).
 
 ## Requirements
 
@@ -182,14 +182,15 @@ The following are not defined:
 
 ## GUfuncs
 
-These implement the functions above.
+The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:  
 * `gufuncs.solve`:  
 * `gufuncs.rsolve`:  
 * `gufuncs.lstsq`:  
 * `gufuncs.rlstsq`:  
+    These implement the functions above.
 * `gufuncs.norm`:  
-    This is literally the same as the functions above.
+    This is literally the same as the function above.
 * `gufuncs.lu_m`:  
     Implements `lu` for wide matrices.
 * `gufuncs.lu_n`:  
@@ -225,12 +226,12 @@ These implement the functions above.
 * `gufuncs.qr_lstsq`:  
 * `gufuncs.rqr_lstsq`:  
     Use QR decomposition in `raw` form from previous use.
-* pinv
+* `pinv`:  
     Moore-Penrose pseudoinverse.
-* pinv_qrm
-* pinv_qrn
+* `pinv_qrm`:  
+* `pinv_qrn`:  
     Also return QR decomposition in `raw` form for future use.
-* qr_pinv
+* `qr_pinv`:  
     Use QR decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
 * `gufuncs.rtrue_tivide`:  

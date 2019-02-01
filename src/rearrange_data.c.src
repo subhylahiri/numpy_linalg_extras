@@ -214,7 +214,7 @@ linearize_@TYPE@_matrix(void *dst_in,
                 * We have to compensate.
                 */
                 FNAME(@copy@)(  &columns,
-                                (void *)((@typ@*)src + (columns-1)*column_strides),
+                                (void *)(src + (columns-1)*column_strides),
                                 &column_strides,
                                 (void *)dst, &one);
             }
@@ -277,7 +277,7 @@ delinearize_@TYPE@_matrix(  void *dst_in,
                 */
                 if (columns > 0) {
                     memcpy((void *)dst, (void *)(src + (columns-1)), sizeof(@typ@));
-                    @TYPE@_conj_vec(one, dst, column_strides, data);
+                    @TYPE@_conj_vec(one, dst, one, data);
                 }
             }
             src += data->output_lead_dim;

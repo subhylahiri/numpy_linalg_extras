@@ -321,7 +321,7 @@ class TestLstsqVal(TestLstsq):
         with self.subTest(msg='rlstsq(under)'):
             self.assertArrayAllClose(b @ self.x[sctype], self.v[sctype])
 
-    @utn.loop_test(attr_inds=np.s_[0])
+    @utn.loop_test(attr_inds=np.s_[1::2])
     def test_lstsqqr_val(self, sctype):
         """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
         """
@@ -335,7 +335,7 @@ class TestLstsqVal(TestLstsq):
             # overconstrained
             aa = gfl.qr_lstsq(xf, tau, self.y[sctype])
             with self.subTest('qr_lstsq(over' + suffix):
-                self.assertArrayAllClose(aa, a)
+                self.assertArrayAllClose(aa, a0)
             # underconstrained
             b = gfl.rqr_lstsq(self.v[sctype], xf, tau)
             with self.subTest('rqr_lstsq(under' + suffix):

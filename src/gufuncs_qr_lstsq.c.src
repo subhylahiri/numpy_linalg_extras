@@ -427,19 +427,19 @@ FNAME(@lacpy@)(char *uplo, int *m, int *n,
 /* a -> r, v, tau */
 extern void
 FNAME(@geqrf@)(int *m, int *n, @typ@ *a, int *lda, @typ@ *tau,
-            @typ@ *work, int * lwork, int *info);
+            @typ@ *work, int *lwork, int *info);
 extern void
 FNAME(@gelqf@)(int *m, int *n, @typ@ *a, int *lda, @typ@ *tau,
-            @typ@ *work, int * lwork, int *info);
+            @typ@ *work, int *lwork, int *info);
 /* v, tau -> q */
 extern void
 FNAME(@orgqr@)(int *m, int *n, int *k,
             @typ@ *a, int *lda, @typ@ *tau,
-            @typ@ *work, int * lwork, int *info);
+            @typ@ *work, int *lwork, int *info);
 extern void
 FNAME(@orglq@)(int *m, int *n, int *k,
             @typ@ *a, int *lda, @typ@ *tau,
-            @typ@ *work, int * lwork, int *info);
+            @typ@ *work, int *lwork, int *info);
 
 /* least square solution of a x = b for x from qr/lq */
 /* multiply b by q from qr/lq */
@@ -1340,7 +1340,7 @@ call_@geqrs@(GEQRF_PARAMS_t *params)
     LAPACK(@ormqr@)(&char_L, &@trans@, &params->M, &params->NC, &params->K,
                     params->A, &params->LDA, params->T, params->B, &params->LDB,
                     params->W, &params->LW, &params->INFO);
-    // B is modified by ?TRSM to carry R^-1 B
+    // Q^T B is modified by ?TRSM to carry R^-1 Q^T B
     LAPACK(@trsm@)(&char_L, &char_U, &char_N, &char_N,
                     &params->N, &params->NC, &@one@,
                     params->A, &params->LDA, params->B, &params->LDB);
@@ -1363,12 +1363,12 @@ call_@gelqs@(GEQRF_PARAMS_t *params)
     LAPACK(@trsm@)(&char_L, &char_L, &char_N, &char_N,
                     &params->M, &params->NC, &@one@,
                     params->A, &params->LDA, params->B, &params->LDB);
-    // B is modified by ?LASET to zero out bottom N-M rows
+    // L^-1 B is modified by ?LASET to zero out bottom N-M rows
     if (params->MN) {
         LAPACK(@laset@)(&char_F, &params->MN, &params->NC, &@zero@, &@zero@,
                     params->BZ, &params->LDB);
     }
-    // B is modified by ?ORMLQ to carry Q^T B
+    // L^-1 B is modified by ?ORMLQ to carry Q^T L^-1 B
     LAPACK(@ormlq@)(&char_L, &@trans@, &params->N, &params->NC, &params->K,
                     params->A, &params->LDA, params->T, params->B, &params->LDB,
                     params->W, &params->LW, &params->INFO);
@@ -1499,14 +1499,19 @@ release_@geqrs@(GEQRF_PARAMS_t *params)
 
 // lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(n,m),(k)";
 
+// QRF: pointer to QR/LQ factors output
+// qrf_out: shape info for QRF
 static int
-do_@TYPE@_qrfs(GEQRF_PARAMS_t *params, int underconstrained)
+do_@TYPE@_qrfs(void *QRF, const LINEARIZE_DATA_t *qrf_out,
+                GEQRF_PARAMS_t *params, int underconstrained)
 {
     // QR/LQ decompose
     call_@geqrf@_@gelqf@(params, underconstrained);
-    if (params->INFO < 0) {
+    if (params->INFO) {
       return 1;
     }
+    // copy QR/LQ factors to output
+    delinearize_@TYPE@_matrix(QRF, params->A, qrf_out);
     // Solve least squares problem
     call_@geqrs@_@gelqs@(params, underconstrained);
     if (params->INFO) {
@@ -1535,7 +1540,7 @@ INIT_OUTER_LOOP_5
     npy_intp stride_tau = *steps++;  // vec
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
-    LINEARIZE_DATA_t a_in, b_in, x_out, a_out, tau_out;
+    LINEARIZE_DATA_t a_in, b_in, x_out, af_out, tau_out;
     int underconstrained = (len_m < len_n) ? 1 : 0;
     //length of tau
     npy_intp len_k = npy_int_min(len_m, len_n); // min
@@ -1548,22 +1553,21 @@ INIT_OUTER_LOOP_5
         init_linearize_datac(&a_in, len_n, len_m, stride_a_c, stride_a_r, conj);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);
-        init_linearize_datac(&a_out, len_n, len_m, stride_af_r, stride_af_c, conj);
+        init_linearize_data_exc(&af_out, len_n, len_m, stride_af_r, stride_af_c, len_m, conj);
         init_linearize_vdatac(&tau_out, len_k, stride_tau, 0);
 
         BEGIN_OUTER_LOOP_5
             int not_ok;
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            not_ok = do_@TYPE@_qrfs(&params, underconstrained);
+            not_ok = do_@TYPE@_qrfs(args[3], &af_out, &params, underconstrained);  // call lapack & copy AF output
             if (not_ok) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);
-                nan_@TYPE@_matrix(args[3], &a_out);
+                nan_@TYPE@_matrix(args[3], &af_out);
                 nan_@TYPE@_vec(args[4], &tau_out);
             } else {
                 delinearize_@TYPE@_matrix(args[2], params.B, &x_out);  // copy outputs
-                delinearize_@TYPE@_matrix(args[3], params.A, &a_out);
                 delinearize_@TYPE@_vec(args[4], params.T, &tau_out);
             }
         END_OUTER_LOOP_5
@@ -1651,7 +1655,7 @@ INIT_OUTER_LOOP_4
     // }
     if(init_@geqrs@(&params, len_m, len_n, len_nrhs, 0)){ // allocate buffer
         // initialise shape data
-        init_linearize_datac(&a_in, len_n, len_m, stride_a_r, stride_a_c, conj);
+        init_linearize_data_exc(&a_in, len_n, len_m, stride_a_r, stride_a_c, len_m, conj);
         init_linearize_vdatac(&tau_in, len_k, stride_tau, 0);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);
@@ -1894,17 +1898,20 @@ do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, int underconstrained)
 }
 
 // pinvqr_signature = "(m,n)->(n,m),(m,n),(k)";
+
+// AF: pointer to QR/LQ factors output
+// af_out: shape info for A
 static int
-save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
+save_@TYPE@_qrfi(void *AF, const LINEARIZE_DATA_t *af_out,
                 GEQRF_PARAMS_t *params, int underconstrained)
 {
     // QR/LQ decompose
     call_@geqrf@_@gelqf@(params, underconstrained);
     if (params->INFO) {
       return 1;
-    } else {  // copy QR/LQ factors before they are destroyed
-        delinearize_@TYPE@_matrix(A, params->A, a_out);
     }
+    // copy QR/LQ factors before they are destroyed
+    delinearize_@TYPE@_matrix(AF, params->A, af_out);
     // Solve least squares problem
     call_@geqri@_@gelqi@(params, underconstrained);
     if (params->INFO) {
@@ -1979,7 +1986,7 @@ INIT_OUTER_LOOP_4
     npy_intp stride_tau = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
-    LINEARIZE_DATA_t a_in, x_out, a_out, tau_out;
+    LINEARIZE_DATA_t a_in, x_out, af_out, tau_out;
     int underconstrained = len_m < len_n ? 1 : 0;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
@@ -1988,18 +1995,18 @@ INIT_OUTER_LOOP_4
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         // need to conjugate-transpose params.A to get X
         init_linearize_data_exc(&x_out, len_n, len_m, stride_x_r, stride_x_c, len_m, 1);
-        init_linearize_data_ex(&a_out, len_n, len_m, stride_f_r, stride_f_c, len_m);
+        init_linearize_data_ex(&af_out, len_n, len_m, stride_f_r, stride_f_c, len_m);
         init_linearize_vdata(&tau_out, len_k, stride_tau);
 
         BEGIN_OUTER_LOOP_4
             int not_ok;
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
             // call Lapack, copy A output
-            not_ok = save_@TYPE@_qrfi(args[2], &a_out, &params, underconstrained);
+            not_ok = save_@TYPE@_qrfi(args[2], &af_out, &params, underconstrained);
             if (not_ok) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &x_out);
-                nan_@TYPE@_matrix(args[2], &a_out);
+                nan_@TYPE@_matrix(args[2], &af_out);
                 nan_@TYPE@_vec(args[3], &tau_out);
             } else {
                 delinearize_@TYPE@_matrix(args[1], params.A, &x_out);  // copy other outputs

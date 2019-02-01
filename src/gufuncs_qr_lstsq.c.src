@@ -230,7 +230,8 @@ PyDoc_STRVAR(lstsq_qr__doc__,
 "Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`.\n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
 "See Also\n--------\n"
-"qr in 'raw' mode."
+"qr in 'raw' mode.\n"
+"lq in 'raw' mode.\n"
 );
 
 PyDoc_STRVAR(rlstsq_qr__doc__,
@@ -258,7 +259,8 @@ PyDoc_STRVAR(rlstsq_qr__doc__,
 "Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`.\n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
 "See Also\n--------\n"
-"qr in 'raw' mode."
+"qr in 'raw' mode.\n"
+"lq in 'raw' mode.\n"
 );
 
 /*************************
@@ -289,7 +291,8 @@ PyDoc_STRVAR(qr_lstsq__doc__,
 "Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`. \n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
 "See Also\n--------\n"
-"qr in 'raw' mode."
+"qr in 'raw' mode.\n"
+"lq in 'raw' mode.\n"
 );
 
 PyDoc_STRVAR(rqr_lstsq__doc__,
@@ -315,7 +318,8 @@ PyDoc_STRVAR(rqr_lstsq__doc__,
 "Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`. \n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
 "See Also\n--------\n"
-"qr in 'raw' mode."
+"qr in 'raw' mode.\n"
+"lq in 'raw' mode.\n"
 );
 
 
@@ -1300,6 +1304,25 @@ call_@ormqr@(GEQRF_PARAMS_t *params)
                     params->W, &params->LW, &params->INFO);
 }
 
+// needed to compute lwork
+static NPY_INLINE void
+call_@ormlq@(GEQRF_PARAMS_t *params)
+{
+    // B is modified by ?ORMQR to carry Q^T B
+    LAPACK(@ormlq@)(&char_L, &@trans@, &params->N, &params->NC, &params->K,
+                    params->A, &params->LDA, params->T, params->B, &params->LDB,
+                    params->W, &params->LW, &params->INFO);
+}
+
+static NPY_INLINE void
+call_@ormqr@_@ormlq@(GEQRF_PARAMS_t *params, int do_lq) {
+    if (do_lq) {
+        call_@ormlq@(params);
+    } else {
+        call_@ormqr@(params);
+    }
+}
+
 // the version of lapack that I have doesn't include _geqrs, so:
 static NPY_INLINE void
 call_@geqrs@(GEQRF_PARAMS_t *params)
@@ -1351,6 +1374,15 @@ call_@gelqs@(GEQRF_PARAMS_t *params)
                     params->W, &params->LW, &params->INFO);
 }
 
+static NPY_INLINE void
+call_@geqrs@_@gelqs@(GEQRF_PARAMS_t *params, int do_lq) {
+    if (do_lq) {
+        call_@gelqs@(params);
+    } else {
+        call_@geqrs@(params);
+    }
+}
+
 /***************************************************************************
 * Initialize the parameters to use in the lapack functions _geqrf & _orgqr *
 * Handles buffer allocation.
@@ -1398,16 +1430,17 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     params->LW = -1;        // for workspace query
     params->INFO = 0;
 
+    int underconstrained = M < N ? 1 : 0;
     // _geqrs doesn't allow workspace queries,
     // but it only uses 'work' in _ormqr, which does.
-    call_@ormqr@(params);       // workspace query 1
+    call_@ormqr@_@ormlq@(params, underconstrained);     // workspace query 1
     if (params->INFO < 0) {
         goto error;
     }
     LWQ = @TYPE@_real_int(work_size);
 
     if (do_qrf) {
-        call_@geqrf@(params);   // workspace query 2
+        call_@geqrf@_@gelqf@(params, underconstrained); // workspace query 2
         if (params->INFO < 0) {
             goto error;
         }
@@ -1467,23 +1500,15 @@ release_@geqrs@(GEQRF_PARAMS_t *params)
 // lstsqqr_signature = "(m,n),(m,nrhs)->(n,nrhs),(n,m),(k)";
 
 static int
-do_@TYPE@_qrfs(GEQRF_PARAMS_t *params, npy_intp underconstrained)
+do_@TYPE@_qrfs(GEQRF_PARAMS_t *params, int underconstrained)
 {
-    // QR decompose
-    if (underconstrained) {
-        call_@gelqf@(params);
-    } else {
-        call_@geqrf@(params);
-    }
+    // QR/LQ decompose
+    call_@geqrf@_@gelqf@(params, underconstrained);
     if (params->INFO < 0) {
       return 1;
     }
     // Solve least squares problem
-    if (underconstrained) {
-        call_@gelqs@(params);
-    } else {
-        call_@geqrs@(params);
-    }
+    call_@geqrs@_@gelqs@(params, underconstrained);
     if (params->INFO) {
       return 1;
     }
@@ -1505,8 +1530,8 @@ INIT_OUTER_LOOP_5
     npy_intp stride_b_c = *steps++;
     npy_intp stride_x_r = *steps++;  // rows
     npy_intp stride_x_c = *steps++;
-    npy_intp stride_af_c = *steps++;  // rows
-    npy_intp stride_af_r = *steps++;  // swapped to transpose (fortran order)
+    npy_intp stride_af_r = *steps++;  // swap to transpose (fortran order)
+    npy_intp stride_af_c = *steps++;
     npy_intp stride_tau = *steps++;  // vec
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
@@ -1523,7 +1548,7 @@ INIT_OUTER_LOOP_5
         init_linearize_datac(&a_in, len_n, len_m, stride_a_c, stride_a_r, conj);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);
-        init_linearize_datac(&a_out, len_n, len_m, stride_af_c, stride_af_r, conj);
+        init_linearize_datac(&a_out, len_n, len_m, stride_af_r, stride_af_c, conj);
         init_linearize_vdatac(&tau_out, len_k, stride_tau, 0);
 
         BEGIN_OUTER_LOOP_5
@@ -1604,14 +1629,15 @@ INIT_OUTER_LOOP_4
     npy_intp len_m = *dimensions++;  // rows of a, b
     npy_intp len_k = *dimensions++;  // length of tau
     npy_intp len_nrhs = *dimensions++;  // columns of x, b
-    npy_intp stride_a_c = *steps++;    // swapped to transpose (fortran order)
     npy_intp stride_a_r = *steps++;  // rows
+    npy_intp stride_a_c = *steps++;  // swap to transpose (fortran order)
     npy_intp stride_tau = *steps++;  // vec
     npy_intp stride_b_r = *steps++;  // rows
     npy_intp stride_b_c = *steps++;
     npy_intp stride_x_r = *steps++;  // rows
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
+    int underconstrained = (len_m < len_n) ? 1 : 0;
     GEQRF_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, tau_in, x_out;
 
@@ -1625,7 +1651,7 @@ INIT_OUTER_LOOP_4
     // }
     if(init_@geqrs@(&params, len_m, len_n, len_nrhs, 0)){ // allocate buffer
         // initialise shape data
-        init_linearize_datac(&a_in, len_n, len_m, stride_a_c, stride_a_r, conj);
+        init_linearize_datac(&a_in, len_n, len_m, stride_a_r, stride_a_c, conj);
         init_linearize_vdatac(&tau_in, len_k, stride_tau, 0);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);
@@ -1635,11 +1661,7 @@ INIT_OUTER_LOOP_4
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_vec(params.T, args[1], &tau_in);
             linearize_@TYPE@_matrix(params.B, args[2], &b_in);
-            if (len_m < len_n) {
-                call_@gelqs@(&params);                          // call Lapack
-            } else {
-                call_@geqrs@(&params);                          // call Lapack
-            }
+            call_@geqrs@_@gelqs@(&params, underconstrained);     // call Lapack
             not_ok = params.INFO;
             if (not_ok) {
                 error_occurred = 1;
@@ -1753,6 +1775,15 @@ call_@gelqi@(GEQRF_PARAMS_t *params)
                     params->B, &params->LDB, params->A, &params->LDA);
 }
 
+static NPY_INLINE void
+call_@geqri@_@gelqi@(GEQRF_PARAMS_t *params, int do_lq) {
+    if (do_lq) {
+        call_@gelqi@(params);
+    } else {
+        call_@geqri@(params);
+    }
+}
+
 /***************************************************************************
 * Initialize the parameters to use in the lapack functions _geqri & _gelqi *
 * Handles buffer allocation.
@@ -1794,22 +1825,15 @@ init_@geqri@(GEQRF_PARAMS_t *params,
     params->LW = -1;        // for workspace query
     params->INFO = 0;
 
-    if (M <= N) {
-        call_@orglq@(params);   // workspace query 1, wide
-    } else{
-        call_@orgqr@(params);   // workspace query 1, tall
-    }
+    int underconstrained = M < N ? 1 : 0;
+    call_@orgqr@_@orglq@(params, underconstrained); // workspace query 1
     if (params->INFO < 0) {
         goto error;
     }
     LWQ = @TYPE@_real_int(work_size);  // enough workspace for _orgqr
 
     if (do_qrf) {
-        if (M <= N) {
-            call_@gelqf@(params);   // workspace query 2, wide
-        } else{
-            call_@geqrf@(params);   // workspace query 2, tall
-        }
+        call_@geqrf@_@gelqf@(params, underconstrained); // workspace query 2
         if (params->INFO < 0) {
             goto error;
         }
@@ -1854,23 +1878,15 @@ init_@geqri@(GEQRF_PARAMS_t *params,
 
 // pinv_signature = "(m,n)->(n,m)";
 static int
-do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, npy_intp underconstrained)
+do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, int underconstrained)
 {
     // QR/LQ decompose
-    if (underconstrained) {
-        call_@gelqf@(params);
-    } else {
-        call_@geqrf@(params);
-    }
+    call_@geqrf@_@gelqf@(params, underconstrained);
     if (params->INFO) {
       return 1;
     }
     // Solve least squares problem
-    if (underconstrained) {
-        call_@gelqi@(params);
-    } else {
-        call_@geqri@(params);
-    }
+    call_@geqri@_@gelqi@(params, underconstrained);
     if (params->INFO) {
       return 1;
     }
@@ -1880,25 +1896,17 @@ do_@TYPE@_qrfi(GEQRF_PARAMS_t *params, npy_intp underconstrained)
 // pinvqr_signature = "(m,n)->(n,m),(m,n),(k)";
 static int
 save_@TYPE@_qrfi(void *A, const LINEARIZE_DATA_t *a_out,
-                GEQRF_PARAMS_t *params, npy_intp underconstrained)
+                GEQRF_PARAMS_t *params, int underconstrained)
 {
     // QR/LQ decompose
-    if (underconstrained) {
-        call_@gelqf@(params);
-    } else {
-        call_@geqrf@(params);
-    }
+    call_@geqrf@_@gelqf@(params, underconstrained);
     if (params->INFO) {
       return 1;
     } else {  // copy QR/LQ factors before they are destroyed
         delinearize_@TYPE@_matrix(A, params->A, a_out);
     }
     // Solve least squares problem
-    if (underconstrained) {
-        call_@gelqi@(params);
-    } else {
-        call_@geqri@(params);
-    }
+    call_@geqri@_@gelqi@(params, underconstrained);
     if (params->INFO) {
       return 1;
     }
@@ -1925,7 +1933,7 @@ INIT_OUTER_LOOP_2
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
     LINEARIZE_DATA_t a_in, x_out;
-    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+    int underconstrained = len_m < len_n ? 1 : 0;
 
     if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
         // initialise shape data
@@ -1966,13 +1974,13 @@ INIT_OUTER_LOOP_4
     npy_intp stride_a_c = *steps++;
     npy_intp stride_x_r = *steps++;  // rows
     npy_intp stride_x_c = *steps++;
-    npy_intp stride_f_c = *steps++;  // swapped to transpose (fortran order)
     npy_intp stride_f_r = *steps++;  // rows
+    npy_intp stride_f_c = *steps++;  // swapped to transpose (fortran order)
     npy_intp stride_tau = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
     LINEARIZE_DATA_t a_in, x_out, a_out, tau_out;
-    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+    int underconstrained = len_m < len_n ? 1 : 0;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
     if(init_@geqri@(&params, len_m, len_n, 1)){  // allocate buffer
@@ -1980,7 +1988,7 @@ INIT_OUTER_LOOP_4
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         // need to conjugate-transpose params.A to get X
         init_linearize_data_exc(&x_out, len_n, len_m, stride_x_r, stride_x_c, len_m, 1);
-        init_linearize_data_ex(&a_out, len_n, len_m, stride_f_c, stride_f_r, len_m);
+        init_linearize_data_ex(&a_out, len_n, len_m, stride_f_r, stride_f_c, len_m);
         init_linearize_vdata(&tau_out, len_k, stride_tau);
 
         BEGIN_OUTER_LOOP_4
@@ -2026,7 +2034,7 @@ INIT_OUTER_LOOP_3
     int error_occurred = get_fp_invalid_and_clear();
     GEQRF_PARAMS_t params;
     LINEARIZE_DATA_t a_in, tau_in, x_out;
-    npy_intp underconstrained = len_m < len_n ? 1 : 0;
+    int underconstrained = len_m < len_n ? 1 : 0;
     len_k = npy_int_min(len_m, len_n);
 
     if(init_@geqri@(&params, len_m, len_n, 0)){  // allocate buffer
@@ -2040,11 +2048,7 @@ INIT_OUTER_LOOP_3
             linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
             linearize_@TYPE@_vec(params.T, args[1], &tau_in);
             // Solve least squares problem
-            if (underconstrained) {
-                call_@gelqi@(&params);
-            } else {
-                call_@geqri@(&params);
-            }
+            call_@geqri@_@gelqi@(&params, underconstrained);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);

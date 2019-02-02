@@ -83,13 +83,17 @@ PyDoc_STRVAR(lu_raw__doc__,
 "A: ndarray (...,M,N)\n"
 "    Matrix to be factored.\n\n"
 "Returns\n-------\n"
-"AF: ndarray (...,M,N)\n"
-"   LU factors of ``A``, with the nonzero elements of ``U`` above and on \n"
-"   the diagonal, nonzero elements of ``L`` below the diagonal. \n"
+"AF: ndarray (...,N,M)\n"
+"    Transposed matrix (Fortran order).\n"
+"   LU factors of ``A``, with the nonzero elements of ``U`` below and on \n"
+"   the diagonal, nonzero elements of ``L`` above the diagonal. \n"
 "   The diagonal elements of ``L``, which are all 1, are not stored."
 "IP: ndarray (...,K)\n"
 "   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``, ``K=min(M,N)``."
+"   are performed in order ``i=1,...,K``, ``K=min(M,N)``.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `lu_rawm` or `lu_rawn`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n"
 );
 
 /*******************
@@ -97,7 +101,7 @@ PyDoc_STRVAR(lu_raw__doc__,
 ********************/
 
 PyDoc_STRVAR(pivot__doc__,
-//"lu_solve(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n"
+//"pivot(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n"
 "Perform row pivoting.\n\n"
 "Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
 "If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
@@ -105,7 +109,7 @@ PyDoc_STRVAR(pivot__doc__,
 "Parameters\n-----------\n"
 "A: ndarray (...,M,N)\n"
 "    Matrix before pivoting.\n"
-"IP: ndarray[int] (...,N)\n"
+"IP: ndarray[int] (...,M)\n"
 "    Pivot indices from LU factoring, etc.\n\n"
 "Returns\n-------\n"
 "AP: ndarray (...,M,N)\n"
@@ -113,7 +117,7 @@ PyDoc_STRVAR(pivot__doc__,
 );
 
 PyDoc_STRVAR(rpivot__doc__,
-//"lu_solve(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n"
+//"pivot(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n"
 "Undo row pivoting.\n\n"
 "Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
 "If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
@@ -121,7 +125,7 @@ PyDoc_STRVAR(rpivot__doc__,
 "Parameters\n-----------\n"
 "AP: ndarray (...,M,N)\n"
 "    Pivoted matrix.\n"
-"IP: ndarray[int] (...,N)\n"
+"IP: ndarray[int] (...,M)\n"
 "    Pivot indices from LU factoring, etc.\n\n"
 "Returns\n-------\n"
 "A: ndarray (...,M,N)\n"
@@ -147,7 +151,7 @@ PyDoc_STRVAR(solve__doc__,
 "    Matrix of solution vectors.");
 
 PyDoc_STRVAR(rsolve__doc__,
-//"solve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"rsolve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
 "Solve reversed linear system.\n\n"
 "Solve the equation `A = XB` for `X`.\n\n"
 "Parameters\n-----------\n"
@@ -157,7 +161,8 @@ PyDoc_STRVAR(rsolve__doc__,
 "    Matrix of coefficients.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,NRHS,N)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors."
+);
 
 /********************
 *    Solve + LU     *
@@ -180,7 +185,13 @@ PyDoc_STRVAR(solve_lu__doc__,
 "AF: ndarray (...,N,N)\n"
 "    LU factors of ``A``.\n"
 "IP: ndarray[int] (...,N)\n"
-"    Pivot indices from LU factoring.");
+"    Pivot indices from LU factoring.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 PyDoc_STRVAR(rsolve_lu__doc__,
 //"rsolve_lu(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
@@ -199,7 +210,14 @@ PyDoc_STRVAR(rsolve_lu__doc__,
 "BF: ndarray (...,N,N)\n"
 "    LU factors of ``B``.\n"
 "IP: ndarray[int] (...,N)\n"
-"    Pivot indices from LU factoring.");
+"    Pivot indices from LU factoring.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `rsolve_lum` or `rsolve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
+
 
 /********************
 *   Solve from LU   *
@@ -209,7 +227,7 @@ PyDoc_STRVAR(lu_solve__doc__,
 //"lu_solve(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IPIV: ndarray)\n\n"
 "Solve linear system.\n\n"
 "Solve  equation ``AX = B`` for ``X``. \n"
-"This version uses the LU factors of ``A`` from previous use of ``(r)solve_f``.\n"
+"This version uses the LU factors of ``A`` from previous use of ``(r)solve_lu``.\n"
 "It is intended for use in binary operators.\n\n"
 "Parameters\n-----------\n"
 "AF: ndarray (...,N,N)\n"
@@ -220,13 +238,19 @@ PyDoc_STRVAR(lu_solve__doc__,
 "    Matrix of result vectors.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,N,NRHS)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 PyDoc_STRVAR(rlu_solve__doc__,
 //"rlu_rsolve(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
 "Solve reversed linear system.\n\n"
 "Solve the equation ``A = XB`` for ``X``.\n\n"
-"This version uses the LU factors of ``B`` from previous use of ``(r)solve_f``.\n"
+"This version uses the LU factors of ``B`` from previous use of ``(r)solve_lu``.\n"
 "It is intended for use in binary operators.\n\n"
 "Parameters\n-----------\n"
 "A: ndarray (...,NRHS,N)\n"
@@ -237,7 +261,13 @@ PyDoc_STRVAR(rlu_solve__doc__,
 "    Pivot indices from LU factoring.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,NRHS,N)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 /*************************
 *           INV          *

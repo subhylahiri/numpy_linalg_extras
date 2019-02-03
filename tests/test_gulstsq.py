@@ -321,7 +321,7 @@ class TestLstsqVal(TestLstsq):
         with self.subTest(msg='rlstsq(under)'):
             self.assertArrayAllClose(b @ self.x[sctype], self.v[sctype])
 
-    @utn.loop_test(attr_inds=np.s_[1::2])
+    @utn.loop_test()
     def test_lstsqqr_val(self, sctype):
         """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
         """
@@ -341,7 +341,7 @@ class TestLstsqVal(TestLstsq):
             with self.subTest('rqr_lstsq(under' + suffix):
                 self.assertArrayAllClose(b @ self.x[sctype], self.v[sctype])
 
-    @utn.loop_test(attr_inds=3)
+    @utn.loop_test()
     def test_rlstsqqr_val(self, sctype):
         """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
         """
@@ -362,7 +362,7 @@ class TestLstsqVal(TestLstsq):
                 self.assertArrayAllClose(self.xt[sctype] @ self.x[sctype] @ b,
                                          self.xt[sctype] @ self.z[sctype])
 
-    @utn.loop_test(attr_inds=3)
+    @utn.loop_test()
     def test_lstsqqrt_val(self, sctype):
         """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
         """
@@ -383,7 +383,7 @@ class TestLstsqVal(TestLstsq):
                 self.assertArrayAllClose(b @ self.xt[sctype] @ self.x[sctype],
                                          self.zt[sctype] @ self.x[sctype])
 
-    @utn.loop_test(attr_inds=3)
+    @utn.loop_test()
     def test_rlstsqqrt_val(self, sctype):
         """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
         """

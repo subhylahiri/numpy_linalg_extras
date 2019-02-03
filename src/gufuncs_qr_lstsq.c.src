@@ -512,15 +512,15 @@ typedef struct geqrf_params_struct
     void *W; /* WR is (N*B,) of base type, work for _ge{qr,lq}f or _orgqr,_ge{qr,lq}s*/
     void *BZ; /* BZ is (N-M,NC) of base type, zeroed for _gelqs */
 
-    fortran_int M;
-    fortran_int N;
-    fortran_int MN;
-    fortran_int K;
-    fortran_int NC;
-    fortran_int LDA;
-    fortran_int LDB;
-    fortran_int LW;
-    fortran_int INFO;
+    fortran_int M;      // rows
+    fortran_int N;      // cols
+    fortran_int MN;     // diff
+    fortran_int K;      // min
+    fortran_int NC;     // inner (qrf,lqf) or rhs (qrs,lqs)
+    fortran_int LDA;    // rows for storage of A
+    fortran_int LDB;    // rows for storage of B
+    fortran_int LW;     // workspace size
+    fortran_int INFO;   // error signal
 } GEQRF_PARAMS_t;
 
 /**begin repeat
@@ -1424,8 +1424,9 @@ init_@geqrs@(GEQRF_PARAMS_t *params,
     ldb = fortran_int_max(MNx, 1);
     safe_M = M;
     safe_N = N;
-    safe_MNx = MNx;
+    safe_NC = NC;
     safe_K = K;
+    safe_MNx = MNx;
 
     params->A = NULL;   // not needed for workspace query
     params->T = NULL;   // not needed for workspace query

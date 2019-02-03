@@ -58,7 +58,7 @@ class TestLU(utn.TestCaseNumpy):
             self.assertEqual(wd_ip.shape, (3, 1, 3))
         tl_f, tl_ip = gfl.lu_rawn(self.tall['d'])
         with self.subTest(msg="tall"):
-            self.assertEqual(tl_f.shape, (5, 2))
+            self.assertEqual(tl_f.shape, (2, 5))
             self.assertEqual(tl_ip.shape, (2,))
 
     @utn.loop_test()

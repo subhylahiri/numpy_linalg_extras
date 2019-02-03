@@ -410,7 +410,7 @@ typedef struct gesv_params_struct
 */
 
 // lu_signature = "(m,n)->(m,k),(k,n),(k)"
-// lu_raw_signature = "(m,n)->(m,n),(k)"
+// lu_raw_signature = "(m,n)->(n,m),(k)"
 
 /**************************************************
 * Calling BLAS/Lapack function _getrf             *
@@ -549,7 +549,7 @@ static void
 *         LU RAW        *
 *************************/
 
-// lu_raw_signature = "(m,n)->(m,n),(k)"
+// lu_raw_signature = "(m,n)->(n,m),(k)"
 
 static void
 @TYPE@_lu_raw(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -571,7 +571,7 @@ static void
     if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
-        init_linearize_data(&f_out, len_n, len_m, stride_f_c, stride_f_r);
+        init_linearize_data(&f_out, len_n, len_m, stride_f_r, stride_f_c);
         init_linearize_vdata(&ipiv_out, len_k, stride_ip);
 
         BEGIN_OUTER_LOOP_3
@@ -950,7 +950,7 @@ static void
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
-        init_linearize_data(&af_out, len_n, len_n, stride_af_c, stride_af_r);
+        init_linearize_data(&af_out, len_n, len_n, stride_af_r, stride_af_c);
         init_linearize_vdata(&ipiv_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_5
@@ -1045,7 +1045,7 @@ static void
 
     if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
         // initialise shape data
-        init_linearize_data(&a_in, len_n, len_n, stride_af_c, stride_af_r);
+        init_linearize_data(&a_in, len_n, len_n, stride_af_r, stride_af_c);
         init_linearize_vdata(&ipiv_in, len_n, stride_ip);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
@@ -1260,7 +1260,7 @@ INIT_OUTER_LOOP_4
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
-        init_linearize_data(&f_out, len_n, len_n, stride_f_c, stride_f_r);
+        init_linearize_data(&f_out, len_n, len_n, stride_f_r, stride_f_c);
         init_linearize_vdata(&ip_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_4
@@ -1304,7 +1304,7 @@ INIT_OUTER_LOOP_3
 
     if(init_@getri@(&params, len_n)){  // allocate buffer
         // initialise shape data
-        init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
+        init_linearize_data(&a_in, len_n, len_n, stride_a_r, stride_a_c);
         init_linearize_vdata(&ip_in, len_n, stride_ip);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
 
@@ -1392,9 +1392,9 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
         FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
     { "lu_n", "(m,n)->(m,n),(n,n),(n)", lu__doc__, 4, 1, 3,
         FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
-    { "lu_rawm", "(m,n)->(m,n),(m)", lu_raw__doc__, 4, 1, 2,
+    { "lu_rawm", "(m,n)->(n,m),(m)", lu_raw__doc__, 4, 1, 2,
         FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
-    { "lu_rawn", "(m,n)->(m,n),(n)", lu_raw__doc__, 4, 1, 2,
+    { "lu_rawn", "(m,n)->(n,m),(n)", lu_raw__doc__, 4, 1, 2,
         FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
     { "pivot", "(m,n),(k)->(m,n)", pivot__doc__, 4, 2, 1,
         FUNC_ARRAY_NAME(pivot), ufn_types_pivot_3 },

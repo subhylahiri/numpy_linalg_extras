@@ -1565,7 +1565,7 @@ INIT_OUTER_LOOP_5
         init_linearize_datac(&a_in, len_n, len_m, stride_a_c, stride_a_r, conj);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);
-        init_linearize_data_exc(&af_out, len_n, len_m, stride_af_r, stride_af_c, len_m, conj);
+        init_linearize_datac(&af_out, len_n, len_m, stride_af_r, stride_af_c, conj);
         init_linearize_vdatac(&tau_out, len_k, stride_tau, 0);
 
         BEGIN_OUTER_LOOP_5
@@ -1667,7 +1667,7 @@ INIT_OUTER_LOOP_4
     // }
     if(init_@geqrs@(&params, len_m, len_n, len_nrhs, 0)){ // allocate buffer
         // initialise shape data
-        init_linearize_data_exc(&a_in, len_n, len_m, stride_a_r, stride_a_c, len_m, conj);
+        init_linearize_datac(&a_in, len_n, len_m, stride_a_r, stride_a_c, conj);
         init_linearize_vdatac(&tau_in, len_k, stride_tau, 0);
         init_linearize_data_exc(&b_in, len_nrhs, len_m, stride_b_c, stride_b_r, len_mn, conj);
         init_linearize_data_exc(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r, len_mn, conj);

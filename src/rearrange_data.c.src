@@ -345,7 +345,7 @@ Copying lower triangular part of matrix from contiguous fortran to numpy
 
 This function does not fill the upper triangle with zeros, or set the diagonal.
 To do that, call zero_@TYPE@_matrix first. Unit diagonals can be set with
-eye_@TYPE@_matrix.
+eye_@TYPE@_matrix or delinearize_@TYPE@_diag.
 */
 void
 delinearize_@TYPE@_tril(void *dst_in,
@@ -390,6 +390,56 @@ delinearize_@TYPE@_tril(void *dst_in,
             }
             src += data->output_lead_dim;
             dst += data->row_strides/sizeof(@typ@);
+        }
+    }
+}
+
+/*
+Copying diagonal part of matrix from contiguous fortran to numpy
+*/
+void
+delinearize_@TYPE@_diag(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data)
+{
+   @typ@ *src = (@typ@ *) src_in;
+   @typ@ *dst = (@typ@ *) dst_in;
+
+   if (src) {
+        int i;
+        fortran_int columns = (fortran_int)data->columns;
+        fortran_int rows = (fortran_int)data->rows;
+        fortran_int len = fortran_int_min(columns, rows);
+        fortran_int column_strides =
+            (fortran_int)(data->column_strides/sizeof(@typ@));
+        fortran_int row_strides =
+            (fortran_int)(data->row_strides/sizeof(@typ@));
+        fortran_int dst_strides = column_strides + row_strides;
+        fortran_int src_strides = (fortran_int)(data->output_lead_dim + 1);
+
+        if (dst_strides > 0) {
+            FNAME(@copy@)(  &len,
+                            (void *)src, &src_strides,
+                            (void *)dst, &dst_strides);
+        }
+        else if (dst_strides < 0) {
+            /*
+            * BLAS _copy assumes dst points to the first element in memory.
+            * numpy points it at the first element of the array.
+            * We have to compensate.
+            */
+            FNAME(@copy@)(  &len,
+                            (void *)src, &src_strides,
+                            (void *)(dst + (len-1)*dst_strides),
+                            &dst_strides);
+        }
+        else {
+            /*
+            * Zero stride has undefined behavior in some BLAS
+            * implementations (e.g. OSX Accelerate), so do it
+            * manually
+            */
+            memcpy((void *)dst, (void *)(src + (len-1)*src_strides), sizeof(@typ@));
         }
     }
 }
@@ -617,9 +667,9 @@ nan_@TYPE@_vec(void *dst_in, const LINEARIZE_DATA_t* data)
 *************************/
 
 /*
-Copying upper triangular part matrices from contiguous fortran to numpy
+Copying upper/lower triangular part of matrices from contiguous fortran to numpy
 
-This function does fill the lower triangle with zeros.
+This function does fill the other triangle with zeros and copies the diagonal.
 */
 void
 delinearize_@TYPE@_trilu(void *dst_in,
@@ -630,6 +680,7 @@ delinearize_@TYPE@_trilu(void *dst_in,
     if (lower) {
         zero_@TYPE@_triu(dst_in, data);                     // Zero out L
         delinearize_@TYPE@_tril(dst_in, src_in, data);   // Copy triangular L from buffer
+        delinearize_@TYPE@_diag(dst_in, src_in, data);   // Copy diagonal of L from buffer
     } else {
         zero_@TYPE@_tril(dst_in, data);                     // Zero out R
         delinearize_@TYPE@_triu(dst_in, src_in, data);   // Copy triangular R from buffer

@@ -6,7 +6,7 @@ import numpy as np
 import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-from numpy_linalg import transpose, dagger
+from numpy_linalg import transpose, dagger, row, col, scalar
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
@@ -15,7 +15,7 @@ errstate = utn.errstate(invalid='raise')
 
 
 class TestQRPinv(utn.TestCaseNumpy):
-    """Testing gufuncs_lapack.qr_*, pinv, pinv_qr and qr_pinv
+    """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
     """
 
     def setUp(self):
@@ -25,6 +25,7 @@ class TestQRPinv(utn.TestCaseNumpy):
         self.wide = {}
         self.id_small = {}
         self.id_big = {}
+        # self.sctype = ['d']
         for sctype in self.sctype:
             x = np.random.randn(120, 10, 5, 16)
             y = np.random.randn(120, 10, 16, 5)
@@ -32,6 +33,11 @@ class TestQRPinv(utn.TestCaseNumpy):
             self.tall[sctype] = utn.asa(x.swapaxes(-2, -1), y, sctype)
             self.id_small[sctype] = np.eye(5, dtype=sctype)
             self.id_big[sctype] = np.eye(16, dtype=sctype)
+
+
+class TestQRPinvShape(TestQRPinv):
+    """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
+    """
 
     @errstate
     def test_qr_shape(self):
@@ -41,18 +47,49 @@ class TestQRPinv(utn.TestCaseNumpy):
             q, r = gfl.qr_m(self.wide['d'])
             self.assertEqual(q.shape, (120, 10, 5, 5))
             self.assertEqual(r.shape, (120, 10, 5, 16))
+            r = gfl.qr_rm(self.wide['d'])
+            self.assertEqual(r.shape, (120, 10, 5, 16))
+            with self.assertRaisesRegex(*utn.invalid_err):
+                gfl.qr_n(self.wide['d'])
         with self.subTest(msg='tall'):
             q, r = gfl.qr_n(self.tall['d'])
             self.assertEqual(q.shape, (120, 10, 16, 5))
             self.assertEqual(r.shape, (120, 10, 5, 5))
-            with self.assertRaisesRegex(*utn.invalid_err):
-                gfl.qr_n(self.wide['d'])
+            r = gfl.qr_rn(self.tall['d'])
+            self.assertEqual(r.shape, (120, 10, 5, 5))
         with self.subTest(msg='complete'):
             q, r = gfl.qr_m(self.tall['d'])
             self.assertEqual(q.shape, (120, 10, 16, 16))
             self.assertEqual(r.shape, (120, 10, 16, 5))
         with self.subTest(msg='raw'):
             h, tau = gfl.qr_rawn(self.tall['d'])
+            self.assertEqual(h.shape, (120, 10, 5, 16))
+            self.assertEqual(tau.shape, (120, 10, 5))
+
+    @errstate
+    def test_lq_shape(self):
+        """Check that lq_* all return arrays with the expected shape
+        """
+        with self.subTest(msg='wide'):
+            lo, q = gfl.lq_m(self.wide['d'])
+            self.assertEqual(lo.shape, (120, 10, 5, 5))
+            self.assertEqual(q.shape, (120, 10, 5, 16))
+            lo = gfl.lq_lm(self.wide['d'])
+            self.assertEqual(lo.shape, (120, 10, 5, 5))
+        with self.subTest(msg='tall'):
+            lo, q = gfl.lq_n(self.tall['d'])
+            self.assertEqual(lo.shape, (120, 10, 16, 5))
+            self.assertEqual(q.shape, (120, 10, 5, 5))
+            lo = gfl.lq_ln(self.tall['d'])
+            self.assertEqual(lo.shape, (120, 10, 16, 5))
+            with self.assertRaisesRegex(*utn.invalid_err):
+                gfl.lq_m(self.tall['d'])
+        with self.subTest(msg='complete'):
+            lo, q = gfl.lq_n(self.wide['d'])
+            self.assertEqual(lo.shape, (120, 10, 5, 16))
+            self.assertEqual(q.shape, (120, 10, 16, 16))
+        with self.subTest(msg='raw'):
+            h, tau = gfl.lq_rawn(self.tall['d'])
             self.assertEqual(h.shape, (120, 10, 5, 16))
             self.assertEqual(tau.shape, (120, 10, 5))
 
@@ -81,6 +118,11 @@ class TestQRPinv(utn.TestCaseNumpy):
         with self.subTest(msg='tall,-qr'):
             tall_p = gfl.qr_pinv(tall_f, tall_tau)
             self.assertEqual(tall_p.shape, (120, 10, 5, 16))
+
+
+class TestQR(TestQRPinv):
+    """Testing gufuncs_lapack.qr_*
+    """
 
     @utn.loop_test(msg='wide')
     def test_qr_wide(self, sctype):
@@ -145,16 +187,16 @@ class TestQRPinv(utn.TestCaseNumpy):
         n = rr.shape[-2]
         ht, tau = gfl.qr_rawm(self.wide[sctype])
         h = transpose(ht)
-        v = np.tril(h[..., :n], -1)
+        v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
+        vn = gfb.norm(row(tau) * v[..., :n], axis=-2)**2
         r = np.triu(h)
         with self.subTest(msg='raw_m'):
             self.assertArrayAllClose(r, rr)
             self.assertArrayAllClose(vn, 2 * tau.real)
-        for k in range(1, n+1):
-            vv = v[..., -k, None]
-            r -= tau[..., None, None, -k] * vv * (dagger(vv) @ r)
+        for k in range(n):
+            vv = v[..., n-k-1:n-k]
+            r -= scalar(tau[..., -k-1]) * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_m'):
             self.assertArrayAllClose(r, self.wide[sctype])
 
@@ -168,17 +210,126 @@ class TestQRPinv(utn.TestCaseNumpy):
         h = transpose(ht)
         v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
-        vn = (gfb.norm(v, axis=-2) * np.abs(tau))**2
+        vn = gfb.norm(row(tau) * v, axis=-2)**2
         r = np.triu(h)
         with self.subTest(msg='raw_n'):
-            self.assertArrayAllClose(r[..., :5, :], rr)
+            self.assertArrayAllClose(r[..., :n, :], rr)
             self.assertArrayAllClose(vn, 2 * tau.real)
-        for k in range(1, n+1):
-            vr = v[..., None, :, -k].conj() @ r
-            r -= tau[..., None, None, -k] * v[..., -k, None] * vr
+        for k in range(n):
+            vv = v[..., n-k-1:n-k]
+            r -= scalar(tau[..., -k-1]) * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_n'):
             self.assertArrayAllClose(r, self.tall[sctype])
 
+
+class TestLQ(TestQRPinv):
+    """Testing gufuncs_lapack.lq_*
+    """
+
+    @utn.loop_test(msg='wide')
+    def test_lq_wide(self, sctype):
+        """Check that lq_m returns the expected values
+        """
+        lo, q = gfl.lq_m(self.wide[sctype])
+        wide = lo @ q
+        eye = q @ dagger(q)
+        with self.subTest(msg='lq'):
+            self.assertArrayAllClose(wide, self.wide[sctype])
+        with self.subTest(msg='q q^T'):
+            self.assertArrayAllClose(self.id_small[sctype], eye)
+
+    @utn.loop_test(msg='tall')
+    def test_lq_tall(self, sctype):
+        """Check that lq_n returns the expected values on tall matrices
+        """
+        lo, q = gfl.lq_n(self.tall[sctype])
+        tall = lo @ q
+        eye = q @ dagger(q)
+        eyet = dagger(q) @ q
+        with self.subTest(msg='lq'):
+            self.assertArrayAllClose(tall, self.tall[sctype])
+        with self.subTest(msg='q q^T'):
+            self.assertArrayAllClose(self.id_small[sctype], eye)
+        with self.subTest(msg='q^T q'):
+            self.assertArrayAllClose(self.id_small[sctype], eyet)
+
+    # @unittest.skip('wrong size')
+    @utn.loop_test(msg='complete')
+    def test_lq_complete(self, sctype):
+        """Check that lq_n returns the expected values on wide matrices
+        """
+        lo, q = gfl.lq_n(self.wide[sctype])
+        wide = lo @ q
+        eye = q @ dagger(q)
+        eyet = dagger(q) @ q
+        with self.subTest(msg='lq'):
+            self.assertArrayAllClose(wide, self.wide[sctype])
+        with self.subTest(msg='q q^T'):
+            self.assertArrayAllClose(self.id_big[sctype], eye)
+        with self.subTest(msg='q^T q'):
+            self.assertArrayAllClose(self.id_big[sctype], eyet)
+
+    @utn.loop_test(msg='l')
+    def test_lq_l(self, sctype):
+        """Check that lq_lm, lq_ln return the expected values
+        """
+        with self.subTest(msg='l_m'):
+            lo = gfl.lq_lm(self.wide[sctype])
+            llo = gfl.lq_m(self.wide[sctype])[0]
+            self.assertArrayAllClose(lo, llo)
+        with self.subTest(msg='l_n'):
+            lo = gfl.lq_ln(self.tall[sctype])
+            llo = gfl.lq_n(self.tall[sctype])[0]
+            self.assertArrayAllClose(lo, llo)
+
+    @utn.loop_test(msg='rawm')
+    def test_lq_rawm(self, sctype):
+        """Check that lq_rawm returns the expected values
+        """
+        llo = gfl.lq_m(self.wide[sctype])[0]
+        n = llo.shape[-2]
+        ht, tau = gfl.lq_rawm(self.wide[sctype])
+        h = transpose(ht)
+        v = np.triu(h, 1)
+        v[(...,) + np.diag_indices(n)] = 1
+        vn = gfb.norm(col(tau) * v, axis=-1)**2
+        lo = np.tril(h)
+        with self.subTest(msg='raw_m'):
+            self.assertArrayAllClose(lo[..., :n], llo)
+        with self.subTest(msg='tau_m'):
+            self.assertArrayAllClose(vn, 2 * tau.real)
+        for k in range(n):
+            vv = v[..., n-k-1:n-k, :]
+            lo -= scalar(tau[..., -k-1].conj()) * (lo @ dagger(vv)) * vv
+        with self.subTest(msg='h_m'):
+            self.assertArrayAllClose(lo, self.wide[sctype])
+
+    @utn.loop_test(msg='rawn')
+    def test_lq_rawn(self, sctype):
+        """Check that lq_rawn returns the expected values
+        """
+        llo = gfl.lq_n(self.tall[sctype])[0]
+        n = llo.shape[-1]
+        ht, tau = gfl.lq_rawn(self.tall[sctype])
+        h = transpose(ht)
+        v = np.triu(h, 1)
+        v[(...,) + np.diag_indices(n)] = 1
+        vn = gfb.norm(col(tau) * v[..., :n, :], axis=-1)**2
+        lo = np.tril(h)
+        with self.subTest(msg='raw_n'):
+            self.assertArrayAllClose(lo, llo)
+        with self.subTest(msg='tau_n'):
+            self.assertArrayAllClose(vn, 2 * tau.real)
+        for k in range(n):
+            vv = v[..., n-k-1:n-k, :]
+            lo -= scalar(tau[..., -k-1].conj()) * (lo @ dagger(vv)) * vv
+        with self.subTest(msg='h_n'):
+            self.assertArrayAllClose(lo, self.tall[sctype])
+
+
+class TestPinv(TestQRPinv):
+    """Testing gufuncs_lapack.pinv, pinv_qr and qr_pinv
+    """
     @utn.loop_test(msg='pinv')
     def test_pinv_val(self, sctype):
         """Check that pinv gufuncs all return arrays with the expected values

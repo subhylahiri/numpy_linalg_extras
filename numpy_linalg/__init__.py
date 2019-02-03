@@ -25,14 +25,6 @@ invarray
     Does not actually invert the matrix unless it is explicitly called.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
-lnmatrix
-    Subclass of `lnarray` which swaps matrix/elementwise multiplication and
-    division from the right. Shouldn't be necessary given `lnarray`'s syntax.
-ldarray
-    `lnarray` subclass which overloads bitshift operators for matrix division.
-    One of several reasons why this is a bad idea is that bitshifting has lower
-    operator priority than division, so you will have to use parentheses often.
-    I think you're better off sticking with `lnarray`.
 
 Functions
 ---------
@@ -54,6 +46,10 @@ lu
     LU decomposition with broadcasting and subclass passing.
 qr
     QR decomposition with broadcasting and subclass passing.
+lq
+    LQ decomposition with broadcasting and subclass passing.
+lqr
+    For wide matrices LQ decomposition, otherwise QR decomposition.
 Also includes `gufuncs` for `matmul`, etc, and versions of most `numpy`array
 creation and manipulation routines and `wrappers` for converting the rest.
 

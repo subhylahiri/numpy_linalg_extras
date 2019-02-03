@@ -24,14 +24,14 @@ matldiv
     Matrix division from left.
 matrdiv
     Matrix division from right.
+lu
+    LU decomposition with broadcasting and subclass passing.
 qr
     QR decomposition with broadcasting and subclass passing.
 lq
     LQ decomposition with broadcasting and subclass passing.
 lqr
-    LQ or QR decomposition with broadcasting and subclass passing.
-lu
-    LU decomposition with broadcasting and subclass passing.
+    For wide matrices LQ decomposition, otherwise QR decomposition.
 """
 import typing as ty
 import numpy as np

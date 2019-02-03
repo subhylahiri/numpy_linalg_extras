@@ -48,6 +48,12 @@ qr_*
         n: #(rows) > #(columns).
         r: only return `R`.
         raw: return `H` and `tau`, from which `Q` and `R` can be computed.
+lq_*
+    LQ factorization in various forms - {m,n,lm,ln,rawm,rawn}.
+        m: #(rows) < #(columns).
+        n: #(rows) > #(columns).
+        l: only return `L`.
+        raw: return `H` and `tau`, from which `Q` and `L` can be computed.
 rtrue_tivide
     Reversed division (only useful to implement binary operators).
 

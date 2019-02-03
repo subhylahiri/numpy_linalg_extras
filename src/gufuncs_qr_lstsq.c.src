@@ -612,17 +612,17 @@ init_@geqrf@(GEQRF_PARAMS_t *params, npy_intp M_in, npy_intp N_in, npy_intp NC_i
     npy_uint8 *mem_buff = NULL;
     npy_uint8 *a, *b, *c;
     fortran_int M, N, NC, K, ld, LW, LWR, LWQ;
-    size_t safe_M, safe_NC, safe_K, safe_LW;
+    size_t safe_M, safe_N, safe_K, safe_LW;
     @ftyp@ work_size;
 
     M = (fortran_int)M_in;
     N = (fortran_int)N_in;
     NC = (fortran_int)NC_in;
     K = fortran_int_min(M, N);
-    ld = fortran_int_max(M, 1);
-    safe_M = M;
-    safe_NC = fortran_int_max(NC, N);
+    safe_M = fortran_int_max(M, NC);
+    safe_N = fortran_int_max(NC, N);
     safe_K = K;
+    ld = fortran_int_max(safe_M, 1);
 
     params->A = NULL;   // not needed for workspace query
     params->T = NULL;   // not needed for workspace query
@@ -656,14 +656,14 @@ init_@geqrf@(GEQRF_PARAMS_t *params, npy_intp M_in, npy_intp N_in, npy_intp NC_i
     LW = fortran_int_max(LWR, LWQ);     // enough workspace for either
     safe_LW = LW;
 
-    mem_buff = malloc(safe_M * safe_NC * sizeof(@ftyp@) // for A
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@) // for A/Q
                    + safe_K * sizeof(@ftyp@)            // for tau (T)
                    + safe_LW * sizeof(@ftyp@));         // for W
     if (!mem_buff) {
         goto error;
     }
     a = mem_buff;                               // store A at start of buffer
-    b = a + safe_M * safe_NC * sizeof(@ftyp@);  // store tau after space for A
+    b = a + safe_M * safe_N * sizeof(@ftyp@);  // store tau after space for A
     c = b + safe_K * sizeof(@ftyp@);            // store W after space for A,tau
 
     params->A = a;
@@ -738,26 +738,26 @@ INIT_OUTER_LOOP_3
     npy_intp len_q = do_lq ? len_n : len_m;     // outer dimension of Q
     npy_intp q_arg = 1 + do_lq;     // which element of args points to Q
     npy_intp rl_arg = 2 - do_lq;    // which element of args points to R/L
+    npy_intp lda = npy_int_max(len_m, len_nc);  // rows for storing A or Q
+
+    // initialise shape data
+    init_linearize_data_ex(&a_in, len_n, len_m, stride_a_n, stride_a_m, lda);
+    if (do_lq) {
+        init_linearize_data_ex(&rl_out, len_nc, len_m, stride_q_k, stride_q_m, lda);
+        init_linearize_data_ex(&q_out, len_n, len_nc, stride_r_n, stride_r_k, lda);
+    } else {
+        init_linearize_data_ex(&q_out, len_nc, len_m, stride_q_k, stride_q_m, lda);
+        init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, lda);
+    }
 
     if(len_q < len_nc) {//signature demands an overcomplete matrix for q, impossible when orthogonal.
         // PyErr_SetString(PyExc_ValueError, "qr_n can only be called when m >= n.");
         // PyErr_SetString(PyExc_ValueError, "lq_m can only be called when m <= n.");
         error_occurred = 1;
-        init_linearize_data(&q_out, len_nc, len_m, stride_q_k, stride_q_m);
-        init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
-        nan_@TYPE@_matrix(args[1], &q_out);
-        nan_@TYPE@_matrix(args[2], &rl_out);
+        nan_@TYPE@_matrix(args[q_arg], &q_out);
+        nan_@TYPE@_matrix(args[rl_arg], &rl_out);
     } else {
         if(init_@geqrf@(&params, len_m, len_n, len_nc, 1, do_lq)){  // allocate buffer
-            // initialise shape data
-            init_linearize_data(&a_in, len_n, len_m, stride_a_n, stride_a_m);
-            if (do_lq) {
-                init_linearize_data(&rl_out, len_nc, len_m, stride_q_k, stride_q_m);
-                init_linearize_data_ex(&q_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
-            } else {
-                init_linearize_data(&q_out, len_nc, len_m, stride_q_k, stride_q_m);
-                init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
-            }
 
             BEGIN_OUTER_LOOP
                 int not_ok;
@@ -781,6 +781,7 @@ INIT_OUTER_LOOP_3
 ************************/
 
 // qr_r_signature (m.n)->(k,n)
+// lq_l_signature (m.n)->(m,k)
 
 static void
 @TYPE@_qr_r(char **args, npy_intp *dimensions, npy_intp *steps, int square_m, int do_lq)
@@ -798,21 +799,21 @@ INIT_OUTER_LOOP_2
     npy_intp len_nc = square_m ? len_m : len_n; // central dimension
     npy_intp len_q = do_lq ? len_n : len_m;     // outer dimension of Q
 
+    // initialise shape data
+    init_linearize_data(&a_in, len_n, len_m, stride_a_n, stride_a_m);
+    if (do_lq) {
+        init_linearize_data_ex(&rl_out, len_nc, len_m, stride_r_n, stride_r_k, len_m);
+    } else {
+        init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
+    }
+
     if(len_q < len_nc) {//signature demands an overcomplete matrix for q, impossible when orthogonal.
         // PyErr_SetString(PyExc_ValueError, "qr_n can only be called when m >= n.");
         // PyErr_SetString(PyExc_ValueError, "lq_m can only be called when m <= n.");
         error_occurred = 1;
-        init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
         nan_@TYPE@_matrix(args[1], &rl_out);
     } else {
         if(init_@geqrf@(&params, len_m, len_n, len_nc, 0, do_lq)){ // allocate buffer
-            // initialise shape data
-            init_linearize_data(&a_in, len_n, len_m, stride_a_n, stride_a_m);
-            if (do_lq) {
-                init_linearize_data_ex(&rl_out, len_nc, len_m, stride_r_n, stride_r_k, len_m);
-            } else {
-                init_linearize_data_ex(&rl_out, len_n, len_nc, stride_r_n, stride_r_k, len_m);
-            }
 
             BEGIN_OUTER_LOOP
                 linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input to buffer
@@ -856,7 +857,7 @@ INIT_OUTER_LOOP_3
     if(len_q < len_nc) {//signature demands an overcomplete matrix for q, impossible when orthogonal.
         // PyErr_SetString(PyExc_ValueError, "qr_n can only be called when m >= n.");
         error_occurred = 1;
-        init_linearize_data_ex(&r_out, len_n, len_m, stride_r_m, stride_r_n, len_m);
+        init_linearize_data(&r_out, len_n, len_m, stride_r_m, stride_r_n);
         init_linearize_vdata(&tau_out, len_nc, stride_tau);
         nan_@TYPE@_matrix(args[1], &r_out);
         nan_@TYPE@_vec(args[2], &tau_out);

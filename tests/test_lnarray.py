@@ -60,6 +60,10 @@ class TestArray(TestNewClasses):
         self.assertIsInstance(la.lu(v)[0], np.ndarray)
         self.assertIsInstance(la.qr(w)[0], la.lnarray)
         self.assertIsInstance(la.qr(v)[0], np.ndarray)
+        self.assertIsInstance(la.lq(w)[0], la.lnarray)
+        self.assertIsInstance(la.lq(v)[0], np.ndarray)
+        self.assertIsInstance(la.lqr(w)[0], la.lnarray)
+        self.assertIsInstance(la.lqr(v)[0], np.ndarray)
         self.assertIsInstance(np.linalg.qr(w)[0], np.ndarray)
 
     def test_array_shape(self):

@@ -126,6 +126,62 @@ class TestShape(TestLinalg):
         self.assertEqual((h.ndim, tau.ndim), (2, 1))
         self.assertEqual(h.shape + tau.shape, (5, 3, 3))
 
+    def test_lq(self):
+        """Check that lq returns correct shape in each mode
+        """
+        lo, q = la.lq(self.x['d'], 'reduced')
+        self.assertEqual((lo.ndim, q.ndim), (3, 3))
+        self.assertEqual(lo.shape + q.shape, (2, 5, 3, 2, 3, 3))
+        lo, q = la.lq(self.y['d'], 'reduced')
+        self.assertEqual((lo.ndim, q.ndim), (2, 2))
+        self.assertEqual(lo.shape + q.shape, (3, 3, 3, 5))
+        lo, q = la.lq(self.x['d'], 'complete')
+        self.assertEqual((lo.ndim, q.ndim), (3, 3))
+        self.assertEqual(lo.shape + q.shape, (2, 5, 3, 2, 3, 3))
+        lo, q = la.lq(self.y['d'], 'complete')
+        self.assertEqual((lo.ndim, q.ndim), (2, 2))
+        self.assertEqual(lo.shape + q.shape, (3, 5, 5, 5))
+        lo = la.lq(self.x['d'], 'l')
+        self.assertEqual(lo.shape, (2, 5, 3))
+        lo = la.lq(self.y['d'], 'l')
+        self.assertEqual(lo.shape, (3, 3))
+        h, tau = la.lq(self.x['d'], 'raw')
+        self.assertEqual((h.ndim, tau.ndim), (3, 2))
+        self.assertEqual(h.shape + tau.shape, (2, 3, 5, 2, 3))
+        h, tau = la.lq(self.y['d'], 'raw')
+        self.assertEqual((h.ndim, tau.ndim), (2, 1))
+        self.assertEqual(h.shape + tau.shape, (5, 3, 3))
+
+    def test_lqr(self):
+        """Check that lqr returns correct shape in each mode
+        """
+        q, r = la.lqr(self.x['d'], 'reduced')
+        self.assertEqual((q.ndim, r.ndim), (3, 3))
+        self.assertEqual(q.shape + r.shape, (2, 5, 3, 2, 3, 3))
+        lo, q = la.lqr(self.y['d'], 'reduced')
+        self.assertEqual((lo.ndim, q.ndim), (2, 2))
+        self.assertEqual(lo.shape + q.shape, (3, 3, 3, 5))
+        q, r = la.lqr(self.x['d'], 'complete')
+        self.assertEqual((q.ndim, r.ndim), (3, 3))
+        self.assertEqual(q.shape + r.shape, (2, 5, 5, 2, 5, 3))
+        lo, q = la.lqr(self.y['d'], 'complete')
+        self.assertEqual((lo.ndim, q.ndim), (2, 2))
+        self.assertEqual(lo.shape + q.shape, (3, 5, 5, 5))
+        r = la.lqr(self.x['d'], 'l')
+        self.assertEqual(r.shape, (2, 3, 3))
+        lo = la.lqr(self.y['d'], 'l')
+        self.assertEqual(lo.shape, (3, 3))
+        r = la.lqr(self.x['d'], 'r')
+        self.assertEqual(r.shape, (2, 3, 3))
+        lo = la.lqr(self.y['d'], 'r')
+        self.assertEqual(lo.shape, (3, 3))
+        h, tau = la.lqr(self.x['d'], 'raw')
+        self.assertEqual((h.ndim, tau.ndim), (3, 2))
+        self.assertEqual(h.shape + tau.shape, (2, 3, 5, 2, 3))
+        h, tau = la.lqr(self.y['d'], 'raw')
+        self.assertEqual((h.ndim, tau.ndim), (2, 1))
+        self.assertEqual(h.shape + tau.shape, (5, 3, 3))
+
     def test_lu(self):
         """Check that lu returns correct shape in each mode
         """
@@ -229,6 +285,44 @@ class TestValue(TestLinalg):
         r = la.qr(self.y[sctype], 'r')
         h, tau = la.qr(self.y[sctype], 'raw')
         self.assertArrayAllClose(r, np.triu(la.transpose(h)))
+
+    @utn.loop_test()
+    def test_lq(self, sctype):
+        """Check that lq returns correct value in each mode
+        """
+        lo, q = la.lq(self.x[sctype], 'reduced')
+        self.assertArrayAllClose(lo @ q, self.x[sctype])
+        lo, q = la.lq(self.y[sctype], 'reduced')
+        self.assertArrayAllClose(lo @ q, self.y[sctype])
+        lo, q = la.lq(self.x[sctype], 'complete')
+        self.assertArrayAllClose(lo @ q, self.x[sctype])
+        lo, q = la.lq(self.y[sctype], 'complete')
+        self.assertArrayAllClose(lo @ q, self.y[sctype])
+        lo = la.lq(self.x[sctype], 'l')
+        h, tau = la.lq(self.x[sctype], 'raw')
+        self.assertArrayAllClose(lo, np.tril(la.transpose(h)))
+        lo = la.lq(self.y[sctype], 'l')
+        h, tau = la.lq(self.y[sctype], 'raw')
+        self.assertArrayAllClose(lo, np.tril(la.transpose(h))[..., :3])
+
+    @utn.loop_test()
+    def test_lqr(self, sctype):
+        """Check that lqr returns correct value in each mode
+        """
+        q, r = la.lqr(self.x[sctype], 'reduced')
+        self.assertArrayAllClose(q @ r, self.x[sctype])
+        lo, q = la.lqr(self.y[sctype], 'reduced')
+        self.assertArrayAllClose(lo @ q, self.y[sctype])
+        q, r = la.lqr(self.x[sctype], 'complete')
+        self.assertArrayAllClose(q @ r, self.x[sctype])
+        lo, q = la.lqr(self.y[sctype], 'complete')
+        self.assertArrayAllClose(lo @ q, self.y[sctype])
+        r = la.lqr(self.x[sctype], 'r')
+        h, tau = la.lqr(self.x[sctype], 'raw')
+        self.assertArrayAllClose(r, np.triu(la.transpose(h))[:, :3])
+        lo = la.lqr(self.y[sctype], 'r')
+        h, tau = la.lqr(self.y[sctype], 'raw')
+        self.assertArrayAllClose(lo, np.tril(la.transpose(h))[..., :3])
 
     @utn.loop_test()
     def test_lu(self, sctype):

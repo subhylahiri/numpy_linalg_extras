@@ -70,7 +70,7 @@ Examples
 """
 
 from ._lnarray import lnarray, pinvarray, invarray
-from ._linalg import (transpose, dagger, col, row, scalar, qr, lu,
+from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
                       matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv)
 from .gufuncs import norm
 from . import gufuncs
@@ -84,5 +84,5 @@ assert gufuncs
 assert wrappers
 assert norm
 assert all((lnarray, pinvarray, invarray))
-assert all((transpose, dagger, col, row, scalar, qr, lu, matmul, solve, rsolve,
-            lstsq, rlstsq, matldiv, matrdiv))
+assert all((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
+            matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))

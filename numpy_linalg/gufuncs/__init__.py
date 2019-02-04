@@ -48,6 +48,12 @@ qr_*
         n: #(rows) > #(columns).
         r: only return `R`.
         raw: return `H` and `tau`, from which `Q` and `R` can be computed.
+lq_*
+    LQ factorization in various forms - {m,n,lm,ln,rawm,rawn}.
+        m: #(rows) < #(columns).
+        n: #(rows) > #(columns).
+        l: only return `L`.
+        raw: return `H` and `tau`, from which `Q` and `L` can be computed.
 rtrue_tivide
     Reversed division (only useful to implement binary operators).
 
@@ -105,6 +111,7 @@ from ._gufuncs_lu_solve import (lu_m, lu_n, lu_rawm, lu_rawn, solve, rsolve,
                                 solve_lu, rsolve_lu, lu_solve, rlu_solve,
                                 pivot, rpivot)
 from ._gufuncs_qr_lstsq import (qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
+                                lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,
                                 lstsq, rlstsq, lstsq_qrm, lstsq_qrn,
                                 rlstsq_qrm, rlstsq_qrn, qr_lstsq, rqr_lstsq,
                                 pinv, pinv_qrm, pinv_qrn, qr_pinv)
@@ -114,6 +121,7 @@ assert pivot
 assert rpivot
 assert any((lu_m, lu_n, lu_rawm, lu_rawn))
 assert any((qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn))
+assert any((lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn))
 assert any((pinv, pinv_qrm, pinv_qrn, qr_pinv))
 # =============================================================================
 # Error handling

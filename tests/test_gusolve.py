@@ -54,11 +54,11 @@ class TestLU(utn.TestCaseNumpy):
             self.assertEqual(sq_ip.shape, (2, 5))
         wd_f, wd_ip = gfl.lu_rawm(self.wide['d'])
         with self.subTest(msg="wide"):
-            self.assertEqual(wd_f.shape, (3, 1, 3, 6))
+            self.assertEqual(wd_f.shape, (3, 1, 6, 3))
             self.assertEqual(wd_ip.shape, (3, 1, 3))
         tl_f, tl_ip = gfl.lu_rawn(self.tall['d'])
         with self.subTest(msg="tall"):
-            self.assertEqual(tl_f.shape, (5, 2))
+            self.assertEqual(tl_f.shape, (2, 5))
             self.assertEqual(tl_ip.shape, (2,))
 
     @utn.loop_test()
@@ -106,6 +106,7 @@ class TestLU(utn.TestCaseNumpy):
         """Test values of raw LU"""
         sq_l, sq_u, sq_ip0 = gfl.lu_m(self.square[sctype])
         sq_f, sq_ip = gfl.lu_rawm(self.square[sctype])
+        sq_f = transpose(sq_f)
         linds = (...,) + np.tril_indices(5, -1)
         uinds = (...,) + np.triu_indices(5, 0)
         with self.subTest(msg="square"):
@@ -114,6 +115,7 @@ class TestLU(utn.TestCaseNumpy):
             self.assertEqual(sq_ip, sq_ip0)
         wd_l, wd_u, wd_ip0 = gfl.lu_m(self.wide[sctype])
         wd_f, wd_ip = gfl.lu_rawm(self.wide[sctype])
+        wd_f = transpose(wd_f)
         linds = (...,) + np.tril_indices(3, -1, 6)
         uinds = (...,) + np.triu_indices(3, 0, 6)
         with self.subTest(msg="wide"):
@@ -122,6 +124,7 @@ class TestLU(utn.TestCaseNumpy):
             self.assertEqual(wd_ip, wd_ip0)
         tl_l, tl_u, tl_ip0 = gfl.lu_n(self.tall[sctype])
         tl_f, tl_ip = gfl.lu_rawn(self.tall[sctype])
+        tl_f = transpose(tl_f)
         linds = (...,) + np.tril_indices(5, -1, 2)
         uinds = (...,) + np.triu_indices(5, 0, 2)
         with self.subTest(msg="tall"):

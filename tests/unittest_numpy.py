@@ -201,16 +201,16 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
     shape = np.broadcast(x, y).shape
     thresh = atol + rtol * np.abs(np.broadcast_to(y, shape))
     mismatch = np.abs(x - y)
-    mis_frac = mismatch / thresh
+    mis_frac = np.log(mismatch) - np.log(thresh)
     ind = np.unravel_index(np.argmax(mis_frac), mis_frac.shape)
-    formatter = 'Should be zero: {:.2g}\nor: {:.2g} = {:.2g} * {:.1f} at {}'
+    formatter = 'Should be zero: {:.2g}\nor: {:.2g} = {:.2g} * 1e{:.1f} at {}'
     if equal_nan:
         worst = np.nanmax(mismatch)
     else:
         worst = np.amax(mismatch)
 
     return formatter.format(worst, mismatch[ind], thresh[ind],
-                            mis_frac[ind], ind)
+                            mis_frac[ind] / np.log(10), ind)
 
 
 cmplx = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,

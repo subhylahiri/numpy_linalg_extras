@@ -24,10 +24,14 @@ matldiv
     Matrix division from left.
 matrdiv
     Matrix division from right.
-qr
-    QR decomposition with broadcasting and subclass passing.
 lu
     LU decomposition with broadcasting and subclass passing.
+qr
+    QR decomposition with broadcasting and subclass passing.
+lq
+    LQ decomposition with broadcasting and subclass passing.
+lqr
+    For wide matrices LQ decomposition, otherwise QR decomposition.
 """
 import typing as ty
 import numpy as np
@@ -49,6 +53,8 @@ __all__ = [
     'matldiv',
     'matrdiv',
     'qr',
+    'lq',
+    'lqr',
     'lu',
 ]
 
@@ -320,10 +326,10 @@ def qr(x: np.ndarray, mode: str = 'reduced', *args,
     A: ndarray (...,M,N)
         Matrix to be factored.
     mode: str
-        chosen from:
-        **reduced** - default, use minimum inner dimensionality ``K=min(M,N)``,
+        Case insensitive, chosen from:
+        **reduced** - default, use inner dimensionality ``K=min(M,N)``,
         **complete** - use inner dimensionality ``K=M``, for square `Q`,
-        **r** - return `R` only,
+        **r** or **R** - return `R` only,
         **raw** - return `H,tau`, which determine `Q` and `R` (see below).
 
     Returns
@@ -333,20 +339,110 @@ def qr(x: np.ndarray, mode: str = 'reduced', *args,
     R: ndarray (...,K,N). Modes: `reduced, complete, r`.
         Matrix with zeros below the diagonal.
     H: ndarray (...,N,M). Modes: `raw`.
-        Transpose of matrix for use in Fortran. Before transpose, it contained
-        the following information:
-            On & super-diagonal: non-zero part of `R`.
-            Sub-diagonal: lower part of Householder reflectors `v`, in columns.
+        Transposed matrix (Fortran order). It contains the following:
+            On & below diagonal: non-zero part of `R`.
+            Above diagonal: Householder reflectors `v` in rows.
     tau: ndarray (...,K,). Modes: `raw`.
         Scaling factors for Householder reflectors. The unit normal to the
         reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
     """
-    if mode not in qr_modes.keys():
+    if mode.lower() not in qr_modes.keys():
         raise ValueError('Modes known to qr: reduced, complete, r, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = qr_modes[mode][x.shape[-2] > x.shape[-1]]
+    ufunc = qr_modes[mode.lower()][x.shape[-2] > x.shape[-1]]
     gf.make_errobj("QR failed: rank deficient?", kwds)
     return ufunc(x, *args, **kwds)
+
+
+lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
+            'complete': (gf.lq_n, gf.lq_n),
+            'l': (gf.lq_lm, gf.lq_ln),
+            'raw': (gf.lq_rawm, gf.lq_rawn)}
+
+
+def lq(x: np.ndarray, mode: str = 'reduced', *args,
+       **kwds) -> ty.Tuple[np.ndarray, ...]:
+    """LQ decomposition.
+
+    Factor a matrix as `A = LQ` with `Q` orthogonal and `L` lower-triangular.
+    `K = min(M,N)`, except for mode `complete`, where `K = N`.
+
+    Parameters
+    -----------
+    A: ndarray (...,M,N)
+        Matrix to be factored.
+    mode: str
+        Case insensitive, chosen from:
+        **reduced** - default, use inner dimensionality ``K=min(M,N)``,
+        **complete** - use inner dimensionality ``K=N``, for square `Q`,
+        **l** or **L** - return `L` only,
+        **raw** - return `H,tau`, which determine `Q` and `L` (see below).
+
+    Returns
+    -------
+    L: ndarray (...,M,K). Modes: `reduced, complete, l`.
+        Matrix with zeros above the diagonal.
+    Q: ndarray (...,K,N). Modes: `reduced, complete`.
+        Matrix with orthonormal rows.
+    H: ndarray (...,N,M). Modes: `raw`.
+        Transposed matrix (Fortran order). It contains the following:
+            On & above diagonal: non-zero part of `L`.
+            Below diagonal: Householder reflectors `v*` in columns (conjugate).
+    tau: ndarray (...,K,). Modes: `raw`.
+        Scaling factors for Householder reflectors. The unit normal to the
+        reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
+    """
+    if mode.lower() not in lq_modes.keys():
+        raise ValueError('Modes known to lq: reduced, complete, l, raw.\n'
+                         + 'Unknown mode: ' + mode)
+    ufunc = lq_modes[mode.lower()][x.shape[-2] > x.shape[-1]]
+    gf.make_errobj("LQ failed: rank deficient?", kwds)
+    return ufunc(x, *args, **kwds)
+
+
+def lqr(x: np.ndarray, mode: str = 'reduced', *args,
+        **kwds) -> ty.Tuple[np.ndarray, ...]:
+    """LQ/QR decomposition.
+
+    Factor a matrix as `A = LQ` or `A = QR` with `Q` orthogonal,
+    `L` lower-triangular or `R` upper-triangular. Uses LQ decomposition for
+    wide matrices or QR decomposition for tall and square matrices.
+    `K = min(M,N)`, except for mode `complete`, where `K = max(M,N)`.
+
+    Parameters
+    -----------
+    A: ndarray (...,M,N)
+        Matrix to be factored.
+    mode: str (default = `reduced`)
+        Case insensitive, chosen from:
+        **reduced** - use inner dimensionality ``K=min(M,N)`` for square `L/R`,
+        **complete** - use inner dimensionality ``K=max(M,N)`` for square `Q`,
+        **l**, **L**, **r** or **R** - return `L/R` only (square),
+        **raw** - return `H,tau`, which determine `Q` and `L/R` (see below).
+
+    Returns
+    -------
+    L: ndarray (...,M,K). Modes: `reduced, complete, l, r`. M < N.
+        Matrix with zeros above the diagonal.
+    Q: ndarray, `reduced` mode: (...,M,N), `complete` mode:  (...,K,K).
+        Matrix with orthonormal rows.
+    R: ndarray (...,K,N). Modes: `reduced, complete, l, r`. M >= N.
+        Matrix with zeros below the diagonal.
+    H: ndarray (...,N,M). Modes: `raw`.
+        Transposed matrix (Fortran order). It contains the following:
+            On & above/below diagonal: non-zero part of `L/R`.
+            Below/above diagonal: Householder reflectors `v*` or `v`.
+    tau: ndarray (...,K,). Modes: `raw`.
+        Scaling factors for Householder reflectors. The unit normal to the
+        reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
+    """
+    if x.shape[-2] < x.shape[-1]:
+        if mode.lower() == 'r':
+            return lq(x, 'l', *args, **kwds)
+        return lq(x, mode, *args, **kwds)
+    if mode.lower() == 'l':
+        return qr(x, 'r', *args, **kwds)
+    return qr(x, mode, *args, **kwds)
 
 
 lu_modes = {'separate': (gf.lu_m, gf.lu_n),
@@ -376,10 +472,10 @@ def lu(x: np.ndarray, mode: str = 'separate', *args,
         Matrix with zeros above the diagonal and ones on the diagonal.
     U: ndarray (...,K,N). Modes: `separate`.
         Matrix with zeros below the diagonal.
-    AF: ndarray (...,M,N). Modes: `raw`.
-        Raw matrix output from Lapack in Fortran.
-            On & super-diagonal: non-zero part of `U`.
-            Sub-diagonal: non-zero part of `L`, excluding diagonal.
+    AF: ndarray (...,N,M). Modes: `raw`.
+        Raw matrix output from Lapack, transposed (Fortran order).
+            On & above diagonal: non-zero part of `U`.
+            Below diagonal: non-zero part of `L`, excluding diagonal.
     ipiv: ndarray (...,K,). Modes: `separate, raw`.
         Pivot indices
     """

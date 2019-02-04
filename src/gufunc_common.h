@@ -320,7 +320,12 @@ static void init_constants(void)
 *****************************************************************************
 */
 /* For the 'data' argument for ufunc creation */
-static void *null_data_array[] = { (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL };
+static void *null_data_array[] = {
+    (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL,
+    (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL,
+    (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL,
+    (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL, (void *)NULL,
+};
 
 /* For the 'types' argument for ufunc creation */
 static char ufn_types_2_2[] = { NPY_FLOAT, NPY_FLOAT,

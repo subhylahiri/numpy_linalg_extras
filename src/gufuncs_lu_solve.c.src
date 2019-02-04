@@ -83,13 +83,17 @@ PyDoc_STRVAR(lu_raw__doc__,
 "A: ndarray (...,M,N)\n"
 "    Matrix to be factored.\n\n"
 "Returns\n-------\n"
-"AF: ndarray (...,M,N)\n"
-"   LU factors of ``A``, with the nonzero elements of ``U`` above and on \n"
-"   the diagonal, nonzero elements of ``L`` below the diagonal. \n"
+"AF: ndarray (...,N,M)\n"
+"    Transposed matrix (Fortran order).\n"
+"   LU factors of ``A``, with the nonzero elements of ``U`` below and on \n"
+"   the diagonal, nonzero elements of ``L`` above the diagonal. \n"
 "   The diagonal elements of ``L``, which are all 1, are not stored."
 "IP: ndarray (...,K)\n"
 "   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``, ``K=min(M,N)``."
+"   are performed in order ``i=1,...,K``, ``K=min(M,N)``.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `lu_rawm` or `lu_rawn`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n"
 );
 
 /*******************
@@ -97,7 +101,7 @@ PyDoc_STRVAR(lu_raw__doc__,
 ********************/
 
 PyDoc_STRVAR(pivot__doc__,
-//"lu_solve(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n"
+//"pivot(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n"
 "Perform row pivoting.\n\n"
 "Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
 "If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
@@ -105,7 +109,7 @@ PyDoc_STRVAR(pivot__doc__,
 "Parameters\n-----------\n"
 "A: ndarray (...,M,N)\n"
 "    Matrix before pivoting.\n"
-"IP: ndarray[int] (...,N)\n"
+"IP: ndarray[int] (...,M)\n"
 "    Pivot indices from LU factoring, etc.\n\n"
 "Returns\n-------\n"
 "AP: ndarray (...,M,N)\n"
@@ -113,7 +117,7 @@ PyDoc_STRVAR(pivot__doc__,
 );
 
 PyDoc_STRVAR(rpivot__doc__,
-//"lu_solve(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n"
+//"pivot(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n"
 "Undo row pivoting.\n\n"
 "Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
 "If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
@@ -121,7 +125,7 @@ PyDoc_STRVAR(rpivot__doc__,
 "Parameters\n-----------\n"
 "AP: ndarray (...,M,N)\n"
 "    Pivoted matrix.\n"
-"IP: ndarray[int] (...,N)\n"
+"IP: ndarray[int] (...,M)\n"
 "    Pivot indices from LU factoring, etc.\n\n"
 "Returns\n-------\n"
 "A: ndarray (...,M,N)\n"
@@ -147,7 +151,7 @@ PyDoc_STRVAR(solve__doc__,
 "    Matrix of solution vectors.");
 
 PyDoc_STRVAR(rsolve__doc__,
-//"solve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+//"rsolve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
 "Solve reversed linear system.\n\n"
 "Solve the equation `A = XB` for `X`.\n\n"
 "Parameters\n-----------\n"
@@ -157,7 +161,8 @@ PyDoc_STRVAR(rsolve__doc__,
 "    Matrix of coefficients.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,NRHS,N)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors."
+);
 
 /********************
 *    Solve + LU     *
@@ -180,7 +185,13 @@ PyDoc_STRVAR(solve_lu__doc__,
 "AF: ndarray (...,N,N)\n"
 "    LU factors of ``A``.\n"
 "IP: ndarray[int] (...,N)\n"
-"    Pivot indices from LU factoring.");
+"    Pivot indices from LU factoring.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 PyDoc_STRVAR(rsolve_lu__doc__,
 //"rsolve_lu(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
@@ -199,7 +210,14 @@ PyDoc_STRVAR(rsolve_lu__doc__,
 "BF: ndarray (...,N,N)\n"
 "    LU factors of ``B``.\n"
 "IP: ndarray[int] (...,N)\n"
-"    Pivot indices from LU factoring.");
+"    Pivot indices from LU factoring.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `rsolve_lum` or `rsolve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
+
 
 /********************
 *   Solve from LU   *
@@ -209,7 +227,7 @@ PyDoc_STRVAR(lu_solve__doc__,
 //"lu_solve(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IPIV: ndarray)\n\n"
 "Solve linear system.\n\n"
 "Solve  equation ``AX = B`` for ``X``. \n"
-"This version uses the LU factors of ``A`` from previous use of ``(r)solve_f``.\n"
+"This version uses the LU factors of ``A`` from previous use of ``(r)solve_lu``.\n"
 "It is intended for use in binary operators.\n\n"
 "Parameters\n-----------\n"
 "AF: ndarray (...,N,N)\n"
@@ -220,13 +238,19 @@ PyDoc_STRVAR(lu_solve__doc__,
 "    Matrix of result vectors.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,N,NRHS)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 PyDoc_STRVAR(rlu_solve__doc__,
 //"rlu_rsolve(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
 "Solve reversed linear system.\n\n"
 "Solve the equation ``A = XB`` for ``X``.\n\n"
-"This version uses the LU factors of ``B`` from previous use of ``(r)solve_f``.\n"
+"This version uses the LU factors of ``B`` from previous use of ``(r)solve_lu``.\n"
 "It is intended for use in binary operators.\n\n"
 "Parameters\n-----------\n"
 "A: ndarray (...,NRHS,N)\n"
@@ -237,7 +261,13 @@ PyDoc_STRVAR(rlu_solve__doc__,
 "    Pivot indices from LU factoring.\n\n"
 "Returns\n-------\n"
 "X: ndarray (...,NRHS,N)\n"
-"    Matrix of solution vectors.");
+"    Matrix of solution vectors.\n\n"
+"Notes\n-----\n"
+"Nothing will fail if you make the wrong choice of `solve_lum` or `solve_lun`.\n"
+"You will merely waste memory from keeping unused elements of `IP`.\n\n"
+"See Also\n--------\n"
+"lu in 'raw' mode."
+);
 
 /*************************
 *           INV          *
@@ -380,7 +410,7 @@ typedef struct gesv_params_struct
 */
 
 // lu_signature = "(m,n)->(m,k),(k,n),(k)"
-// lu_raw_signature = "(m,n)->(m,n),(k)"
+// lu_raw_signature = "(m,n)->(n,m),(k)"
 
 /**************************************************
 * Calling BLAS/Lapack function _getrf             *
@@ -519,7 +549,7 @@ static void
 *         LU RAW        *
 *************************/
 
-// lu_raw_signature = "(m,n)->(m,n),(k)"
+// lu_raw_signature = "(m,n)->(n,m),(k)"
 
 static void
 @TYPE@_lu_raw(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -541,7 +571,7 @@ static void
     if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
-        init_linearize_data(&f_out, len_n, len_m, stride_f_c, stride_f_r);
+        init_linearize_data(&f_out, len_n, len_m, stride_f_r, stride_f_c);
         init_linearize_vdata(&ipiv_out, len_k, stride_ip);
 
         BEGIN_OUTER_LOOP_3
@@ -920,7 +950,7 @@ static void
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
-        init_linearize_data(&af_out, len_n, len_n, stride_af_c, stride_af_r);
+        init_linearize_data(&af_out, len_n, len_n, stride_af_r, stride_af_c);
         init_linearize_vdata(&ipiv_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_5
@@ -1015,7 +1045,7 @@ static void
 
     if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
         // initialise shape data
-        init_linearize_data(&a_in, len_n, len_n, stride_af_c, stride_af_r);
+        init_linearize_data(&a_in, len_n, len_n, stride_af_r, stride_af_c);
         init_linearize_vdata(&ipiv_in, len_n, stride_ip);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
@@ -1230,7 +1260,7 @@ INIT_OUTER_LOOP_4
         // initialise shape data
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
-        init_linearize_data(&f_out, len_n, len_n, stride_f_c, stride_f_r);
+        init_linearize_data(&f_out, len_n, len_n, stride_f_r, stride_f_c);
         init_linearize_vdata(&ip_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_4
@@ -1274,7 +1304,7 @@ INIT_OUTER_LOOP_3
 
     if(init_@getri@(&params, len_n)){  // allocate buffer
         // initialise shape data
-        init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
+        init_linearize_data(&a_in, len_n, len_n, stride_a_r, stride_a_c);
         init_linearize_vdata(&ip_in, len_n, stride_ip);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
 
@@ -1362,9 +1392,9 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
         FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
     { "lu_n", "(m,n)->(m,n),(n,n),(n)", lu__doc__, 4, 1, 3,
         FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
-    { "lu_rawm", "(m,n)->(m,n),(m)", lu_raw__doc__, 4, 1, 2,
+    { "lu_rawm", "(m,n)->(n,m),(m)", lu_raw__doc__, 4, 1, 2,
         FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
-    { "lu_rawn", "(m,n)->(m,n),(n)", lu_raw__doc__, 4, 1, 2,
+    { "lu_rawn", "(m,n)->(n,m),(n)", lu_raw__doc__, 4, 1, 2,
         FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
     { "pivot", "(m,n),(k)->(m,n)", pivot__doc__, 4, 2, 1,
         FUNC_ARRAY_NAME(pivot), ufn_types_pivot_3 },

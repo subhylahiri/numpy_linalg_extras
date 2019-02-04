@@ -77,7 +77,7 @@ In each case, this wheel reinvention was done for one of the following reasons:
 1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
 rely on it.
-1. I needed a `gufunc` version of `lstq` that doesn't require an `rcond` input
+1. I needed a `gufunc` version of `lstsq` that doesn't require an `rcond` input
 and doesn't return any  diagnostic information.
 1. Completeness (e.g. `inv`).
 
@@ -158,6 +158,10 @@ reasons:
 * `qr`:  
     QR decomposition with broadcasting and subclass passing. Does not implement
     the deprecated modes of `numpy.linalg.qr`.
+* `lq`:  
+    LQ decomposition with broadcasting and subclass passing.
+* `lqr`:  
+    For wide matrices LQ decomposition, otherwise QR decomposition.
 
 The following operations will do the right thing, but may be better avoided:
 ```python
@@ -179,6 +183,7 @@ The following are not defined:
 >>> lstsq(lnarray, pinvarray)
 >>> rlstsq(pinvarray, lnarray)
 ```
+Combining `invarray` and `pinvarray` will either fail, or produce weird results
 
 ## GUfuncs
 
@@ -209,6 +214,13 @@ The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.qr_rawm`:  
 * `gufuncs.qr_rawn`:  
     Implement `qr` in `raw` mode.
+* `gufuncs.lq_m`:  
+* `gufuncs.lq_n`:  
+* `gufuncs.lq_rm`:  
+* `gufuncs.lq_rn`:  
+* `gufuncs.lq_rawm`:  
+* `gufuncs.lq_rawn`:  
+    Implement `lq`.
 * `gufuncs.pivot`:  
 * `gufuncs.rpivot`:  
     Perform row pivots with the output of `lu_*`.
@@ -226,12 +238,18 @@ The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.qr_lstsq`:  
 * `gufuncs.rqr_lstsq`:  
     Use QR decomposition in `raw` form from previous use.
-* `pinv`:  
+* `gufuncs.inv`:  
+    Matrix inverse.
+* `gufuncs.inv_lu`:  
+    Also return LU decomposition in `raw` form for future use.
+* `gufuncs.lu_inv`:  
+    Use LU decomposition in `raw` form from previous use.
+* `gufuncs.pinv`:  
     Moore-Penrose pseudoinverse.
-* `pinv_qrm`:  
-* `pinv_qrn`:  
+* `gufuncs.pinv_qrm`:  
+* `gufuncs.pinv_qrn`:  
     Also return QR decomposition in `raw` form for future use.
-* `qr_pinv`:  
+* `gufuncs.qr_pinv`:  
     Use QR decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
 * `gufuncs.rtrue_tivide`:  

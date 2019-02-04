@@ -50,6 +50,7 @@ DECLARE_FUNC_LINEARIZE(matrix)
 DECLARE_FUNC_DELINEARIZE(matrix)
 DECLARE_FUNC_DELINEARIZE(triu)
 DECLARE_FUNC_DELINEARIZE(tril)
+DECLARE_FUNC_DELINEARIZE(diag)
 DECLARE_FUNC_FILL(nan, matrix)
 DECLARE_FUNC_FILL(zero, matrix)
 DECLARE_FUNC_FILL(zero, triu)
@@ -58,6 +59,12 @@ DECLARE_FUNC_FILL(eye, matrix)
 DECLARE_FUNC_LINEARIZE(vec)
 DECLARE_FUNC_DELINEARIZE(vec)
 DECLARE_FUNC_FILL(nan, vec)
+
+// combination of delinearize_ and zero_, _triu and _tril
+void delinearize_FLOAT_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
+void delinearize_DOUBLE_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
+void delinearize_CFLOAT_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
+void delinearize_CDOUBLE_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
 
 // These functions convert floating point variables to integers
 fortran_int FLOAT_real_int(fortran_real val);

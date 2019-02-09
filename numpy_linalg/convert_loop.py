@@ -2,17 +2,18 @@
 """
 Helper for writing __array_ufunc__
 """
-import itertools
-from typing import Tuple, Any, List, Sequence, Callable
-import numpy as np
-ArgTuple = Tuple[Any]
+import itertools as _itertools
+import typing as _ty
+import numpy as _np
+ArgTuple = _ty.Tuple[_ty.Any]
 # ======================================================================
 # %% Inputs
 # ======================================================================
 
 
-def conv_loop_in(converter: Callable,
-                 obj_typ, tup: ArgTuple) -> (ArgTuple, List[bool]):
+def conv_loop_in(converter: _ty.Callable,
+                 obj_typ,
+                 tup: ArgTuple) -> (ArgTuple, _ty.List[bool]):
     """Process inputs in an __array_ufunc__ method
 
     Parameters
@@ -41,17 +42,17 @@ def conv_loop_in(converter: Callable,
     return tuple(out), conv
 
 
-def prepare_via_view() -> Callable:
+def prepare_via_view() -> _ty.Callable:
     """Create function to convert object to an array using view method
     """
     def converter(thing):
         """convert to array using view method
         """
-        return thing.view(np.ndarray)
+        return thing.view(_np.ndarray)
     return converter
 
 
-def prepare_via_attr(attr: str) -> Callable:
+def prepare_via_attr(attr: str) -> _ty.Callable:
     """Create function to convert object to an array using an attribute
 
     Parameters
@@ -66,7 +67,7 @@ def prepare_via_attr(attr: str) -> Callable:
     return converter
 
 
-def conv_loop_in_view(obj_typ, tup: ArgTuple) -> (ArgTuple, List[bool]):
+def conv_loop_in_view(obj_typ, tup: ArgTuple) -> (ArgTuple, _ty.List[bool]):
     """Process inputs in an __array_ufunc__ method using view method
 
     Parameters
@@ -87,7 +88,7 @@ def conv_loop_in_view(obj_typ, tup: ArgTuple) -> (ArgTuple, List[bool]):
 
 
 def conv_loop_in_attr(attr: str, obj_typ, tup: ArgTuple) -> (ArgTuple,
-                                                             List[bool]):
+                                                             _ty.List[bool]):
     """Process inputs in an __array_ufunc__ method using an attribute
 
     Parameters
@@ -114,8 +115,10 @@ def conv_loop_in_attr(attr: str, obj_typ, tup: ArgTuple) -> (ArgTuple,
 # ======================================================================
 
 
-def conv_loop_out(converter: Callable, results: ArgTuple, outputs: ArgTuple,
-                  conv: Sequence[bool] = ()) -> ArgTuple:
+def conv_loop_out(converter: _ty.Callable,
+                  results: ArgTuple,
+                  outputs: ArgTuple,
+                  conv: _ty.Sequence[bool] = ()) -> ArgTuple:
     """Process outputs in an __array_ufunc__ method
 
     Parameters
@@ -136,7 +139,7 @@ def conv_loop_out(converter: Callable, results: ArgTuple, outputs: ArgTuple,
         New tuple of results from ufunc with conversions.
     """
     if not conv:
-        conv = itertools.repeat(True)
+        conv = _itertools.repeat(True)
     results_out = []
     for result, output, cout in zip(results, outputs, conv):
         if output is None:
@@ -149,7 +152,7 @@ def conv_loop_out(converter: Callable, results: ArgTuple, outputs: ArgTuple,
     return tuple(results_out)
 
 
-def restore_via_attr(obj, attr: str) -> Callable:
+def restore_via_attr(obj, attr: str) -> _ty.Callable:
     """Create function to convert arrays by setting obj.attr
 
     Parameters
@@ -174,7 +177,7 @@ def restore_via_attr(obj, attr: str) -> Callable:
     return converter
 
 
-def restore_via_init(obj) -> Callable:
+def restore_via_init(obj) -> _ty.Callable:
     """Create function to convert arrays  using obj.__init__
 
     Parameters
@@ -189,7 +192,7 @@ def restore_via_init(obj) -> Callable:
     return converter
 
 
-def restore_via_view(obj) -> Callable:
+def restore_via_view(obj) -> _ty.Callable:
     """Create function to convert arrays using array.view
 
     Parameters
@@ -204,8 +207,11 @@ def restore_via_view(obj) -> Callable:
     return converter
 
 
-def conv_loop_out_attr(obj, attr: str, results: ArgTuple, outputs: ArgTuple,
-                       conv: Sequence[bool] = ()) -> ArgTuple:
+def conv_loop_out_attr(obj,
+                       attr: str,
+                       results: ArgTuple,
+                       outputs: ArgTuple,
+                       conv: _ty.Sequence[bool] = ()) -> ArgTuple:
     """Process outputs in an __array_ufunc__ method
 
     Makes a copy of ``obj`` with ``obj.attr = result``.
@@ -237,8 +243,10 @@ def conv_loop_out_attr(obj, attr: str, results: ArgTuple, outputs: ArgTuple,
     return conv_loop_out(restore_via_attr(obj, attr), results, outputs, conv)
 
 
-def conv_loop_out_init(obj, results: ArgTuple, outputs: ArgTuple,
-                       conv: Sequence[bool] = ()) -> ArgTuple:
+def conv_loop_out_init(obj,
+                       results: ArgTuple,
+                       outputs: ArgTuple,
+                       conv: _ty.Sequence[bool] = ()) -> ArgTuple:
     """Process outputs in an __array_ufunc__ method
 
     Creates an instance of ``type(obj)`` with ``result`` as its argument.
@@ -263,8 +271,10 @@ def conv_loop_out_init(obj, results: ArgTuple, outputs: ArgTuple,
     return conv_loop_out(restore_via_init(obj), results, outputs, conv)
 
 
-def conv_loop_out_view(obj, results: ArgTuple, outputs: ArgTuple,
-                       conv: Sequence[bool] = ()) -> ArgTuple:
+def conv_loop_out_view(obj,
+                       results: ArgTuple,
+                       outputs: ArgTuple,
+                       conv: _ty.Sequence[bool] = ()) -> ArgTuple:
     """Process outputs in an __array_ufunc__ method
 
     Calls ``result.view`` with ``type(obj)`` with as its argument.

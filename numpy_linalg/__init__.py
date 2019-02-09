@@ -75,6 +75,7 @@ from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
 from .gufuncs import norm
 from . import gufuncs
 from . import _ln_wrap as wrappers
+from . import random
 from ._ln_creation import *
 from ._ln_manipulation import *
 # import _ld_wrap as wrappers
@@ -82,6 +83,7 @@ from ._ln_manipulation import *
 # from ._ld_manipulation import *
 assert gufuncs
 assert wrappers
+assert random
 assert norm
 assert all((lnarray, pinvarray, invarray))
 assert all((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,

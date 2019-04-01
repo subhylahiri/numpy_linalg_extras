@@ -36,7 +36,7 @@ To get the actual inverse matrices you can call the objects:
 ## Rationale
 
 Consider the following expression that appeared in my work:
-`$ A = \xi Z Q Z w $`, where `$ Z = (e \xi - W)^{-1} $`
+$A = \xi Z Q Z w$, where $Z = (e \xi - W)^{-1}$
 
 In Matlab, I can compute this with:
 ```matlab
@@ -68,7 +68,7 @@ A = xi @ Z @ Q @ (Z @ w)
 ```
 The parentheses in the last expression are only there for efficiency,
 it would still work without them.
-Note that the `.inv` appears in the same place as the `$^{-1}$` in the
+Note that the `.inv` appears in the same place as the $^{-1}$ in the
 mathematical expression above.
 
 To do this, I reimplemented several `numpy` functions, some of them in `C`.

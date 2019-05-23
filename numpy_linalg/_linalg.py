@@ -8,6 +8,10 @@ Linear algebra routines.
 
 Functions
 ---------
+flattish
+    Flatten a subset of axes.
+expand_dims
+    Add new singleton axes.
 transpose
     Transpose last two indices.
 dagger
@@ -39,6 +43,8 @@ import numpy.linalg.linalg as nla
 from . import gufuncs as gf
 
 __all__ = [
+    'flattish',
+    'expand_dims',
     'transpose',
     'dagger',
     'col',

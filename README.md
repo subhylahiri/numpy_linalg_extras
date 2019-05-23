@@ -89,8 +89,8 @@ reasons:
 
 ## Requirements
 
-* Python 3.6
-* Numpy 1.15
+* Python 3.7
+* Numpy 1.16
 * C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
 (see [below](#building-the-cpython-modules))
 * BLAS/Lapack distribution that was present when the binaries were built
@@ -139,6 +139,10 @@ reasons:
     broadcasting.
 * `norm`
     Vector 2-norm. Broadcasts and passes through subclasses.
+* `flattish`:
+    Flatten a subset of axes.
+* `expand_dims`:
+    Add new singleton axes.
 * `transpose`:  
     Transpose last two indices.  
 * `dagger`:  
@@ -327,6 +331,8 @@ If you have `setuptools`, you can also do:
 ```
 this builds it in-place and creates an `.egg-link` file to make it available
 system-wide.
+
+Note: if you update to a new version of `numpy`, you might need to rebuild the C modules.
 
 
 ## To dos

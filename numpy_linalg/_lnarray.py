@@ -36,7 +36,7 @@ Examples
 >>> u = x @ y.t
 >>> v = (x.r @ y.t).ur
 """
-# from __future__ import annotations
+from __future__ import annotations
 from typing import Optional, Tuple, Sequence
 import numpy as np
 import numpy.lib.mixins as _mix
@@ -160,18 +160,18 @@ class lnarray(np.ndarray):
 
         return results[0] if len(results) == 1 else results
 
-    def flattish(self, start: int, stop: int) -> 'lnarray':
+    def flattish(self, start: int, stop: int) -> lnarray:
         """Partial flattening.
 
         Flattens those axes in the range [start:stop)
 
         See Also
         --------
-        linalg.flattish
+        numpy_linalg.flattish
         """
         return la.flattish(self, start, stop)
 
-    def expand_dims(self, *axis) -> 'lnarray':
+    def expand_dims(self, *axis) -> lnarray:
         """Expand the shape of the array with length one axes
 
         Alias of `numpy.expand_dims` when `*axis` is a single `int`. If `axis`
@@ -179,12 +179,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.expand_dims
+        numpy_linalg.expand_dims
         """
         return la.expand_dims(self, *axis)
 
     @property
-    def t(self) -> 'lnarray':
+    def t(self) -> lnarray:
         """Transpose last two indices.
 
         Transposing last two axes fits better with `np.linalg`'s
@@ -196,12 +196,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.transpose
+        numpy_linalg.transpose
         """
         return la.transpose(self)
 
     @property
-    def h(self) -> 'lnarray':
+    def h(self) -> lnarray:
         """Hermitian-conjugate over last two indices.
 
         Transposing last two axes fits better with `np.linalg`'s
@@ -213,12 +213,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.dagger
+        numpy_linalg.dagger
         """
         return la.dagger(self)
 
     @property
-    def r(self) -> 'lnarray':
+    def r(self) -> lnarray:
         """Treat multi-dim array as a stack of row vectors.
 
         Inserts a singleton axis in second-last slot.
@@ -229,12 +229,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.row
+        numpy_linalg.row
         """
         return la.row(self)
 
     @property
-    def c(self) -> 'lnarray':
+    def c(self) -> lnarray:
         """Treat multi-dim array as a stack of column vectors.
 
         Inserts a singleton axis in last slot.
@@ -245,12 +245,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.col
+        numpy_linalg.col
         """
         return la.col(self)
 
     @property
-    def s(self) -> 'lnarray':
+    def s(self) -> lnarray:
         """Treat multi-dim array as a stack of scalars.
 
         Inserts singleton axes in last two slots.
@@ -261,12 +261,12 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.scalar
+        numpy_linalg.scalar
         """
         return la.scalar(self)
 
     @property
-    def ur(self) -> 'lnarray':
+    def ur(self) -> lnarray:
         """Undo effect of `r`.
 
         Parameters/Results
@@ -281,7 +281,7 @@ class lnarray(np.ndarray):
         return self.squeeze(axis=-2)
 
     @property
-    def uc(self) -> 'lnarray':
+    def uc(self) -> lnarray:
         """Undo effect of `c`.
 
         Parameters/Results
@@ -296,7 +296,7 @@ class lnarray(np.ndarray):
         return self.squeeze(axis=-1)
 
     @property
-    def us(self) -> 'lnarray':
+    def us(self) -> lnarray:
         """Undo effect of `s`.
 
         Parameters/Results
@@ -311,7 +311,7 @@ class lnarray(np.ndarray):
         return self.squeeze(axis=(-2, -1))
 
     @property
-    def pinv(self) -> 'pinvarray':
+    def pinv(self) -> pinvarray:
         """Lazy matrix pseudoinverse
 
         Parameters/Results
@@ -326,7 +326,7 @@ class lnarray(np.ndarray):
         return pinvarray(self)
 
     @property
-    def inv(self) -> 'invarray':
+    def inv(self) -> invarray:
         """Lazy matrix inverse
 
         Parameters/Results
@@ -437,7 +437,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     performing the pseudoinversion and using that instead (except for `len`,
     `shape`, `size`, 'ndim`, `repr`, `str`, `t`, `h` and `inv`).
 
-    It uses `gufuncs.lstsq`,`gufuncs.rlstsq` for @ and `np.linalg.pinv` for ().
+    It uses `gufuncs.lstsq`,`gufuncs.rlstsq` for @ and `gufuncs.pinv` for ().
 
     Examples
     --------
@@ -460,6 +460,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     """
     _to_invert: lnarray
     _inverted: Optional[lnarray]
+    _factored: Tuple[lnarray, ...]
 
     # _ufunc_map[arg1][arg2] -> ufunc_out, where:
     # ar1/arg2 = is the second/first argument the numerator?
@@ -481,10 +482,13 @@ class pinvarray(gf.LNArrayOperatorsMixin):
             # in case input is `ndarray` or `array_like`
             self._to_invert = np.asarray(to_invert).view(lnarray)
         self._inverted = None
+        self._factored = ()
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         """Handling ufuncs with pinvarrays
         """
+        if ufunc is np.matmul:
+            ufunc = gf.matmul
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
         args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
@@ -569,18 +573,30 @@ class pinvarray(gf.LNArrayOperatorsMixin):
         Returns
         -------
         inverted
-            The (pseudo)inverse of the `lnarray` whose `inv` this object is,
-            stored as `self._inverted`.
-
-        Notes
-        -----
-        If self._to_invert has not been (pseudo)inverted, it will compute the
-        (pseudo)inverse first.
-        Otherwise, it will use the stored value.
+            The (pseudo)inverse of the `lnarray` whose `(p)inv` this object is.
         """
-        if self._inverted is None:
-            self._invert()
-        return self._inverted
+        # Can't know if self._to_invert has been modified, so:
+        self._invert()
+        out = self._inverted
+        self._inverted = None
+        return out
+        # """Get actual (pseudo)inverse
+        #
+        # Returns
+        # -------
+        # inverted
+        #     The (pseudo)inverse of the `lnarray` whose `(p)inv` this object
+        #     is, stored as `self._inverted`.
+        #
+        # Notes
+        # -----
+        # If self._to_invert has not been (pseudo)inverted, it will compute the
+        # (pseudo)inverse first.
+        # Otherwise, it will use the stored value.
+        # """
+        # if self._inverted is None:
+        #     self._invert()
+        # return self._inverted
 
     def __len__(self):
         return self.shape[0]
@@ -595,7 +611,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
                                             "\n" + " " * -extra)
         return selfname + rep[(len(selfname) + extra):]
 
-    def swapaxes(self, axis1, axis2) -> 'pinvarray':
+    def swapaxes(self, axis1, axis2) -> pinvarray:
         """Interchange two axes in a copy
 
         Parameters
@@ -648,16 +664,16 @@ class pinvarray(gf.LNArrayOperatorsMixin):
         return self._to_invert
 
     @property
-    def t(self) -> 'pinvarray':
+    def t(self) -> pinvarray:
         """A copy of object, but view of data"""
         return type(self)(self._to_invert.t)
 
     @property
-    def h(self) -> 'pinvarray':
+    def h(self) -> pinvarray:
         """A copy of object, but view of data"""
         return type(self)(self._to_invert.h)
 
-    def copy(self, order='C', **kwds) -> 'pinvarray':
+    def copy(self, order='C', **kwds) -> pinvarray:
         """Copy data"""
         _to_invert = kwds.pop('_to_invert', None)
         if _to_invert is None:
@@ -672,7 +688,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
             self._inverted = self._to_invert / gf.norm(self._to_invert)**2
         elif self.ndim >= 2:
             # pinv broadcasts
-            self._inverted = np.linalg.pinv(self._to_invert).view(lnarray)
+            self._inverted = gf.pinv(self._to_invert).view(lnarray)
         else:
             raise ValueError('Nothing to invert? ' + str(self._to_invert))
 
@@ -716,7 +732,7 @@ class invarray(pinvarray):
     performing the inversion and using that instead (except for `len`,
     `shape`, `size`, 'ndim`, `repr`, `str`, `t` and `inv`).
 
-    It uses `gufuncs.solve`, `gufuncs.rsolve` for @ and `np.linalg.inv` for ().
+    It uses `gufuncs.solve`, `gufuncs.rsolve` for @ and `gufuncs.inv` for ().
 
     Examples
     --------
@@ -773,6 +789,6 @@ class invarray(pinvarray):
         """
         if self.ndim >= 2 and self.shape[-2] == self.shape[-1]:
             # square
-            self._inverted = np.linalg.inv(self._to_invert)
+            self._inverted = gf.inv(self._to_invert)
         else:
             raise ValueError('Nothing to invert? ' + str(self._to_invert))

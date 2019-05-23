@@ -19,6 +19,12 @@ solve_lu, rsolve_lu
     Also return LU factors for use next time.
 lu_solve, rlu_solve
     Use LU factors from previous time.
+inv
+    Moore-Penrose pseudoinverse.
+inv_lu
+    Also return LU factors for use next time.
+lu_inv
+    Use LU factors from previous time.
 lstsq
     Least square solution of systems of linear equations.
 rlstsq
@@ -109,7 +115,7 @@ from ._gufuncs_blas import matmul, rmatmul  # norm
 # from ._gufuncs_lapack import *
 from ._gufuncs_lu_solve import (lu_m, lu_n, lu_rawm, lu_rawn, solve, rsolve,
                                 solve_lu, rsolve_lu, lu_solve, rlu_solve,
-                                pivot, rpivot)
+                                pivot, rpivot, inv, inv_lu, lu_inv)
 from ._gufuncs_qr_lstsq import (qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
                                 lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,
                                 lstsq, rlstsq, lstsq_qrm, lstsq_qrn,
@@ -119,7 +125,7 @@ from ._gufuncs_qr_lstsq import (qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
 assert norm
 assert pivot
 assert rpivot
-assert any((lu_m, lu_n, lu_rawm, lu_rawn))
+assert any((lu_m, lu_n, lu_rawm, lu_rawn, inv, inv_lu, lu_inv))
 assert any((qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn))
 assert any((lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn))
 assert any((pinv, pinv_qrm, pinv_qrn, qr_pinv))

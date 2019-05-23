@@ -28,6 +28,10 @@ invarray
 
 Functions
 ---------
+flattish
+    Flatten a subset of axes.
+expand_dims
+    Add new singleton axes.
 transpose
     Transpose last two indices.
 dagger
@@ -71,7 +75,8 @@ Examples
 
 from ._lnarray import lnarray, pinvarray, invarray
 from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-                      matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv)
+                      matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv,
+                      flattish, expand_dims)
 from .gufuncs import norm
 from . import gufuncs
 from . import _ln_wrap as wrappers
@@ -86,5 +91,5 @@ assert wrappers
 assert random
 assert norm
 assert all((lnarray, pinvarray, invarray))
-assert all((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-            matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
+assert all((transpose, dagger, col, row, scalar, qr, lq, lqr, lu, expand_dims,
+            matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv, flattish))

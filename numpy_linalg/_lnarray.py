@@ -133,9 +133,9 @@ class lnarray(np.ndarray):
         """
         args = list(cv.conv_loop_in_view(lnarray, inputs)[0])
         # Set of ufuncs that need special handling for vectors
-        if ufunc in gf.inverse_arguments.keys():
-            args[0], args[1], squeeze = gf.vec2mat(
-                    args[0], args[1], gf.inverse_arguments[ufunc]
+        if ufunc in gf.fam.inverse_arguments.keys():
+            args[0], args[1], squeeze = gf.vec.vec2mat(
+                    args[0], args[1], gf.fam.inverse_arguments[ufunc]
             )
         args = tuple(args)
 
@@ -146,7 +146,7 @@ class lnarray(np.ndarray):
         else:
             outputs = (None,) * ufunc.nout
 
-        if ufunc in gf.inverse_arguments.keys():
+        if ufunc in gf.fam.inverse_arguments.keys():
             gf.make_errobj("Failure in routine: " + ufunc.__name__, kwargs)
         results = super().__array_ufunc__(ufunc, method, *args, **kwargs)
         if results is NotImplemented:
@@ -154,8 +154,8 @@ class lnarray(np.ndarray):
 
         if ufunc.nout == 1:
             results = (results,)
-        if ufunc in gf.inverse_arguments.keys() and any(squeeze):
-            results = (gf.mat2vec(results[0], squeeze),) + results[1:]
+        if ufunc in gf.fam.inverse_arguments.keys() and any(squeeze):
+            results = (gf.vec.mat2vec(results[0], squeeze),) + results[1:]
         results = cv.conv_loop_out_view(self, results, outputs)
 
         return results[0] if len(results) == 1 else results
@@ -363,14 +363,14 @@ def _inv_input(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     Returns
     -------
     left, right
-        `gufuncs.inverse_arguments` of ufunc to call
+        `gufuncs.fam.inverse_arguments` of ufunc to call
     swap
         should imputs be swapped?
     """
     # inverse_arguments tells us if each argument is a 'denominator'.
     # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
     # Hence `xor`.
-    func_in = gf.inverse_arguments[ufunc]
+    func_in = gf.fam.inverse_arguments[ufunc]
     # NOTE: rmatmul doesn't fit the pattern, needs special handling
     if all(func_in) and all(pinv_in):
         return (True, True, True)
@@ -388,13 +388,13 @@ def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> bool:
     pinv_in: Sequence[bool]
         Tells us if each original argument was a (p)invarray
     """
-    # inverse_scalar_arguments tells us if the other argument is a 'numerator'.
+    # inverse_scalar_arguments tells us if the other argument is a numerator.
     # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
     # Hence `xor`.
     # if both arguments are (p)invarrays, return (indices of) None
     if all(pinv_in):
         return (False, False)
-    func_in = gf.inverse_scalar_arguments[ufunc]
+    func_in = gf.fam.inverse_scalar_arguments[ufunc]
     return tuple(x ^ y for x, y in zip(pinv_in, func_in))
 
 
@@ -464,11 +464,11 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     # _ufunc_map[arg1][arg2] -> ufunc_out, where:
     # ar1/arg2 = is the second/first argument the numerator?
     # ufunc_out = ufunc to use instead of original for scalar operator
-    _ufunc_map = gf.truediv_family
+    _ufunc_map = gf.fam.truediv_family
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?
     # ufunc_out = gufunc to use instead of original in matrix operation
-    _gufunc_map = gf.lstsq_family
+    _gufunc_map = gf.fam.lstsq_family
 
     # these ufuncs are passed on to self._to_invert
     _unary_ufuncs = {np.positive, np.negative}
@@ -490,8 +490,8 @@ class pinvarray(gf.LNArrayOperatorsMixin):
         args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
 
         pinv_out = [False] * ufunc.nout  # which outputs need converting back?
-        if ufunc in gf.inverse_arguments.keys():
-            if not gf.same_family(ufunc, self._gufunc_map[0][1]):
+        if ufunc in gf.fam.inverse_arguments.keys():
+            if not gf.fam.same_family(ufunc, self._gufunc_map[0][1]):
                 return NotImplemented
             left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
             ufunc = self._gufunc_map[left_arg][right_arg]
@@ -500,7 +500,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
                 args = (args[1], args[0]) + args[2:]
             # only operation that returns `invarray` is `invarray @ invarray`
             pinv_out[0] = left_arg and right_arg
-        elif ufunc in gf.inverse_scalar_arguments.keys():
+        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
             left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
             ufunc = self._ufunc_map[left_arg][right_arg]
             pinv_out[0] = True  # one of left_arg/right_arg must be True
@@ -742,7 +742,7 @@ class invarray(pinvarray):
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?
     # ufunc_out = gufunc to use instead of original in matrix operation
-    _gufunc_map = gf.solve_family
+    _gufunc_map = gf.fam.solve_family
 
     def __init__(self, to_invert: lnarray):
         super().__init__(to_invert)

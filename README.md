@@ -42,7 +42,7 @@ The `lnarray` class also has properties for delayed matrix division:
 None of the above actually invert the matrices. They return `invarray/pinvarray`
 objects that call `solve/lstsq` behind the scenes, which is [faster and more
 accurate](https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/).
-To get the actual inverse matrices you can call the objects:
+To get the actual inverse matrices you can explicitly call the objects:
 ```python
 >>> x = y.inv()
 >>> x = y.pinv()
@@ -88,15 +88,15 @@ In each case, this wheel reinvention was done for one of the following reasons:
 1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
 rely on it.
-1. I needed a `gufunc` version of `lstsq` that doesn't require an `rcond` input
-and doesn't return any  diagnostic information.
+1. I needed a `gufunc` version of `lstsq` neither requires an `rcond` input
+nor returns any diagnostic information.
 1. Completeness (e.g. `inv`).
 
 I did not reimplement several `numpy.linalg` functions for one of the following
 reasons:
 1. There's no way to make it fit with the standard broadcasting rules
 (e.g. `dot`, `tensordot`).
-1. The `numpy.linalg` version already does everything I need (e.g. `eig`, `svd`).
+1. The `numpy` version already does everything I need (e.g. `eig`, `svd`).
 
 ## Requirements
 
@@ -201,7 +201,7 @@ The following are not defined:
 >>> lstsq(lnarray, pinvarray)
 >>> rlstsq(pinvarray, lnarray)
 ```
-Combining `invarray` and `pinvarray` will either fail, or produce weird results
+Combining `invarray` and `pinvarray` will either fail or produce weird results.
 
 ## GUfuncs
 
@@ -308,7 +308,8 @@ The following can be found in `numpy_linalg.gufuncs`:
 
 ## Building the C modules
 
-You will need to have the appropriate C compilers. On Linux, you should already have them.
+You will need to have the appropriate C compilers. 
+On Linux, you should already have them.
 On Windows, [see here](https://wiki.python.org/moin/WindowsCompilers).
 
 You will need a BLAS/Lapack distribution. Anaconda usually uses MKL, but they
@@ -325,11 +326,12 @@ Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
 ```
-([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl) under
-Uninstalling MKL).
+([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl) 
+under Uninstalling MKL).
 
-If your BLAS/Lapack distribution is installed somewhere `numpy` isn't expecting,
-you can provide directions in a [site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
+If your BLAS/Lapack distribution is somewhere `numpy` isn't expecting, you can 
+provide directions in a 
+[site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
 
 Once you have all of the above, you can build the C modules in-place:
 ```

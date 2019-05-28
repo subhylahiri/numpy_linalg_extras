@@ -104,6 +104,8 @@ import functools as _ft
 import itertools as _it
 import numpy as _np
 import numpy.lib.mixins as _mix
+from . import (_gufuncs_cloop, _gufuncs_blas, _gufuncs_lu_solve,
+               _gufuncs_qr_lstsq)
 from ._gufuncs_cloop import norm, rtrue_divide  # matmul, rmatmul
 from ._gufuncs_blas import matmul, rmatmul  # norm
 # from ._gufuncs_lapack import *
@@ -115,10 +117,13 @@ from ._gufuncs_qr_lstsq import (qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
                                 lstsq, rlstsq, lstsq_qrm, lstsq_qrn,
                                 rlstsq_qrm, rlstsq_qrn, qr_lstsq, rqr_lstsq,
                                 pinv, pinv_qrm, pinv_qrn, qr_pinv)
+
+from ..version import max_version as _version
+__version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
+                       _gufuncs_lu_solve, _gufuncs_qr_lstsq)
+
 # fool pyflakes
-assert norm
-assert pivot
-assert rpivot
+assert any((norm, pivot, rpivot))
 assert any((lu_m, lu_n, lu_rawm, lu_rawn))
 assert any((qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn))
 assert any((lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn))

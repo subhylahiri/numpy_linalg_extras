@@ -41,6 +41,7 @@ import typing as ty
 import numpy as np
 import numpy.linalg.linalg as nla
 from . import gufuncs as gf
+from .gufuncs._gufuncs_cloop import matmul, rmatmul
 
 __all__ = [
     'flattish',
@@ -219,8 +220,8 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # =============================================================================
 # Division & Multiplication
 # =============================================================================
-matmul = gf.vec_wrap(gf.matmul)
-rmatmul = gf.vec_wrap(gf.rmatmul)
+# matmul = gf.vec_wrap(gf.matmul)
+# rmatmul = gf.vec_wrap(gf.rmatmul)
 solve = gf.vec_wrap(gf.solve)
 rsolve = gf.vec_wrap(gf.rsolve)
 lstsq = gf.vec_wrap(gf.lstsq)

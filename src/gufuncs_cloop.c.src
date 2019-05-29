@@ -356,9 +356,9 @@ GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rtrue_divide);
 
 // info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
-    { "matmul", "(m,n),(n,p)->(m,p)", matmul__doc__, 5, 2, 1,
+    { "matmul", "(m?,n),(n,p?)->(m?,p?)", matmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(matmul), ufn_types_5_3 },
-    { "rmatmul", "(n,p),(m,n)->(m,p)", rmatmul__doc__, 5, 2, 1,
+    { "rmatmul", "(n,p?),(m?,n)->(m?,p?)", rmatmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(rmatmul), ufn_types_5_3 },
     { "norm", "(n)->()", norm__doc__, 4, 1, 1,
       FUNC_ARRAY_NAME(norm), ufn_types_norm },

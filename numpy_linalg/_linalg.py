@@ -220,12 +220,12 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # =============================================================================
 # Division & Multiplication
 # =============================================================================
-# matmul = gf.vec_wrap(gf.matmul)
-# rmatmul = gf.vec_wrap(gf.rmatmul)
-solve = gf.vec_wrap(gf.solve)
-rsolve = gf.vec_wrap(gf.rsolve)
-lstsq = gf.vec_wrap(gf.lstsq)
-rlstsq = gf.vec_wrap(gf.rlstsq)
+matmul = gf.vec.vec_wrap(gf.matmul)
+rmatmul = gf.vec.vec_wrap(gf.rmatmul)
+solve = gf.vec.vec_wrap(gf.solve)
+rsolve = gf.vec.vec_wrap(gf.rsolve)
+lstsq = gf.vec.vec_wrap(gf.lstsq)
+rlstsq = gf.vec.vec_wrap(gf.rlstsq)
 
 
 def matldiv(x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:

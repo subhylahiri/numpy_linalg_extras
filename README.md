@@ -2,6 +2,21 @@
 
 [Instructions for building the C modules below](#building-the-cpython-modules)
 
+<!-- MDTOC maxdepth:6 firsth1:1 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
+
+- [Numpy linear algebra enhancements](#numpy-linear-algebra-enhancements)   
+   - [Rationale](#rationale)   
+   - [Requirements](#requirements)   
+   - [Classes](#classes)   
+   - [Functions](#functions)   
+   - [GUfuncs](#gufuncs)   
+   - [Wrappers](#wrappers)   
+   - [Examples](#examples)   
+   - [Building the C modules](#building-the-c-modules)   
+   - [To dos](#to-dos)   
+
+<!-- /MDTOC -->
+
 This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
 matrix division. The main way of using this is via the `lnarray` class
@@ -27,7 +42,7 @@ The `lnarray` class also has properties for delayed matrix division:
 None of the above actually invert the matrices. They return `invarray/pinvarray`
 objects that call `solve/lstsq` behind the scenes, which is [faster and more
 accurate](https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/).
-To get the actual inverse matrices you can call the objects:
+To get the actual inverse matrices you can explicitly call the objects:
 ```python
 >>> x = y.inv()
 >>> x = y.pinv()
@@ -47,22 +62,18 @@ Prior to Python 3.5 and Numpy 1.10, avoiding `inv`, I'd have to write it like th
 ```python
 Zi = np.dot(ev, xi) - W
 A = np.dot(np.dot(np.linalg.solve(Zi.T, xi).T, Q), np.linalg.solve(Zi, w))
-```
-or
-```python
-S = np.linalg.solve(Zi.T, xi).T.dot(Q).dot(np.linalg.solve(Zi, w))
+# or
+A = np.linalg.solve(Zi.T, xi).T.dot(Q).dot(np.linalg.solve(Zi, w))
 ```
 Things do get better in Python 3.5 and Numpy 1.10:
 ```python
-A = np.linalg.solve(Zi.T, xi).T @ Q @np.linalg.solve(Zi, w)
+A = np.linalg.solve(Zi.T, xi).T @ Q @ np.linalg.solve(Zi, w)
 ```
-If I want it to broadcast I'd also have to replace `.T` with `.swapaxes(-2, -1)`.
+If I want it to broadcast I'd also have to replace `T` with `swapaxes(-2, -1)`.
 Using this package, I can write it as
 ```python
 A = xi @ Zi.inv @ Q @ (Zi.inv @ w)
-```
-or even
-```python
+# or even
 Z = (ev @ xi - W).inv
 A = xi @ Z @ Q @ (Z @ w)
 ```
@@ -77,15 +88,15 @@ In each case, this wheel reinvention was done for one of the following reasons:
 1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
 rely on it.
-1. I needed a `gufunc` version of `lstsq` that doesn't require an `rcond` input
-and doesn't return any  diagnostic information.
+1. I needed a `gufunc` version of `lstsq` neither requires an `rcond` input
+nor returns any diagnostic information.
 1. Completeness (e.g. `inv`).
 
 I did not reimplement several `numpy.linalg` functions for one of the following
 reasons:
 1. There's no way to make it fit with the standard broadcasting rules
 (e.g. `dot`, `tensordot`).
-1. The `numpy.linalg` version already does everything I need (e.g. `eig`, `svd`).
+1. The `numpy` version already does everything I need (e.g. `eig`, `svd`).
 
 ## Requirements
 
@@ -97,11 +108,11 @@ reasons:
 
 ## Classes
 
-* `lnarray`:  
+* `lnarray`:
     Subclass of `numpy.ndarray` with properties such as `pinv/inv` for matrix
     division, `t` and `h` for transposing stacks of matrices, `r`, `c` and `s`
     for dealing with stacks of vectors and scalars.
-* `invarray`:  
+* `invarray`:
     Performs exact matrix division when it is matrix multiplied (@).
     Returned by `lnarray.inv`. It calls `solve` behind the scenes.
     Does not actually invert the matrix unless it is explicitly called.
@@ -110,7 +121,7 @@ reasons:
     object will affect the original `lnarray` object.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
-* `pinvarray`:  
+* `pinvarray`:
     Performs least-squares matrix division when it is matrix multiplied (@).
     Returned by `lnarray.pinv`. It calls `lstsq` behind the scenes.
     Does not actually pseudoinvert the matrix unless it is explicitly called.
@@ -122,49 +133,52 @@ reasons:
 
 ## Functions
 
-* `matmul`:  
+The following are implemented by operators/properties of the classes above.
+* `matmul`:
     Matrix multiplication with broadcasting and BLAS acceleration.
-* `solve`:  
+* `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
-* `rsolve`:  
+* `rsolve`:
     Reversed Linear equation solving (matrix right-division) with broadcasting.
-* `lstsq`:  
+* `lstsq`:
     Linear least squares solutions (matrix left-division) with broadcasting.
     Unlike `numnpy.linalg.lstsq`, this does not take an `rcond` parameter, or
     return diagnostic information (which is better suited to binary operators).
     However, it does broadcast and pass through subclasses.
-* `rlstsq`:  
+* `rlstsq`:
     Reversed linear least squares problems (matrix right-division) with
     broadcasting.
-* `norm`
-    Vector 2-norm. Broadcasts and passes through subclasses.
+* `transpose`:
+    Transpose last two indices.
+* `dagger`:
+    Complex conjugate and transpose last two indices.
+* `col`:
+    Treat multi-dim array as a stack of column vectors.
+* `row`:
+    Treat multi-dim array as a stack of row vectors.
+* `scalar`:
+    Treat multi-dim array as a stack of scalars.
 * `flattish`:
     Flatten a subset of axes.
 * `expand_dims`:
-    Add new singleton axes.
-* `transpose`:  
-    Transpose last two indices.  
-* `dagger`:  
-    Complex conjugate and transpose last two indices.  
-* `col`:  
-    Treat multi-dim array as a stack of column vectors.
-* `row`:  
-    Treat multi-dim array as a stack of row vectors.
-* `scalar`:  
-    Treat multi-dim array as a stack of scalars.
-* `matldiv`:  
+    Add new singleton axes.    
+
+The following are not implemented by operators/properties of the classes above.
+* `matldiv`:
     Matrix division from left (exact or least-squares).
-* `matrdiv`:  
+* `matrdiv`:
     Matrix division from right (exact or least-squares).
-* `lu`:  
+* `norm`:
+    Vector 2-norm. Broadcasts and passes through subclasses.
+* `lu`:
     LU decomposition with broadcasting and subclass passing.
-* `qr`:  
+* `qr`:
     QR decomposition with broadcasting and subclass passing. Does not implement
     the deprecated modes of `numpy.linalg.qr`.
-* `lq`:  
+* `lq`:
     LQ decomposition with broadcasting and subclass passing.
-* `lqr`:  
+* `lqr`:
     For wide matrices LQ decomposition, otherwise QR decomposition.
 
 The following operations will do the right thing, but may be better avoided:
@@ -187,95 +201,95 @@ The following are not defined:
 >>> lstsq(lnarray, pinvarray)
 >>> rlstsq(pinvarray, lnarray)
 ```
-Combining `invarray` and `pinvarray` will either fail, or produce weird results
+Combining `invarray` and `pinvarray` will either fail or produce weird results.
 
 ## GUfuncs
 
 The following can be found in `numpy_linalg.gufuncs`:
-* `gufuncs.matmul`:  
-* `gufuncs.solve`:  
-* `gufuncs.rsolve`:  
-* `gufuncs.lstsq`:  
-* `gufuncs.rlstsq`:  
+* `gufuncs.matmul`:
     These implement the functions above.
-* `gufuncs.norm`:  
+* `gufuncs.solve`:
+* `gufuncs.rsolve`:
+* `gufuncs.lstsq`:
+* `gufuncs.rlstsq`:
+* `gufuncs.norm`:
     This is literally the same as the function above.
-* `gufuncs.lu_m`:  
+* `gufuncs.lu_m`:
     Implements `lu` for wide matrices.
-* `gufuncs.lu_n`:  
+* `gufuncs.lu_n`:
     Implements `lu` for narrow matrices.
-* `gufuncs.lu_rawm`:  
-* `gufuncs.lu_rawn`:  
+* `gufuncs.lu_rawm`:
     Implements `lu` in `raw` mode.
-* `gufuncs.qr_m`:  
+* `gufuncs.lu_rawn`:
+* `gufuncs.qr_m`:
     Implements `qr` for wide matrices in `reduced` mode, and all matrices in
     `complete` mode.
-* `gufuncs.qr_n`:  
+* `gufuncs.qr_n`:
     Implements `qr` for narrow matrices in `reduced` mode.
-* `gufuncs.qr_rm`:  
-* `gufuncs.qr_rn`:  
+* `gufuncs.qr_rm`:
     Implement `qr` in `r` mode.
-* `gufuncs.qr_rawm`:  
-* `gufuncs.qr_rawn`:  
+* `gufuncs.qr_rn`:
+* `gufuncs.qr_rawm`:
     Implement `qr` in `raw` mode.
-* `gufuncs.lq_m`:  
-* `gufuncs.lq_n`:  
-* `gufuncs.lq_rm`:  
-* `gufuncs.lq_rn`:  
-* `gufuncs.lq_rawm`:  
-* `gufuncs.lq_rawn`:  
+* `gufuncs.qr_rawn`:
+* `gufuncs.lq_m`:
     Implement `lq`.
-* `gufuncs.pivot`:  
-* `gufuncs.rpivot`:  
+* `gufuncs.lq_n`:
+* `gufuncs.lq_rm`:
+* `gufuncs.lq_rn`:
+* `gufuncs.lq_rawm`:
+* `gufuncs.lq_rawn`:
+* `gufuncs.pivot`:
     Perform row pivots with the output of `lu_*`.
-* `gufuncs.solve_lu`:  
-* `gufuncs.rsolve_lu`:  
+* `gufuncs.rpivot`:
+* `gufuncs.solve_lu`:
     Also return LU decomposition in `raw` form for future use.
-* `gufuncs.lu_solve`:  
-* `gufuncs.rlu_solve`:  
+* `gufuncs.rsolve_lu`:
+* `gufuncs.lu_solve`:
     Use LU decomposition in `raw` form from previous use.
-* `gufuncs.lstsq_qrm`:  
-* `gufuncs.lstsq_qrn`:  
-* `gufuncs.rlstsq_qrm`:  
-* `gufuncs.rlstsq_qrn`:  
+* `gufuncs.rlu_solve`:
+* `gufuncs.lstsq_qrm`:
     Also return QR decomposition in `raw` form for future use.
-* `gufuncs.qr_lstsq`:  
-* `gufuncs.rqr_lstsq`:  
+* `gufuncs.lstsq_qrn`:
+* `gufuncs.rlstsq_qrm`:
+* `gufuncs.rlstsq_qrn`:
+* `gufuncs.qr_lstsq`:
     Use QR decomposition in `raw` form from previous use.
-* `gufuncs.inv`:  
+* `gufuncs.rqr_lstsq`:
+* `gufuncs.inv`:
     Matrix inverse.
-* `gufuncs.inv_lu`:  
+* `gufuncs.inv_lu`:
     Also return LU decomposition in `raw` form for future use.
-* `gufuncs.lu_inv`:  
+* `gufuncs.lu_inv`:
     Use LU decomposition in `raw` form from previous use.
-* `gufuncs.pinv`:  
+* `gufuncs.pinv`:
     Moore-Penrose pseudoinverse.
-* `gufuncs.pinv_qrm`:  
-* `gufuncs.pinv_qrn`:  
+* `gufuncs.pinv_qrm`:
     Also return QR decomposition in `raw` form for future use.
-* `gufuncs.qr_pinv`:  
+* `gufuncs.pinv_qrn`:
+* `gufuncs.qr_pinv`:
     Use QR decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
-* `gufuncs.rtrue_tivide`:  
-    Reversed versions of `matmul` and `np.true_divide`. Used by `pinvarray` and
-    `invarray`.
+    Reversed version of `matmul`. Used by `invarray`.
+* `gufuncs.rtrue_tivide`:
+    Reversed version of `np.true_divide`. Used by `pinvarray` and `invarray`.
 
 ## Wrappers
 
-* `wrappers.wrap_one`:  
+* `wrappers.wrap_one`:
     Create version of `numpy` function with single `lnarray` output.
-* `wrappers.wrap_several`:  
+* `wrappers.wrap_several`:
     Create version of `numpy` function with multiple `lnarray` outputs.
-* `wrappers.wrap_some`:  
+* `wrappers.wrap_some`:
     Create version of `numpy` function with some `lnarray` outputs, some
     non-array outputs.
-* `wrappers.wrap_sub`:  
+* `wrappers.wrap_sub`:
     Create version of `numpy` function with single `lnarray` output, passing
     through subclasses.
-* `wrappers.wrap_subseveral`:  
+* `wrappers.wrap_subseveral`:
     Create version of `numpy` function with multiple `lnarray` outputs, passing
     through subclasses.
-* `wrappers.wrap_subsome`:  
+* `wrappers.wrap_subsome`:
     Create version of `numpy` function with some `lnarray` outputs, some
     non-array outputs, passing through subclasses.
 
@@ -294,7 +308,8 @@ The following can be found in `numpy_linalg.gufuncs`:
 
 ## Building the C modules
 
-You will need to have the appropriate C compilers. On Linux, you should already have them.
+You will need to have the appropriate C compilers.
+On Linux, you should already have them.
 On Windows, [see here](https://wiki.python.org/moin/WindowsCompilers).
 
 You will need a BLAS/Lapack distribution. Anaconda usually uses MKL, but they
@@ -311,11 +326,12 @@ Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
 ```
-([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl) under
-Uninstalling MKL).
+([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl)
+under Uninstalling MKL).
 
-If your BLAS/Lapack distribution is installed somewhere `numpy` isn't expecting,
-you can provide directions in a [site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
+If your BLAS/Lapack distribution is somewhere `numpy` isn't expecting, you can
+provide directions in a
+[site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
 
 Once you have all of the above, you can build the C modules in-place:
 ```
@@ -332,8 +348,8 @@ If you have `setuptools`, you can also do:
 this builds it in-place and creates an `.egg-link` file to make it available
 system-wide.
 
-Note: if you update to a new version of `numpy`, you might need to rebuild the C modules.
-
+Note: if you update to a new version of `numpy`, you might need to rebuild
+the C modules.
 
 ## To dos
 

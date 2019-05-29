@@ -22,7 +22,7 @@ __all__ = [
            'concatenate', 'stack', 'column_stack', 'dstack', 'hstack',
            'vstack', 'block', 'split', 'array_split', 'dsplit', 'hsplit',
            'vsplit', 'tile', 'repeat', 'delete', 'insert', 'append', 'resize',
-           'trim_zeros', 'unique', 'flip', 'fliplr', 'flipud', 'reshape',
+           'trim_zeros', 'unique', 'flip', 'fliplr', 'flipud',
            'roll', 'rot90'
            ]
 

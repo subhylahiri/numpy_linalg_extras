@@ -41,7 +41,7 @@ import typing as ty
 import numpy as np
 import numpy.linalg.linalg as nla
 from . import gufuncs as gf
-from .gufuncs._gufuncs_cloop import matmul, rmatmul
+from .gufuncs import matmul, rmatmul, solve, rsolve, lstsq, rlstsq
 
 __all__ = [
     'flattish',
@@ -70,7 +70,7 @@ __all__ = [
 # =============================================================================
 
 
-def flattish(arr: np.ndarray, start: int, stop: int) -> np.ndarray:
+def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     """Partial flattening.
 
     Flattens those axes in the range [start:stop)
@@ -79,16 +79,18 @@ def flattish(arr: np.ndarray, start: int, stop: int) -> np.ndarray:
     ----------
     arr : np.ndarray (...,L,M,N,...,P,Q,R,...)
         Array to be partially flattened.
-    start : int
+    start : int, optional, default: 0
         First axis of group to be flattened.
-    stop : int
-        First axis *after* group to be flattened.
+    stop : int or None, optional, default: None
+        First axis *after* group to be flattened. Goes to end if it is None.
 
     Returns
     -------
     new_arr : np.ndarray (...,L,M*N*...*P*Q,R,...)
         Partially flattened array.
     """
+    if stop is None:
+        stop = arr.ndim
     newshape = arr.shape[:start] + (-1,) + arr.shape[stop:]
     if len(newshape) > arr.ndim + 1:
         raise ValueError("start={} > stop={}".format(start, stop))
@@ -220,12 +222,12 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # =============================================================================
 # Division & Multiplication
 # =============================================================================
-matmul = gf.vec.vec_wrap(gf.matmul)
-rmatmul = gf.vec.vec_wrap(gf.rmatmul)
-solve = gf.vec.vec_wrap(gf.solve)
-rsolve = gf.vec.vec_wrap(gf.rsolve)
-lstsq = gf.vec.vec_wrap(gf.lstsq)
-rlstsq = gf.vec.vec_wrap(gf.rlstsq)
+# matmul = gf.vec.vec_wrap(gf.matmul)
+# rmatmul = gf.vec.vec_wrap(gf.rmatmul)
+# solve = gf.vec.vec_wrap(gf.solve)
+# rsolve = gf.vec.vec_wrap(gf.rsolve)
+# lstsq = gf.vec.vec_wrap(gf.lstsq)
+# rlstsq = gf.vec.vec_wrap(gf.rlstsq)
 
 
 def matldiv(x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:

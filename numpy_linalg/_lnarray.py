@@ -360,6 +360,7 @@ def _inv_input(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
         The original ufunc that was called
     pinv_in: Sequence[bool]
         Tells us if each original argument was a (p)invarray
+
     Returns
     -------
     left, right
@@ -378,7 +379,7 @@ def _inv_input(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     return tuple(x ^ y for x, y in zip(pinv_in, func_in)) + (swap,)
 
 
-def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> bool:
+def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     """Is the other ufunc input a numerator (after swapping for inverse, etc)?
 
     Parameters
@@ -387,6 +388,11 @@ def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> bool:
         The original ufunc that was called
     pinv_in: Sequence[bool]
         Tells us if each original argument was a (p)invarray
+
+    Returns
+    -------
+    left, right : bool
+        `gufuncs.fam.inverse_scalar_arguments` of ufunc to call
     """
     # inverse_scalar_arguments tells us if the other argument is a numerator.
     # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.

@@ -1376,17 +1376,17 @@ static char ufn_types_lu_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY
 
 // info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
-    { "solve", "(n,n),(n,nrhs)->(n,nrhs)", solve__doc__, 4, 2, 1,
+    { "solve", "(n,n),(n,nrhs?)->(n,nrhs?)", solve__doc__, 4, 2, 1,
         FUNC_ARRAY_NAME(solve), ufn_types_4_3 },
-    { "rsolve", "(nrhs,n),(n,n)->(nrhs,n)", rsolve__doc__, 4, 2, 1,
+    { "rsolve", "(nrhs?,n),(n,n)->(nrhs?,n)", rsolve__doc__, 4, 2, 1,
         FUNC_ARRAY_NAME(rsolve), ufn_types_4_3 },
-    { "solve_lu", "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)", solve_lu__doc__, 4, 2, 3,
+    { "solve_lu", "(n,n),(n,nrhs?)->(n,nrhs?),(n,n),(n)", solve_lu__doc__, 4, 2, 3,
         FUNC_ARRAY_NAME(solve_lu), ufn_types_lu_5 },
-    { "rsolve_lu", "(nrhs,n),(n,n)->(nrhs,n),(n,n),(n)", rsolve_lu__doc__, 4, 2, 3,
+    { "rsolve_lu", "(nrhs?,n),(n,n)->(nrhs?,n),(n,n),(n)", rsolve_lu__doc__, 4, 2, 3,
         FUNC_ARRAY_NAME(rsolve_lu), ufn_types_lu_5 },
-    { "lu_solve", "(n,n),(n),(n,nrhs)->(n,nrhs)", lu_solve__doc__, 4, 3, 1,
+    { "lu_solve", "(n,n),(n),(n,nrhs?)->(n,nrhs?)", lu_solve__doc__, 4, 3, 1,
         FUNC_ARRAY_NAME(lu_solve), ufn_types_solve_4 },
-    { "rlu_solve", "(nrhs,n),(n,n),(n)->(nrhs,n)", rlu_solve__doc__, 4, 3, 1,
+    { "rlu_solve", "(nrhs?,n),(n,n),(n)->(nrhs?,n)", rlu_solve__doc__, 4, 3, 1,
         FUNC_ARRAY_NAME(rlu_solve), ufn_types_rsolve_4 },
     { "lu_m", "(m,n)->(m,m),(m,n),(m)", lu__doc__, 4, 1, 3,
         FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },

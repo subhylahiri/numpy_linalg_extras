@@ -304,5 +304,4 @@ class TestSolveVal(TestSolve):
 
 # =============================================================================
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
-#    ut.main(testRunner=ut.TextTestRunner(resultclass=utn.TestResultNumpy))
+    utn.main(verbosity=2)

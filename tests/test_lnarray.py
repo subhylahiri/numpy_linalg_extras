@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test lnarray class
 """
-import unittest
 import numpy as np
 import unittest_numpy as utn
 import numpy_linalg as la
@@ -271,4 +270,4 @@ class TestPinvarray(TestNewClasses):
 
 
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    utn.main(verbosity=2)

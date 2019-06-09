@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test C-loop and BLAS ufuncs + qr
 """
-import unittest
 import numpy as np
 import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
@@ -126,5 +125,4 @@ class TestCloop(TestBlas):
 
 # =============================================================================
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
-#    ut.main(testRunner=ut.TextTestRunner(resultclass=utn.TestResultNumpy))
+    utn.main(verbosity=2)

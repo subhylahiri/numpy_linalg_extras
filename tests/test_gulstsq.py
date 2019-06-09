@@ -264,7 +264,6 @@ class TestLQ(TestQRPinv):
         with self.subTest(msg='q^T q'):
             self.assertArrayAllClose(self.id_small, eyet)
 
-    # @unittest.skip('wrong size')
     @utn.loop_test(msg='complete')
     def test_lq_complete(self, sctype):
         """Check that lq_n returns the expected values on wide matrices
@@ -593,5 +592,4 @@ class TestLstsqVal(TestLstsq):
 
 # =============================================================================
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
-#    ut.main(testRunner=ut.TextTestRunner(resultclass=utn.TestResultNumpy))
+    utn.main(verbosity=2)

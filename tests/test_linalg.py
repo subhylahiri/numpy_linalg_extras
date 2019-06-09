@@ -3,7 +3,6 @@
 It has been established, in test_gu*.py, that the gufuncs return the correct
 values. We just check that the python wrappers call the correct ones.
 """
-import unittest
 import numpy as np
 import unittest_numpy as utn
 import numpy_linalg as la
@@ -350,5 +349,5 @@ class TestValue(TestLinalg):
 
 # =============================================================================
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    utn.main(verbosity=2)
 #    ut.main(testRunner=ut.TextTestRunner(resultclass=utn.TestResultNumpy))

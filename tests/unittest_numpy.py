@@ -33,11 +33,29 @@ invalid_err = (FloatingPointError, 'invalid value encountered')
 __unittest = True
 
 
-class TestResultNumpy(unittest.TextTestResult):
+class TestResultStopTB(unittest.TextTestResult):
     def _is_relevant_tb_level(self, tb):
         f_vars = tb.tb_frame.f_globals.copy()
-        f_vars.update(tb.tb_frame.f_locals)
-        return '__unittest' in f_vars and f_vars['__unittest']
+        f_vars.update(tb.tb_frame.f_locals)  # locals can overwrite globals
+        flags = list(filter(lambda k: k.endswith('__unittest'), f_vars))
+        # locals have precedence over globals, so look at last element.
+        # is flags nonempty and is the last corresponding frame variable True?
+        return flags and f_vars[flags[-1]]
+        # This would fail because key in f_locals is '_TestCase????__unittest':
+        # return '__unittest' in f_vars and f_vars['__unittest']
+
+
+class TestRunnerStopTB(unittest.TextTestRunner):
+    def __init__(self, resultclass=None, **kwargs):
+        if resultclass is None:
+            resultclass = TestResultStopTB
+        super().__init__(resultclass=resultclass, **kwargs)
+
+
+def main(testRunner=None, **kwds):
+    if testRunner is None:
+        testRunner = TestRunnerStopTB
+    unittest.main(testRunner=testRunner, **kwds)
 
 # =============================================================================
 # %% TestCaseNumpy base class
@@ -92,6 +110,7 @@ class TestCaseNumpy(unittest.TestCase):
         numpy.testing.assert_allclose) and processes the results like a
         unittest.TestCase method.
         """
+        # __unittest = True
         if not np.allclose(actual, desired, **self.all_close_opts):
             if msg is None:
                 msg = miss_str(actual, desired, **self.all_close_opts)
@@ -101,6 +120,7 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.equal(...)) and processes the results like a
         unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual != desired):
             self.fail(msg)
 
@@ -108,6 +128,7 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.less(...)) and processes the results like a
         unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual >= desired):
             self.fail(msg)
 
@@ -115,6 +136,7 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.greater(...)) and processes the results like a
         unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual <= desired):
             self.fail(msg)
 
@@ -123,6 +145,7 @@ class TestCaseNumpy(unittest.TestCase):
         numpy.testing.assert_allclose), negates and processes the results like
         a unittest.TestCase method.
         """
+        # __unittest = True
         if np.allclose(actual, desired, **self.all_close_opts):
             if msg is None:
                 msg = miss_str(actual, desired, **self.all_close_opts)
@@ -132,6 +155,7 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.not_equal(...)) and processes the results like
         a unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual == desired):
             self.fail(msg)
 
@@ -139,6 +163,7 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.greater_equal(...)) and processes the results
         like a unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual < desired):
             self.fail(msg)
 
@@ -146,18 +171,20 @@ class TestCaseNumpy(unittest.TestCase):
         """Calls numpy.all(numpy.less_equal(...)) and processes the results
         like a unittest.TestCase method.
         """
+        # __unittest = True
         if np.any(actual > desired):
             self.fail(msg)
 
     def assertArrayShaped(self, array, shape, msg=None):
         """Calls self.assertEqual(array.shape, shape).
         """
-        # self.assertEqual(array.ndim, len(shape), msg)
+        # __unittest = True
         self.assertEqual(array.shape, shape, msg)
 
     def assertArrayShapesAre(self, arrays, shapes, msg=None):
         """Calls self.assertEqual(array.shape, shape).
         """
+        # __unittest = True
         for array, shape in zip(arrays, shapes):
             self.assertEqual(array.shape, shape, msg)
 

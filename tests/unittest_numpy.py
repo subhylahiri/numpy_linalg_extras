@@ -5,7 +5,6 @@ import unittest
 import contextlib
 import functools
 import numpy as np
-import sl_py_tools.numpy_tricks.linalg._lnarray as la
 
 __all__ = [
         'TestCaseNumpy',
@@ -34,11 +33,26 @@ __unittest = True
 
 
 class TestResultStopTB(unittest.TextTestResult):
+    """TestResult that does not print beyond certain frames in tracebacks
+
+    Use in place of `unittest.TextTestResult`.
+
+    You can stop traceback display at any particular point by writing
+    ``__unittest = True``. This can be done at the function level or at the
+    module level. If ``__unittest = True`` appears at the module level, it can
+    be overridden in specific functions by writing ``__unittest = False``.
+
+    Checks if there is a variable name ending with `__unittest` in the frame
+    and if that variable evaluates as True. Only the last variable satisfying
+    the first criterion is tested for the second, with locals added after
+    globals and otherwise appearing in the order they were added to the dicts.
+    """
+
     def _is_relevant_tb_level(self, tb):
         f_vars = tb.tb_frame.f_globals.copy()
-        f_vars.update(tb.tb_frame.f_locals)  # locals can overwrite globals
+        f_vars.update(tb.tb_frame.f_locals)  # locals after/overwrite globals
         flags = list(filter(lambda k: k.endswith('__unittest'), f_vars))
-        # locals have precedence over globals, so look at last element.
+        # locals have precedence over globals, so we look at last element.
         # is flags nonempty and is the last corresponding frame variable True?
         return flags and f_vars[flags[-1]]
         # This would fail because key in f_locals is '_TestCase????__unittest':
@@ -46,6 +60,22 @@ class TestResultStopTB(unittest.TextTestResult):
 
 
 class TestRunnerStopTB(unittest.TextTestRunner):
+    """TestRunner that does not print certain frames in tracebacks
+
+    Use in place of `unittest.TextTestRunner`. It uses `TestResultStopTB` by
+    default.
+
+    You can stop traceback display at any particular point by writing
+    ``__unittest = True``. This can be done at the function level or at the
+    module level. If ``__unittest = True`` appears at the module level, it can
+    be overridden in specific functions by writing ``__unittest = False``.
+
+    Checks if there is a variable name ending with `__unittest` in the frame
+    and if that variable evaluates as True. Only the last variable satisfying
+    the first criterion is tested for the second, with locals appearing after
+    globals and otherwise appearing in the order they were added to the dicts.
+    """
+
     def __init__(self, resultclass=None, **kwargs):
         if resultclass is None:
             resultclass = TestResultStopTB
@@ -53,6 +83,20 @@ class TestRunnerStopTB(unittest.TextTestRunner):
 
 
 def main(testRunner=None, **kwds):
+    """Run tests without printing certain frames in tracebacks.
+
+    Use in place of `unittest.main`. It uses `TestRunnerStopTB` by default.
+
+    You can stop traceback display at any particular point by writing
+    ``__unittest = True``. This can be done at the function level or at the
+    module level. If ``__unittest = True`` appears at the module level, it can
+    be overridden in specific functions by writing ``__unittest = False``.
+
+    Checks if there is a variable name ending with `__unittest` in the frame
+    and if that variable evaluates as True. Only the last variable satisfying
+    the first criterion is tested for the second, with locals appearing after
+    globals and otherwise appearing in the order they were added to the dicts.
+    """
     if testRunner is None:
         testRunner = TestRunnerStopTB
     unittest.main(testRunner=testRunner, **kwds)
@@ -97,10 +141,12 @@ class TestCaseNumpy(unittest.TestCase):
         self.sctype = ['f', 'd', 'F', 'D']
         self.all_close_opts = {'atol': 1e-5, 'rtol': 1e-5, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
-        self.addTypeEqualityFunc(la.lnarray, self.assertArrayAllClose)
 
     def pick_var_type(self, sctype):
-        """Set working avriable types
+        """Set scalar types of member variables.
+
+        If `self.varnames` is `['a', 'b', ...]`, it sets `self.a, self.b, ...`
+        to `self._a[sctype], self._b[sctype], ...`.
         """
         for var in self.varnames:
             setattr(self, var, getattr(self, '_' + var)[sctype])
@@ -244,16 +290,17 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
     shape = np.broadcast(x, y).shape
     thresh = atol + rtol * np.abs(np.broadcast_to(y, shape))
     mismatch = np.abs(x - y)
-    mis_frac = np.log(mismatch) - np.log(thresh)
+    mis_frac = (np.log(mismatch) - np.log(thresh)) / np.log(10)
+
     ind = np.unravel_index(np.argmax(mis_frac), mis_frac.shape)
-    formatter = 'Should be zero: {:.2g}\nor: {:.2g} = {:.2g} * 1e{:.1f} at {}'
     if equal_nan:
         worst = np.nanmax(mismatch)
     else:
         worst = np.amax(mismatch)
+    mismatch, thresh, mis_frac = mismatch[ind], thresh[ind], mis_frac[ind]
 
-    return formatter.format(worst, mismatch[ind], thresh[ind],
-                            mis_frac[ind] / np.log(10), ind)
+    return f"""Should be zero: {worst:.2g}
+    or: {mismatch:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {ind}"""
 
 
 cmplx = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,
@@ -289,7 +336,7 @@ def randn_asa(shape, sctype):
 
 
 def zeros_asa(shape, sctype):
-    """standard normal array with scalar type
+    """array of zeros with scalar type
 
     Parameters
     ----------
@@ -302,7 +349,7 @@ def zeros_asa(shape, sctype):
 
 
 def ones_asa(shape, sctype):
-    """standard normal array with scalar type
+    """array of ones with scalar type
 
     Parameters
     ----------

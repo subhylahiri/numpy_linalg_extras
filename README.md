@@ -1,5 +1,9 @@
 # Numpy linear algebra enhancements
 
+This package contains classes and functions that make the syntax for linear
+algebra in `numpy` cleaner, particularly with respect to broadcasting and
+matrix division. 
+
 [Instructions for building the C modules below](#building-the-cpython-modules)
 
 <!-- MDTOC maxdepth:6 firsth1:1 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
@@ -17,9 +21,7 @@
 
 <!-- /MDTOC -->
 
-This package contains classes and functions that make the syntax for linear
-algebra in `numpy` cleaner, particularly with respect to broadcasting and
-matrix division. The main way of using this is via the `lnarray` class
+The main way of using this is package is via the `lnarray` class
 (the `lstsq` and `qr` functions are the only other things I find useful here).
 All of the functions will work with `numpy.ndarray` objects as well.
 Furthermore, `matmul` is implemented with a `gufunc` which should make

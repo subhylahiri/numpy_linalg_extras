@@ -75,13 +75,17 @@ class TestCaseNumpy(unittest.TestCase):
 
     def setUp(self):
         # Scalar types:
+        self.varnames = []
         self.sctype = ['f', 'd', 'F', 'D']
         self.all_close_opts = {'atol': 1e-5, 'rtol': 1e-5, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
         self.addTypeEqualityFunc(la.lnarray, self.assertArrayAllClose)
 
-#    def defaultTestResult(self):
-#        return TestResultNumpy
+    def pick_var_type(self, sctype):
+        """Set working avriable types
+        """
+        for var in self.varnames:
+            setattr(self, var, getattr(self, '_' + var)[sctype])
 
     def assertArrayAllClose(self, actual, desired, msg=None):
         """Calls numpy.allclose (so it broadcasts, unlike
@@ -145,7 +149,7 @@ class TestCaseNumpy(unittest.TestCase):
         if np.any(actual > desired):
             self.fail(msg)
 
-    def assertArrayShapeIs(self, array, shape, msg=None):
+    def assertArrayShaped(self, array, shape, msg=None):
         """Calls self.assertEqual(array.shape, shape).
         """
         # self.assertEqual(array.ndim, len(shape), msg)

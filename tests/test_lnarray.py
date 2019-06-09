@@ -73,17 +73,17 @@ class TestArray(TestNewClasses):
         """
         self.pick_var_type('D')
         w, x = self.w, self.x
-        self.assertEqual(x.t.shape, (2, 3, 5))
-        self.assertEqual(x.h.shape, (2, 3, 5))
+        self.assertArrayShaped(x.t, (2, 3, 5))
+        self.assertArrayShaped(x.h, (2, 3, 5))
         self.assertArrayNotAllClose(x.t, x.h)
-        self.assertEqual(w.c.shape, (3, 3, 1))
-        self.assertEqual(x.c.uc.shape, (2, 5, 3))
-        self.assertEqual(w.r.shape, (3, 1, 3))
-        self.assertEqual(x.r.ur.shape, (2, 5, 3))
-        self.assertEqual(w.s.shape, (3, 3, 1, 1))
-        self.assertEqual(x.s.us.shape, (2, 5, 3))
-        self.assertEqual(w.expand_dims(1, 3).shape, (3, 1, 3, 1))
-        self.assertEqual((x.s * w).flattish(1, 4).shape, (2, 45, 3))
+        self.assertArrayShaped(w.c, (3, 3, 1))
+        self.assertArrayShaped(x.c.uc, (2, 5, 3))
+        self.assertArrayShaped(w.r, (3, 1, 3))
+        self.assertArrayShaped(x.r.ur, (2, 5, 3))
+        self.assertArrayShaped(w.s, (3, 3, 1, 1))
+        self.assertArrayShaped(x.s.us, (2, 5, 3))
+        self.assertArrayShaped(w.expand_dims(1, 3), (3, 1, 3, 1))
+        self.assertArrayShaped((x.s * w).flattish(1, 4), (2, 45, 3))
         with self.assertRaisesRegex(ValueError, "repeated axes"):
             x.expand_dims(2, -3)
         with self.assertRaises(ValueError):
@@ -148,13 +148,13 @@ class TestPinvarray(TestNewClasses):
         self.assertEqual(xp.ndim, 3)
         self.assertEqual(xp.shape, (2, 3, 5))
         self.assertEqual(xp.size, 30)
-        self.assertEqual(xp().shape, (2, 3, 5))
+        self.assertArrayShaped(xp(), (2, 3, 5))
         with self.assertRaises(ValueError):
             self.x.inv
         xp = self.x.c.pinv
-        self.assertEqual(xp.swapaxes(0, 1).shape, (5, 2, 1, 3))
-        self.assertEqual(xp.swapaxes(0, 2).shape, (1, 5, 2, 3))
-        self.assertEqual(xp.swapaxes(-1, -2).shape, (2, 5, 3, 1))
+        self.assertArrayShaped(xp.swapaxes(0, 1), (5, 2, 1, 3))
+        self.assertArrayShaped(xp.swapaxes(0, 2), (1, 5, 2, 3))
+        self.assertArrayShaped(xp.swapaxes(-1, -2), (2, 5, 3, 1))
 
     @utn.loop_test()
     def test_pinv_funcs(self, sctype):

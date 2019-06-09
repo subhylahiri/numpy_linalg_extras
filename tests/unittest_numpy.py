@@ -149,6 +149,18 @@ class TestCaseNumpy(unittest.TestCase):
         if np.any(actual > desired):
             self.fail(msg)
 
+    def assertArrayShaped(self, array, shape, msg=None):
+        """Calls self.assertEqual(array.shape, shape).
+        """
+        # self.assertEqual(array.ndim, len(shape), msg)
+        self.assertEqual(array.shape, shape, msg)
+
+    def assertArrayShapesAre(self, arrays, shapes, msg=None):
+        """Calls self.assertEqual(array.shape, shape).
+        """
+        for array, shape in zip(arrays, shapes):
+            self.assertEqual(array.shape, shape, msg)
+
 
 # =============================================================================
 # %% Helpers for TestCaseNumpy methods

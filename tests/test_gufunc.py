@@ -42,10 +42,9 @@ class TestBlas(utn.TestCaseNumpy):
         """Check that norm returns arrays with the expected shape
         """
         self.pick_var_type('d')
-        self.assertEqual(self.gf.norm(self.x).shape, (2, 3))
-        self.assertEqual(self.gf.norm(self.x, axis=1).shape, (2, 5))
-        self.assertEqual(self.gf.norm(self.x, keepdims=True).shape,
-                         (2, 3, 1))
+        self.assertArrayShaped(self.gf.norm(self.x), (2, 3))
+        self.assertArrayShaped(self.gf.norm(self.x, axis=1), (2, 5))
+        self.assertArrayShaped(self.gf.norm(self.x, keepdims=True), (2, 3, 1))
 
     @utn.loop_test(msg='norm val', attr_inds=slice(-1))
     def test_norm_val(self, sctype: str):

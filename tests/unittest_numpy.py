@@ -24,12 +24,42 @@ __all__ = [
 # =============================================================================
 broadcast_err = (ValueError, 'operands could not be broadcast')
 core_dim_err = (ValueError, 'mismatch in its core dimension')
+num_dim_err = (ValueError, 'does not have enough dimensions')
 invalid_err = (FloatingPointError, 'invalid value encountered')
 
 # =============================================================================
 # %% Trying to customise traceback display
 # =============================================================================
 __unittest = True
+
+class NosortTestLoader(unittest.TestLoader):
+    """Test loader that does not sort if class overrides dir
+    """
+    sortTestMethodsUsing = None
+
+    def getTestCaseNames(self, testCaseClass):
+        """Return a sorted sequence of method names found within testCaseClass
+        """
+        def shouldIncludeMethod(attrname):
+            if not attrname.startswith(self.testMethodPrefix):
+                return False
+            testFunc = getattr(testCaseClass, attrname)
+            if not callable(testFunc):
+                return False
+            fullName = '%s.%s' % (testCaseClass.__module__, testFunc.__qualname__)
+            return self.testNamePatterns is None or \
+                any(fnmatchcase(fullName, pattern) for pattern in self.testNamePatterns)
+        try:
+            testFnNames = list(filter(shouldIncludeMethod,
+                                      testCaseClass.__dir__(testCaseClass)))
+        except AttributeError:
+            testFnNames = list(filter(shouldIncludeMethod, dir(testCaseClass)))
+        if self.sortTestMethodsUsing:
+            testFnNames.sort(key=functools.cmp_to_key(self.sortTestMethodsUsing))
+        return testFnNames
+
+
+nosortTestLoader = NosortTestLoader()
 
 
 class TestResultStopTB(unittest.TextTestResult):
@@ -48,13 +78,27 @@ class TestResultStopTB(unittest.TextTestResult):
     globals and otherwise appearing in the order they were added to the dicts.
     """
 
+    def addSubTest(self, test, subtest, err):
+        """Called at the end of a subtest.
+        'err' is None if the subtest ended successfully, otherwise it's a
+        tuple of values as returned by sys.exc_info().
+        """
+        super().addSubTest(test, subtest, err)
+        if err is not None:
+            if issubclass(err[0], test.failureException):
+                super().addFailure(test, err)
+                del self.failures[-1]
+            else:
+                super().addError(test, err)
+                del self.errors[-1]
+
     def _is_relevant_tb_level(self, tb):
         f_vars = tb.tb_frame.f_globals.copy()
         f_vars.update(tb.tb_frame.f_locals)  # locals after/overwrite globals
-        flags = list(filter(lambda k: k.endswith('__unittest'), f_vars))
+        flags = [v for k, v in f_vars.items() if k.endswith('__unittest')]
         # locals have precedence over globals, so we look at last element.
         # is flags nonempty and is the last corresponding frame variable True?
-        return flags and f_vars[flags[-1]]
+        return flags and flags[-1]
         # This would fail because key in f_locals is '_TestCase????__unittest':
         # return '__unittest' in f_vars and f_vars['__unittest']
 
@@ -82,7 +126,7 @@ class TestRunnerStopTB(unittest.TextTestRunner):
         super().__init__(resultclass=resultclass, **kwargs)
 
 
-def main(testRunner=None, **kwds):
+def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
     """Run tests without printing certain frames in tracebacks.
 
     Use in place of `unittest.main`. It uses `TestRunnerStopTB` by default.
@@ -99,7 +143,8 @@ def main(testRunner=None, **kwds):
     """
     if testRunner is None:
         testRunner = TestRunnerStopTB
-    unittest.main(testRunner=testRunner, **kwds)
+    unittest.main(testLoader=testLoader, testRunner=testRunner, **kwds)
+
 
 # =============================================================================
 # %% TestCaseNumpy base class
@@ -233,6 +278,12 @@ class TestCaseNumpy(unittest.TestCase):
         # __unittest = True
         for array, shape in zip(arrays, shapes):
             self.assertEqual(array.shape, shape, msg)
+
+    def __dir__(self):
+        my_attr = []
+        for base in self.__bases__:
+            my_attr += TestCaseNumpy.__dir__(base)
+        return my_attr + list(self.__dict__.keys())
 
 
 # =============================================================================

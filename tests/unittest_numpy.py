@@ -4,10 +4,15 @@
 import unittest
 import contextlib
 import functools
+from fnmatch import fnmatchcase
 import numpy as np
 
 __all__ = [
         'TestCaseNumpy',
+        'NosortTestLoader',
+        'TestResultStopTB',
+        'TestRunnerStopTB',
+        'main',
         'loop_test',
         'miss_str',
         'asa',
@@ -15,9 +20,11 @@ __all__ = [
         'zeros_asa',
         'ones_asa',
         'errstate',
+        'unique_unsorted',
         'broadcast_err',
         'core_dim_err',
         'invalid_err',
+        'num_dim_err',
         ]
 # =============================================================================
 # %% Error specs for assertRaisesRegex
@@ -28,9 +35,10 @@ num_dim_err = (ValueError, 'does not have enough dimensions')
 invalid_err = (FloatingPointError, 'invalid value encountered')
 
 # =============================================================================
-# %% Trying to customise traceback display
+# %% Customise test & traceback display
 # =============================================================================
 __unittest = True
+
 
 class NosortTestLoader(unittest.TestLoader):
     """Test loader that does not sort if class overrides dir
@@ -38,7 +46,7 @@ class NosortTestLoader(unittest.TestLoader):
     sortTestMethodsUsing = None
 
     def getTestCaseNames(self, testCaseClass):
-        """Return a sorted sequence of method names found within testCaseClass
+        """Return an unsorted sequence of method names found in testCaseClass
         """
         def shouldIncludeMethod(attrname):
             if not attrname.startswith(self.testMethodPrefix):
@@ -46,16 +54,20 @@ class NosortTestLoader(unittest.TestLoader):
             testFunc = getattr(testCaseClass, attrname)
             if not callable(testFunc):
                 return False
-            fullName = '%s.%s' % (testCaseClass.__module__, testFunc.__qualname__)
+            fullName = '%s.%s' % (testCaseClass.__module__,
+                                  testFunc.__qualname__)
             return self.testNamePatterns is None or \
-                any(fnmatchcase(fullName, pattern) for pattern in self.testNamePatterns)
+                any(fnmatchcase(fullName, pattern)
+                    for pattern in self.testNamePatterns)
         try:
             testFnNames = list(filter(shouldIncludeMethod,
                                       testCaseClass.__dir__(testCaseClass)))
+            testFnNames = unique_unsorted(testFnNames)
         except AttributeError:
             testFnNames = list(filter(shouldIncludeMethod, dir(testCaseClass)))
         if self.sortTestMethodsUsing:
-            testFnNames.sort(key=functools.cmp_to_key(self.sortTestMethodsUsing))
+            testFnNames.sort(key=functools.cmp_to_key(
+                                            self.sortTestMethodsUsing))
         return testFnNames
 
 
@@ -343,15 +355,18 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
     mismatch = np.abs(x - y)
     mis_frac = (np.log(mismatch) - np.log(thresh)) / np.log(10)
 
-    ind = np.unravel_index(np.argmax(mis_frac), mis_frac.shape)
     if equal_nan:
-        worst = np.nanmax(mismatch)
+        a_ind = np.unravel_index(np.nanargmax(mismatch), mismatch.shape)
+        r_ind = np.unravel_index(np.nanargmax(mis_frac), mis_frac.shape)
     else:
-        worst = np.amax(mismatch)
-    mismatch, thresh, mis_frac = mismatch[ind], thresh[ind], mis_frac[ind]
+        a_ind = np.unravel_index(np.argmax(mismatch), mismatch.shape)
+        r_ind = np.unravel_index(np.argmax(mis_frac), mis_frac.shape)
 
-    return f"""Should be zero: {worst:.2g}
-    or: {mismatch:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {ind}"""
+    a_worst, r_worst = mismatch[a_ind], mismatch[r_ind]
+    thresh, mis_frac = thresh[r_ind], mis_frac[r_ind]
+
+    return f"""Should be zero: {a_worst:.2g} at {a_ind},
+    or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {r_ind}."""
 
 
 cmplx = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,
@@ -427,3 +442,11 @@ def errstate(*args, **kwds):
         np.seterr(**old_errstate)
         if call is not None:
             np.seterrcall(old_call)
+
+
+def unique_unsorted(sequence):
+    """remove repetitions without changing the order"""
+    sequence = np.asarray(sequence)
+    inds = np.unique(sequence, return_index=True)[1]
+    inds.sort()
+    return sequence[inds].tolist()

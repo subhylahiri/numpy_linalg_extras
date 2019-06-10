@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Test C-loop and BLAS ufuncs + qr
 """
+import unittest
 import numpy as np
 import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
@@ -42,7 +43,7 @@ class TestBlas(utn.TestCaseNumpy):
             self._n[sctype] = np.sqrt(nsq.real + nsq.imag)
 
     def test_norm_shape(self):
-        """Check that norm returns arrays with the expected shape
+        """Check that norm gufunc returns arrays with the expected shape
         """
         self.pick_var_type('d')
         self.assertArrayShaped(self.gf.norm(self.x), (2, 3))
@@ -51,7 +52,7 @@ class TestBlas(utn.TestCaseNumpy):
 
     @utn.loop_test(msg='norm val', attr_inds=slice(-1))
     def test_norm_val(self, sctype: str):
-        """Check that norm returns the expected values
+        """Check that norm gufunc returns the expected values
         """
         self.pick_var_type('d')
         nout = np.empty((2, 3), dtype=sctype.lower())
@@ -60,32 +61,30 @@ class TestBlas(utn.TestCaseNumpy):
         self.assertArrayAllClose(n, nout)
 
     def test_matmul_shape(self):
-        """Check that matmul returns arrays with the expected shape
+        """Check that matmul gufunc returns arrays with the expected shape
         """
         self.pick_var_type('d')
         self.assertArrayShaped(self.gf.matmul(self.x, self.y), (2, 3, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(self.y, self.x)
-        with self.subTest("flexible signatures"):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.matmul(self.x, self.v), (2, 3))
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.matmul(self.u, self.x), (2, 5))
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.matmul(self.u, self.u), ())
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.matmul(self.x, self.u)
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.matmul(self.v, self.x)
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.matmul(self.v, self.u)
+
+    @unittest.expectedFailure
+    def test_matmul_shape_flexible_signature(self):
+        """Check that matmul gufunc deals with vectors correctly
+        """
+        self.assertArrayShaped(self.gf.matmul(self.x, self.v), (2, 3))
+        self.assertArrayShaped(self.gf.matmul(self.u, self.x), (2, 5))
+        self.assertArrayShaped(self.gf.matmul(self.u, self.u), ())
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(self.x, self.u)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(self.v, self.x)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(self.v, self.u)
 
     @utn.loop_test(msg='matmul val')
     def test_matmul_val(self, sctype):
-        """Check that matmul returns the expected values
+        """Check that matmul gufunc returns the expected values
         """
         self.pick_var_type(sctype)
         zout = np.empty((2, 3, 2), sctype)
@@ -93,32 +92,30 @@ class TestBlas(utn.TestCaseNumpy):
         self.assertArrayAllClose(z, self.z)
 
     def test_rmatmul_shape(self):
-        """Check that rmatmul returns arrays with the expected shape
+        """Check that rmatmul gufunc returns arrays with the expected shape
         """
         self.pick_var_type('d')
         self.assertArrayShaped(self.gf.rmatmul(self.y, self.x), (2, 3, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(self.x, self.y)
-        with self.subTest("flexible signatures"):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.rmatmul(self.x, self.u), (2, 3))
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.rmatmul(self.v, self.x), (2, 5))
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.assertArrayShaped(self.gf.rmatmul(self.u, self.u), ())
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.rmatmul(self.x, self.v)
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.rmatmul(self.u, self.x)
-            # with self.assertRaisesRegex(*utn.core_dim_err):
-            with self.assertRaisesRegex(*utn.num_dim_err):
-                self.gf.rmatmul(self.v, self.u)
+
+    @unittest.expectedFailure
+    def test_rmatmul_shape_flexible_signature(self):
+        """Check that rmatmul gufunc deals with vectors correctly
+        """
+        self.assertArrayShaped(self.gf.rmatmul(self.x, self.u), (2, 3))
+        self.assertArrayShaped(self.gf.rmatmul(self.v, self.x), (2, 5))
+        self.assertArrayShaped(self.gf.rmatmul(self.u, self.u), ())
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(self.x, self.v)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(self.u, self.x)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(self.v, self.u)
 
     @utn.loop_test(msg='rmatmul val')
     def test_rmatmul_val(self, sctype):
-        """Check that rmatmul returns the expected values
+        """Check that rmatmul gufunc returns the expected values
         """
         self.pick_var_type(sctype)
         zout = np.empty((2, 3, 2), sctype)

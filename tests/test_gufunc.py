@@ -21,13 +21,17 @@ class TestBlas(utn.TestCaseNumpy):
         super().setUp()
         self.gf = gfb
         self.sctype.append('i')
-        self.varnames = ['x', 'y', 'z', 'w', 'n']
+        self.varnames = ['n', 'u', 'v', 'w', 'x', 'y', 'z']
+        self._n = {}
+        self._w = {}
+        self._u = {}
+        self._v = {}
         self._x = {}
         self._y = {}
         self._z = {}
-        self._w = {}
-        self._n = {}
         for sctype in self.sctype:
+            self._u[sctype] = utn.randn_asa((3,), sctype)
+            self._v[sctype] = utn.randn_asa((5,), sctype)
             self._x[sctype] = utn.randn_asa((2, 3, 5), sctype)
             self._y[sctype] = utn.randn_asa((5, 2), sctype)
             self._z[sctype] = self._x[sctype] @ self._y[sctype]
@@ -59,8 +63,25 @@ class TestBlas(utn.TestCaseNumpy):
         """Check that matmul returns arrays with the expected shape
         """
         self.pick_var_type('d')
+        self.assertArrayShaped(self.gf.matmul(self.x, self.y), (2, 3, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(self.y, self.x)
+        with self.subTest("flexible signatures"):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.matmul(self.x, self.v), (2, 3))
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.matmul(self.u, self.x), (2, 5))
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.matmul(self.u, self.u), ())
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.matmul(self.x, self.u)
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.matmul(self.v, self.x)
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.matmul(self.v, self.u)
 
     @utn.loop_test(msg='matmul val')
     def test_matmul_val(self, sctype):
@@ -75,8 +96,25 @@ class TestBlas(utn.TestCaseNumpy):
         """Check that rmatmul returns arrays with the expected shape
         """
         self.pick_var_type('d')
+        self.assertArrayShaped(self.gf.rmatmul(self.y, self.x), (2, 3, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(self.x, self.y)
+        with self.subTest("flexible signatures"):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.rmatmul(self.x, self.u), (2, 3))
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.rmatmul(self.v, self.x), (2, 5))
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.assertArrayShaped(self.gf.rmatmul(self.u, self.u), ())
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.rmatmul(self.x, self.v)
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.rmatmul(self.u, self.x)
+            # with self.assertRaisesRegex(*utn.core_dim_err):
+            with self.assertRaisesRegex(*utn.num_dim_err):
+                self.gf.rmatmul(self.v, self.u)
 
     @utn.loop_test(msg='rmatmul val')
     def test_rmatmul_val(self, sctype):

@@ -1,4 +1,4 @@
-# Numpy linear algebra enhancements
+# Linear algebra enhancements for numpy
 
 This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
@@ -8,7 +8,7 @@ matrix division.
 
 <!-- MDTOC maxdepth:6 firsth1:1 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
-- [Numpy linear algebra enhancements](#numpy-linear-algebra-enhancements)   
+- [Linear algebra enhancements for numpy](#linear-algebra-enhancements-for-numpy)   
    - [Rationale](#rationale)   
    - [Requirements](#requirements)   
    - [Classes](#classes)   
@@ -17,6 +17,7 @@ matrix division.
    - [Wrappers](#wrappers)   
    - [Examples](#examples)   
    - [Building the C modules](#building-the-c-modules)   
+   - [Running unit tests](#running-unit-tests)   
    - [To dos](#to-dos)   
 
 <!-- /MDTOC -->
@@ -251,12 +252,12 @@ The following can be found in `numpy_linalg.gufuncs`:
     Use LU decomposition in `raw` form from previous use.
 * `gufuncs.rlu_solve`:
 * `gufuncs.lstsq_qrm`:
-    Also return QR decomposition in `raw` form for future use.
+    Also return QR/LQ decomposition in `raw` form for future use.
 * `gufuncs.lstsq_qrn`:
 * `gufuncs.rlstsq_qrm`:
 * `gufuncs.rlstsq_qrn`:
 * `gufuncs.qr_lstsq`:
-    Use QR decomposition in `raw` form from previous use.
+    Use QR/LQ decomposition in `raw` form from previous use.
 * `gufuncs.rqr_lstsq`:
 * `gufuncs.inv`:
     Matrix inverse.
@@ -267,14 +268,15 @@ The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.pinv`:
     Moore-Penrose pseudoinverse.
 * `gufuncs.pinv_qrm`:
-    Also return QR decomposition in `raw` form for future use.
+    Also return QR/LQ decomposition in `raw` form for future use.
 * `gufuncs.pinv_qrn`:
 * `gufuncs.qr_pinv`:
-    Use QR decomposition in `raw` form from previous use.
+    Use QR/LQ decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
-    Reversed version of `matmul`. Used by `invarray`.
+    Reversed version of `matmul`. Used by `invarray`, otherwise not useful for the user.
 * `gufuncs.rtrue_tivide`:
-    Reversed version of `np.true_divide`. Used by `pinvarray` and `invarray`.
+    Reversed version of `np.true_divide`. Used by `pinvarray` and `invarray`, 
+    otherwise not useful for the user.
 
 ## Wrappers
 
@@ -352,6 +354,15 @@ system-wide.
 
 Note: if you update to a new version of `numpy`, you might need to rebuild
 the C modules.
+
+## Running unit tests
+
+You can test the build process and installation by running the unit tests.
+```
+> python -m unittest
+```
+You can customise which tests are run and how the results are displayed
+using the command line options for the [unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).
 
 ## To dos
 

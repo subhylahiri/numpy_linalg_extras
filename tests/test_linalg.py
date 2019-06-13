@@ -50,58 +50,58 @@ class TestShape(TestLinalg):
         """
         self.pick_var_type('d')
         # shape
-        self.assertArrayShaped(la.transpose(self.x), (2, 3, 5))
-        self.assertArrayShaped(la.row(self.x), (2, 5, 1, 3))
-        self.assertArrayShaped(la.col(self.x), (2, 5, 3, 1))
-        self.assertArrayShaped(la.scalar(self.x), (2, 5, 3, 1, 1))
+        self.assertArrayShape(la.transpose(self.x), (2, 3, 5))
+        self.assertArrayShape(la.row(self.x), (2, 5, 1, 3))
+        self.assertArrayShape(la.col(self.x), (2, 5, 3, 1))
+        self.assertArrayShape(la.scalar(self.x), (2, 5, 3, 1, 1))
 
     def test_la_fn(self):
         """Check (r)matmul, (r)solve, (r)lstsq, return arrays of correct shape
         """
         self.pick_var_type('d')
         # matmul
-        self.assertArrayShaped(la.matmul(self.x, self.y), (2, 5, 5))
-        self.assertArrayShaped(la.matmul(self.x, self.z), (2, 5))
+        self.assertArrayShape(la.matmul(self.x, self.y), (2, 5, 5))
+        self.assertArrayShape(la.matmul(self.x, self.z), (2, 5))
         # rmatmul
-        self.assertArrayShaped(lr.rmatmul(self.x, self.y), (2, 3, 3))
-        self.assertArrayShaped(lr.rmatmul(self.y, self.z), (5,))
+        self.assertArrayShape(lr.rmatmul(self.x, self.y), (2, 3, 3))
+        self.assertArrayShape(lr.rmatmul(self.y, self.z), (5,))
         # solve
-        self.assertArrayShaped(la.solve(self.w, self.y), (2, 3, 5))
-        self.assertArrayShaped(la.solve(self.w, self.z), (2, 3))
+        self.assertArrayShape(la.solve(self.w, self.y), (2, 3, 5))
+        self.assertArrayShape(la.solve(self.w, self.z), (2, 3))
         # rsolve
-        self.assertArrayShaped(la.rsolve(self.x, self.w), (2, 5, 3))
-        self.assertArrayShaped(la.rsolve(self.z, self.w), (2, 3))
+        self.assertArrayShape(la.rsolve(self.x, self.w), (2, 5, 3))
+        self.assertArrayShape(la.rsolve(self.z, self.w), (2, 3))
         # lstsq
-        self.assertArrayShaped(la.lstsq(self.x, self.v), (2, 3, 2))
-        self.assertArrayShaped(la.lstsq(self.y, self.w), (2, 5, 3))
-        self.assertArrayShaped(la.lstsq(self.y, self.z), (5,))
-        self.assertArrayShaped(la.lstsq(self.z, self.w), (2, 3))
+        self.assertArrayShape(la.lstsq(self.x, self.v), (2, 3, 2))
+        self.assertArrayShape(la.lstsq(self.y, self.w), (2, 5, 3))
+        self.assertArrayShape(la.lstsq(self.y, self.z), (5,))
+        self.assertArrayShape(la.lstsq(self.z, self.w), (2, 3))
         # rlstsq
-        self.assertArrayShaped(la.rlstsq(self.w, self.x), (2, 3, 5))
-        self.assertArrayShaped(la.rlstsq(self.u, self.y), (7, 3))
-        self.assertArrayShaped(la.rlstsq(self.w, self.z), (2, 3))
-        self.assertArrayShaped(la.rlstsq(self.z, self.x), (2, 5))
+        self.assertArrayShape(la.rlstsq(self.w, self.x), (2, 3, 5))
+        self.assertArrayShape(la.rlstsq(self.u, self.y), (7, 3))
+        self.assertArrayShape(la.rlstsq(self.w, self.z), (2, 3))
+        self.assertArrayShape(la.rlstsq(self.z, self.x), (2, 5))
 
     def test_div_fn(self):
         """Check matldiv, matrdiv return correct shape
         """
         self.pick_var_type('d')
         # solve
-        self.assertArrayShaped(la.matldiv(self.w, self.y), (2, 3, 5))
-        self.assertArrayShaped(la.matldiv(self.w, self.z), (2, 3))
+        self.assertArrayShape(la.matldiv(self.w, self.y), (2, 3, 5))
+        self.assertArrayShape(la.matldiv(self.w, self.z), (2, 3))
         # rsolve
-        self.assertArrayShaped(la.matrdiv(self.x, self.w), (2, 5, 3))
-        self.assertArrayShaped(la.matrdiv(self.z, self.w), (2, 3))
+        self.assertArrayShape(la.matrdiv(self.x, self.w), (2, 5, 3))
+        self.assertArrayShape(la.matrdiv(self.z, self.w), (2, 3))
         # lstsq
-        self.assertArrayShaped(la.matldiv(self.x, self.v), (2, 3, 2))
-        self.assertArrayShaped(la.matldiv(self.y, self.w), (2, 5, 3))
-        self.assertArrayShaped(la.matldiv(self.y, self.z), (5,))
-        self.assertArrayShaped(la.matldiv(self.z, self.w), (2, 3))
+        self.assertArrayShape(la.matldiv(self.x, self.v), (2, 3, 2))
+        self.assertArrayShape(la.matldiv(self.y, self.w), (2, 5, 3))
+        self.assertArrayShape(la.matldiv(self.y, self.z), (5,))
+        self.assertArrayShape(la.matldiv(self.z, self.w), (2, 3))
         # rlstsq
-        self.assertArrayShaped(la.matrdiv(self.w, self.x), (2, 3, 5))
-        self.assertArrayShaped(la.matrdiv(self.u, self.y), (7, 3))
-        self.assertArrayShaped(la.matrdiv(self.w, self.z), (2, 3))
-        self.assertArrayShaped(la.matrdiv(self.z, self.x), (2, 5))
+        self.assertArrayShape(la.matrdiv(self.w, self.x), (2, 3, 5))
+        self.assertArrayShape(la.matrdiv(self.u, self.y), (7, 3))
+        self.assertArrayShape(la.matrdiv(self.w, self.z), (2, 3))
+        self.assertArrayShape(la.matrdiv(self.z, self.x), (2, 5))
 
     def test_qr(self):
         """Check that qr returns correct shape in each mode
@@ -116,9 +116,9 @@ class TestShape(TestLinalg):
         q, r = la.qr(self.y, 'complete')
         self.assertArrayShapesAre((q, r), ((3, 3), (3, 5)))
         r = la.qr(self.x, 'r')
-        self.assertArrayShaped(r, (2, 3, 3))
+        self.assertArrayShape(r, (2, 3, 3))
         r = la.qr(self.y, 'r')
-        self.assertArrayShaped(r, (3, 5))
+        self.assertArrayShape(r, (3, 5))
         h, tau = la.qr(self.x, 'raw')
         self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
         h, tau = la.qr(self.y, 'raw')
@@ -137,9 +137,9 @@ class TestShape(TestLinalg):
         lo, q = la.lq(self.y, 'complete')
         self.assertArrayShapesAre((lo, q), ((3, 5), (5, 5)))
         lo = la.lq(self.x, 'l')
-        self.assertArrayShaped(lo, (2, 5, 3))
+        self.assertArrayShape(lo, (2, 5, 3))
         lo = la.lq(self.y, 'l')
-        self.assertArrayShaped(lo, (3, 3))
+        self.assertArrayShape(lo, (3, 3))
         h, tau = la.lq(self.x, 'raw')
         self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
         h, tau = la.lq(self.y, 'raw')
@@ -158,13 +158,13 @@ class TestShape(TestLinalg):
         lo, q = la.lqr(self.y, 'complete')
         self.assertArrayShapesAre((lo, q), ((3, 5), (5, 5)))
         r = la.lqr(self.x, 'l')
-        self.assertArrayShaped(r, (2, 3, 3))
+        self.assertArrayShape(r, (2, 3, 3))
         lo = la.lqr(self.y, 'l')
-        self.assertArrayShaped(lo, (3, 3))
+        self.assertArrayShape(lo, (3, 3))
         r = la.lqr(self.x, 'r')
-        self.assertArrayShaped(r, (2, 3, 3))
+        self.assertArrayShape(r, (2, 3, 3))
         lo = la.lqr(self.y, 'r')
-        self.assertArrayShaped(lo, (3, 3))
+        self.assertArrayShape(lo, (3, 3))
         h, tau = la.lqr(self.x, 'raw')
         self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
         h, tau = la.lqr(self.y, 'raw')

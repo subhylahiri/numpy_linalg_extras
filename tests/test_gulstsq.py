@@ -46,26 +46,26 @@ class TestQRPinvShape(TestQRPinv):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             q, r = gfl.qr_m(self.wide)
-            self.assertArrayShaped(q, (120, 10, 5, 5))
-            self.assertArrayShaped(r, (120, 10, 5, 16))
+            self.assertArrayShape(q, (120, 10, 5, 5))
+            self.assertArrayShape(r, (120, 10, 5, 16))
             r = gfl.qr_rm(self.wide)
-            self.assertArrayShaped(r, (120, 10, 5, 16))
+            self.assertArrayShape(r, (120, 10, 5, 16))
             with self.assertRaisesRegex(*utn.invalid_err):
                 gfl.qr_n(self.wide)
         with self.subTest(msg='tall'):
             q, r = gfl.qr_n(self.tall)
-            self.assertArrayShaped(q, (120, 10, 16, 5))
-            self.assertArrayShaped(r, (120, 10, 5, 5))
+            self.assertArrayShape(q, (120, 10, 16, 5))
+            self.assertArrayShape(r, (120, 10, 5, 5))
             r = gfl.qr_rn(self.tall)
-            self.assertArrayShaped(r, (120, 10, 5, 5))
+            self.assertArrayShape(r, (120, 10, 5, 5))
         with self.subTest(msg='complete'):
             q, r = gfl.qr_m(self.tall)
-            self.assertArrayShaped(q, (120, 10, 16, 16))
-            self.assertArrayShaped(r, (120, 10, 16, 5))
+            self.assertArrayShape(q, (120, 10, 16, 16))
+            self.assertArrayShape(r, (120, 10, 16, 5))
         with self.subTest(msg='raw'):
             h, tau = gfl.qr_rawn(self.tall)
-            self.assertArrayShaped(h, (120, 10, 5, 16))
-            self.assertArrayShaped(tau, (120, 10, 5))
+            self.assertArrayShape(h, (120, 10, 5, 16))
+            self.assertArrayShape(tau, (120, 10, 5))
 
     @errstate
     def test_lq_shape(self):
@@ -74,26 +74,26 @@ class TestQRPinvShape(TestQRPinv):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             lo, q = gfl.lq_m(self.wide)
-            self.assertArrayShaped(lo, (120, 10, 5, 5))
-            self.assertArrayShaped(q, (120, 10, 5, 16))
+            self.assertArrayShape(lo, (120, 10, 5, 5))
+            self.assertArrayShape(q, (120, 10, 5, 16))
             lo = gfl.lq_lm(self.wide)
-            self.assertArrayShaped(lo, (120, 10, 5, 5))
+            self.assertArrayShape(lo, (120, 10, 5, 5))
         with self.subTest(msg='tall'):
             lo, q = gfl.lq_n(self.tall)
-            self.assertArrayShaped(lo, (120, 10, 16, 5))
-            self.assertArrayShaped(q, (120, 10, 5, 5))
+            self.assertArrayShape(lo, (120, 10, 16, 5))
+            self.assertArrayShape(q, (120, 10, 5, 5))
             lo = gfl.lq_ln(self.tall)
-            self.assertArrayShaped(lo, (120, 10, 16, 5))
+            self.assertArrayShape(lo, (120, 10, 16, 5))
             with self.assertRaisesRegex(*utn.invalid_err):
                 gfl.lq_m(self.tall)
         with self.subTest(msg='complete'):
             lo, q = gfl.lq_n(self.wide)
-            self.assertArrayShaped(lo, (120, 10, 5, 16))
-            self.assertArrayShaped(q, (120, 10, 16, 16))
+            self.assertArrayShape(lo, (120, 10, 5, 16))
+            self.assertArrayShape(q, (120, 10, 16, 16))
         with self.subTest(msg='raw'):
             h, tau = gfl.lq_rawn(self.tall)
-            self.assertArrayShaped(h, (120, 10, 5, 16))
-            self.assertArrayShaped(tau, (120, 10, 5))
+            self.assertArrayShape(h, (120, 10, 5, 16))
+            self.assertArrayShape(tau, (120, 10, 5))
 
     def test_pinv_shape(self):
         """Check that pinv gufuncs all return arrays with the expected shape
@@ -101,26 +101,26 @@ class TestQRPinvShape(TestQRPinv):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             wide_p = gfl.pinv(self.wide)
-            self.assertArrayShaped(wide_p, (120, 10, 16, 5))
+            self.assertArrayShape(wide_p, (120, 10, 16, 5))
         with self.subTest(msg='tall'):
             tall_p = gfl.pinv(self.tall)
-            self.assertArrayShaped(tall_p, (120, 10, 5, 16))
+            self.assertArrayShape(tall_p, (120, 10, 5, 16))
         with self.subTest(msg='wide,+qr'):
             wide_p, wide_f, wide_tau = gfl.pinv_qrm(self.wide)
-            self.assertArrayShaped(wide_p, (120, 10, 16, 5))
-            self.assertArrayShaped(wide_f, (120, 10, 16, 5))
-            self.assertArrayShaped(wide_tau, (120, 10, 5))
+            self.assertArrayShape(wide_p, (120, 10, 16, 5))
+            self.assertArrayShape(wide_f, (120, 10, 16, 5))
+            self.assertArrayShape(wide_tau, (120, 10, 5))
         with self.subTest(msg='tall,+qr'):
             tall_p, tall_f, tall_tau = gfl.pinv_qrn(self.tall)
-            self.assertArrayShaped(tall_p, (120, 10, 5, 16))
-            self.assertArrayShaped(tall_f, (120, 10, 5, 16))
-            self.assertArrayShaped(tall_tau, (120, 10, 5))
+            self.assertArrayShape(tall_p, (120, 10, 5, 16))
+            self.assertArrayShape(tall_f, (120, 10, 5, 16))
+            self.assertArrayShape(tall_tau, (120, 10, 5))
         with self.subTest(msg='wide,-qr'):
             wide_p = gfl.qr_pinv(wide_f, wide_tau)
-            self.assertArrayShaped(wide_p, (120, 10, 16, 5))
+            self.assertArrayShape(wide_p, (120, 10, 16, 5))
         with self.subTest(msg='tall,-qr'):
             tall_p = gfl.qr_pinv(tall_f, tall_tau)
-            self.assertArrayShaped(tall_p, (120, 10, 5, 16))
+            self.assertArrayShape(tall_p, (120, 10, 5, 16))
 
 
 class TestQR(TestQRPinv):
@@ -428,14 +428,14 @@ class TestLstsqShape(TestLstsq):
         self.pick_var_type('d')
         # overconstrained
         a = gfl.lstsq(self.x, self.y)
-        self.assertArrayShaped(a, (2, 5, 2))
+        self.assertArrayShape(a, (2, 5, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(self.x, self.yt)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(self.yt, self.xt)
         # underconstrained
         b = gfl.rlstsq(self.yt, self.xt)
-        self.assertArrayShaped(b, (2, 2, 5))
+        self.assertArrayShape(b, (2, 2, 5))
 
     def test_lstsqqr_shape(self):
         """Check if lstsq_qrn, (r)qr_lstsq return arrays of the expected shape
@@ -443,19 +443,19 @@ class TestLstsqShape(TestLstsq):
         self.pick_var_type('d')
         # overconstrained
         a, xf, tau = gfl.lstsq_qrm(self.x, self.y)
-        self.assertArrayShaped(a, (2, 5, 2))
-        self.assertArrayShaped(xf, (2, 5, 8))
-        self.assertArrayShaped(tau, (2, 8))
+        self.assertArrayShape(a, (2, 5, 2))
+        self.assertArrayShape(xf, (2, 5, 8))
+        self.assertArrayShape(tau, (2, 8))
         a, xf, tau = gfl.lstsq_qrn(self.x, self.y)
-        self.assertArrayShaped(a, (2, 5, 2))
-        self.assertArrayShaped(xf, (2, 5, 8))
-        self.assertArrayShaped(tau, (2, 5))
+        self.assertArrayShape(a, (2, 5, 2))
+        self.assertArrayShape(xf, (2, 5, 8))
+        self.assertArrayShape(tau, (2, 5))
         # overconstrained
         b = gfl.qr_lstsq(xf, tau, self.z)
-        self.assertArrayShaped(b, (3, 2, 5, 4))
+        self.assertArrayShape(b, (3, 2, 5, 4))
         # underconstrained
         c = gfl.rqr_lstsq(self.w, xf, tau)
-        self.assertArrayShaped(c, (3, 2, 1, 8))
+        self.assertArrayShape(c, (3, 2, 1, 8))
 
     def test_rlstsqqr_shape(self):
         """Check if rlstsq_qrm, (r)qr_lstsq return arrays of the expected shape
@@ -463,16 +463,16 @@ class TestLstsqShape(TestLstsq):
         self.pick_var_type('d')
         # underconstrained
         a, xf, tau = gfl.rlstsq_qrm(self.w, self.x)
-        self.assertArrayShaped(a, (3, 2, 1, 8))
-        self.assertArrayShaped(xf, (3, 2, 5, 8))
-        self.assertArrayShaped(tau, (3, 2, 5))
+        self.assertArrayShape(a, (3, 2, 1, 8))
+        self.assertArrayShape(xf, (3, 2, 5, 8))
+        self.assertArrayShape(tau, (3, 2, 5))
         a, xf, tau = gfl.rlstsq_qrn(self.w, self.x)
-        self.assertArrayShaped(a, (3, 2, 1, 8))
-        self.assertArrayShaped(xf, (3, 2, 5, 8))
-        self.assertArrayShaped(tau, (3, 2, 8))
+        self.assertArrayShape(a, (3, 2, 1, 8))
+        self.assertArrayShape(xf, (3, 2, 5, 8))
+        self.assertArrayShape(tau, (3, 2, 8))
         # underconstrained
         b = gfl.rqr_lstsq(self.v, xf, tau)
-        self.assertArrayShaped(b, (3, 2, 4, 8))
+        self.assertArrayShape(b, (3, 2, 4, 8))
 
 
 class TestLstsqVal(TestLstsq):

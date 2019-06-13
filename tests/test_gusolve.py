@@ -34,35 +34,35 @@ class TestLU(utn.TestCaseNumpy):
         self.pick_var_type('d')
         sq_l, sq_u, sq_ip = gfl.lu_m(self.square)
         with self.subTest(msg="square"):
-            self.assertArrayShaped(sq_l, (2, 5, 5))
-            self.assertArrayShaped(sq_u, (2, 5, 5))
-            self.assertArrayShaped(sq_ip, (2, 5))
+            self.assertArrayShape(sq_l, (2, 5, 5))
+            self.assertArrayShape(sq_u, (2, 5, 5))
+            self.assertArrayShape(sq_ip, (2, 5))
         wd_l, wd_u, wd_ip = gfl.lu_m(self.wide)
         with self.subTest(msg="wide"):
-            self.assertArrayShaped(wd_l, (3, 1, 3, 3))
-            self.assertArrayShaped(wd_u, (3, 1, 3, 6))
-            self.assertArrayShaped(wd_ip, (3, 1, 3))
+            self.assertArrayShape(wd_l, (3, 1, 3, 3))
+            self.assertArrayShape(wd_u, (3, 1, 3, 6))
+            self.assertArrayShape(wd_ip, (3, 1, 3))
         tl_l, tl_u, tl_ip = gfl.lu_n(self.tall)
         with self.subTest(msg="tall"):
-            self.assertArrayShaped(tl_l, (5, 2))
-            self.assertArrayShaped(tl_u, (2, 2))
-            self.assertArrayShaped(tl_ip, (2,))
+            self.assertArrayShape(tl_l, (5, 2))
+            self.assertArrayShape(tl_u, (2, 2))
+            self.assertArrayShape(tl_ip, (2,))
 
     def test_lu_raw_shape(self):
         """Test shape of raw LU"""
         self.pick_var_type('d')
         sq_f, sq_ip = gfl.lu_rawm(self.square)
         with self.subTest(msg="square"):
-            self.assertArrayShaped(sq_f, (2, 5, 5))
-            self.assertArrayShaped(sq_ip, (2, 5))
+            self.assertArrayShape(sq_f, (2, 5, 5))
+            self.assertArrayShape(sq_ip, (2, 5))
         wd_f, wd_ip = gfl.lu_rawm(self.wide)
         with self.subTest(msg="wide"):
-            self.assertArrayShaped(wd_f, (3, 1, 6, 3))
-            self.assertArrayShaped(wd_ip, (3, 1, 3))
+            self.assertArrayShape(wd_f, (3, 1, 6, 3))
+            self.assertArrayShape(wd_ip, (3, 1, 3))
         tl_f, tl_ip = gfl.lu_rawn(self.tall)
         with self.subTest(msg="tall"):
-            self.assertArrayShaped(tl_f, (2, 5))
-            self.assertArrayShaped(tl_ip, (2,))
+            self.assertArrayShape(tl_f, (2, 5))
+            self.assertArrayShape(tl_ip, (2,))
 
     @utn.loop_test()
     def test_lu_basic_val(self, sctype):
@@ -143,15 +143,15 @@ class TestLU(utn.TestCaseNumpy):
         self.pick_var_type('d')
         with self.subTest(msg='inv'):
             square_i = gfl.inv(self.square)
-            self.assertArrayShaped(square_i, (2, 5, 5))
+            self.assertArrayShape(square_i, (2, 5, 5))
         with self.subTest(msg='inv,+lu'):
             square_i, square_f, square_ip = gfl.inv_lu(self.square)
-            self.assertArrayShaped(square_i, (2, 5, 5))
-            self.assertArrayShaped(square_f, (2, 5, 5))
-            self.assertArrayShaped(square_ip, (2, 5))
+            self.assertArrayShape(square_i, (2, 5, 5))
+            self.assertArrayShape(square_f, (2, 5, 5))
+            self.assertArrayShape(square_ip, (2, 5))
         with self.subTest(msg='inv,-lu'):
             square_i = gfl.lu_inv(square_f, square_ip)
-            self.assertArrayShaped(square_i, (2, 5, 5))
+            self.assertArrayShape(square_i, (2, 5, 5))
 
     @utn.loop_test()
     def test_inv_val(self, sctype):
@@ -211,37 +211,37 @@ class TestSolveShape(TestSolve):
         """
         self.pick_var_type('d')
         a = gfl.solve(self.x, self.y)
-        self.assertArrayShaped(a, (2, 5, 2))
+        self.assertArrayShape(a, (2, 5, 2))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(self.x, self.yt)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(self.yt, self.x)
         b = gfl.rsolve(self.yt, self.x)
-        self.assertArrayShaped(b, (2, 2, 5))
+        self.assertArrayShape(b, (2, 2, 5))
 
     def test_solvelu_shape(self):
         """Check if solve_lu, lu_solve return arrays with the expected shape
         """
         self.pick_var_type('d')
         a, xf, p = gfl.solve_lu(self.x, self.y)
-        self.assertArrayShaped(a, (2, 5, 2))
-        self.assertArrayShaped(xf, (2, 5, 5))
-        self.assertArrayShaped(p, (2, 5))
+        self.assertArrayShape(a, (2, 5, 2))
+        self.assertArrayShape(xf, (2, 5, 5))
+        self.assertArrayShape(p, (2, 5))
         b = gfl.lu_solve(xf, p, self.z)
-        self.assertArrayShaped(b, (3, 2, 5, 4))
+        self.assertArrayShape(b, (3, 2, 5, 4))
         c = gfl.rlu_solve(self.w, xf, p)
-        self.assertArrayShaped(c, (3, 2, 1, 5))
+        self.assertArrayShape(c, (3, 2, 1, 5))
 
     def test_rsolvelu_shape(self):
         """Check if rsolve_lu, rlu_solve return arrays with the expected shape
         """
         self.pick_var_type('d')
         a, xf, p = gfl.rsolve_lu(self.w, self.x)
-        self.assertArrayShaped(a, (3, 2, 1, 5))
-        self.assertArrayShaped(xf, (3, 2, 5, 5))
-        self.assertArrayShaped(p, (3, 2, 5))
+        self.assertArrayShape(a, (3, 2, 1, 5))
+        self.assertArrayShape(xf, (3, 2, 5, 5))
+        self.assertArrayShape(p, (3, 2, 5))
         b = gfl.rlu_solve(self.v, xf, p)
-        self.assertArrayShaped(b, (3, 2, 4, 5))
+        self.assertArrayShape(b, (3, 2, 4, 5))
 
 
 class TestSolveVal(TestSolve):

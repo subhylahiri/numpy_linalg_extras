@@ -17,6 +17,16 @@ errstate = utn.errstate(invalid='raise')
 
 class TestMatsVecs(utn.TestCaseNumpy):
     """Collection of vectors and matrices for tests"""
+    v_s: np.ndarray
+    v_b: np.ndarray
+    m_bs: np.ndarray
+    m_sb: np.ndarray
+    m_ss: np.ndarray
+    m_bb: np.ndarray
+    a_bs: np.ndarray
+    a_sb: np.ndarray
+    a_ss: np.ndarray
+    a_bb: np.ndarray
 
     def setUp(self):
         extra_sctypes = getattr(self, 'sctype', [])

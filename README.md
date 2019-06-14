@@ -362,7 +362,8 @@ You can test the build process and installation by running the unit tests.
 > python -m unittest
 ```
 You can expect occassional failures when using single precision floats.
-The failure messages would have `sctype='f'` or `sctype='d'` in the titles and the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
+The failure messages would have `sctype='f'` or `sctype='F'` in the titles and 
+the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
 
 You can customise which tests are run and how the results are displayed
 using the command line options for the [unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).

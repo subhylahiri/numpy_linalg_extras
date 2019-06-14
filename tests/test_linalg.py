@@ -107,87 +107,62 @@ class TestShape(TestLinalg):
         """Check that qr returns correct shape in each mode
         """
         self.pick_var_type('d')
-        q, r = la.qr(self.x, 'reduced')
-        self.assertArrayShapesAre((q, r), ((2, 5, 3), (2, 3, 3)))
-        q, r = la.qr(self.y, 'reduced')
-        self.assertArrayShapesAre((q, r), ((3, 3, ), (3, 5)))
-        q, r = la.qr(self.x, 'complete')
-        self.assertArrayShapesAre((q, r), ((2, 5, 5), (2, 5, 3)))
-        q, r = la.qr(self.y, 'complete')
-        self.assertArrayShapesAre((q, r), ((3, 3), (3, 5)))
-        r = la.qr(self.x, 'r')
-        self.assertArrayShape(r, (2, 3, 3))
-        r = la.qr(self.y, 'r')
-        self.assertArrayShape(r, (3, 5))
-        h, tau = la.qr(self.x, 'raw')
-        self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
-        h, tau = la.qr(self.y, 'raw')
-        self.assertArrayShapesAre((h, tau), ((5, 3), (3,)))
+        self.assertArrayShapesAre(la.qr(self.x, 'reduced'),
+                                  ((2, 5, 3), (2, 3, 3)))
+        self.assertArrayShapesAre(la.qr(self.y, 'reduced'), ((3, 3, ), (3, 5)))
+        self.assertArrayShapesAre(la.qr(self.x, 'complete'),
+                                  ((2, 5, 5), (2, 5, 3)))
+        self.assertArrayShapesAre(la.qr(self.y, 'complete'), ((3, 3), (3, 5)))
+        self.assertArrayShape(la.qr(self.x, 'r'), (2, 3, 3))
+        self.assertArrayShape(la.qr(self.y, 'r'), (3, 5))
+        self.assertArrayShapesAre(la.qr(self.x, 'raw'), ((2, 3, 5), (2, 3)))
+        self.assertArrayShapesAre(la.qr(self.y, 'raw'), ((5, 3), (3,)))
 
     def test_lq(self):
         """Check that lq returns correct shape in each mode
         """
         self.pick_var_type('d')
-        lo, q = la.lq(self.x, 'reduced')
-        self.assertArrayShapesAre((lo, q), ((2, 5, 3), (2, 3, 3)))
-        lo, q = la.lq(self.y, 'reduced')
-        self.assertArrayShapesAre((lo, q), ((3, 3), (3, 5)))
-        lo, q = la.lq(self.x, 'complete')
-        self.assertArrayShapesAre((lo, q), ((2, 5, 3), (2, 3, 3)))
-        lo, q = la.lq(self.y, 'complete')
-        self.assertArrayShapesAre((lo, q), ((3, 5), (5, 5)))
-        lo = la.lq(self.x, 'l')
-        self.assertArrayShape(lo, (2, 5, 3))
-        lo = la.lq(self.y, 'l')
-        self.assertArrayShape(lo, (3, 3))
-        h, tau = la.lq(self.x, 'raw')
-        self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
-        h, tau = la.lq(self.y, 'raw')
-        self.assertArrayShapesAre((h, tau), ((5, 3), (3,)))
+        self.assertArrayShapesAre(la.lq(self.x, 'reduced'),
+                                  ((2, 5, 3), (2, 3, 3)))
+        self.assertArrayShapesAre(la.lq(self.y, 'reduced'), ((3, 3), (3, 5)))
+        self.assertArrayShapesAre(la.lq(self.x, 'complete'),
+                                  ((2, 5, 3), (2, 3, 3)))
+        self.assertArrayShapesAre(la.lq(self.y, 'complete'), ((3, 5), (5, 5)))
+        self.assertArrayShape(la.lq(self.x, 'l'), (2, 5, 3))
+        self.assertArrayShape(la.lq(self.y, 'l'), (3, 3))
+        self.assertArrayShapesAre(la.lq(self.x, 'raw'), ((2, 3, 5), (2, 3)))
+        self.assertArrayShapesAre(la.lq(self.y, 'raw'), ((5, 3), (3,)))
 
     def test_lqr(self):
         """Check that lqr returns correct shape in each mode
         """
         self.pick_var_type('d')
-        q, r = la.lqr(self.x, 'reduced')
-        self.assertArrayShapesAre((q, r), ((2, 5, 3), (2, 3, 3)))
-        lo, q = la.lqr(self.y, 'reduced')
-        self.assertArrayShapesAre((lo, q), ((3, 3), (3, 5)))
-        q, r = la.lqr(self.x, 'complete')
-        self.assertArrayShapesAre((q, r), ((2, 5, 5), (2, 5, 3)))
-        lo, q = la.lqr(self.y, 'complete')
-        self.assertArrayShapesAre((lo, q), ((3, 5), (5, 5)))
-        r = la.lqr(self.x, 'l')
-        self.assertArrayShape(r, (2, 3, 3))
-        lo = la.lqr(self.y, 'l')
-        self.assertArrayShape(lo, (3, 3))
-        r = la.lqr(self.x, 'r')
-        self.assertArrayShape(r, (2, 3, 3))
-        lo = la.lqr(self.y, 'r')
-        self.assertArrayShape(lo, (3, 3))
-        h, tau = la.lqr(self.x, 'raw')
-        self.assertArrayShapesAre((h, tau), ((2, 3, 5), (2, 3)))
-        h, tau = la.lqr(self.y, 'raw')
-        self.assertArrayShapesAre((h, tau), ((5, 3), (3,)))
+        self.assertArrayShapesAre(la.lqr(self.x, 'reduced'),
+                                  ((2, 5, 3), (2, 3, 3)))
+        self.assertArrayShapesAre(la.lqr(self.y, 'reduced'), ((3, 3), (3, 5)))
+        self.assertArrayShapesAre(la.lqr(self.x, 'complete'),
+                                  ((2, 5, 5), (2, 5, 3)))
+        self.assertArrayShapesAre(la.lqr(self.y, 'complete'), ((3, 5), (5, 5)))
+        self.assertArrayShape(la.lqr(self.x, 'l'), (2, 3, 3))
+        self.assertArrayShape(la.lqr(self.y, 'l'), (3, 3))
+        self.assertArrayShape(la.lqr(self.x, 'r'), (2, 3, 3))
+        self.assertArrayShape(la.lqr(self.y, 'r'), (3, 3))
+        self.assertArrayShapesAre(la.lqr(self.x, 'raw'), ((2, 3, 5), (2, 3)))
+        self.assertArrayShapesAre(la.lqr(self.y, 'raw'), ((5, 3), (3,)))
 
     def test_lu(self):
         """Check that lu returns correct shape in each mode
         """
         self.pick_var_type('d')
-        low, up, piv = la.lu(self.w, 'separate')
-        self.assertArrayShapesAre((low, up, piv),
+        self.assertArrayShapesAre(la.lu(self.w, 'separate'),
                                   ((2, 3, 3), (2, 3, 3), (2, 3)))
-        low, up, piv = la.lu(self.x, 'separate')
-        self.assertArrayShapesAre((low, up, piv),
+        self.assertArrayShapesAre(la.lu(self.x, 'separate'),
                                   ((2, 5, 3), (2, 3, 3), (2, 3)))
-        low, up, piv = la.lu(self.y, 'separate')
-        self.assertArrayShapesAre((low, up, piv), ((3, 3), (3, 5), (3,)))
-        luf, piv = la.lu(self.w, 'raw')
-        self.assertArrayShapesAre((luf, piv), ((2, 3, 3), (2, 3)))
-        luf, piv = la.lu(self.x, 'raw')
-        self.assertArrayShapesAre((luf, piv), ((2, 3, 5), (2, 3)))
-        luf, piv = la.lu(self.y, 'raw')
-        self.assertArrayShapesAre((luf, piv), ((5, 3), (3,)))
+        self.assertArrayShapesAre(la.lu(self.y, 'separate'),
+                                  ((3, 3), (3, 5), (3,)))
+        self.assertArrayShapesAre(la.lu(self.w, 'raw'), ((2, 3, 3), (2, 3)))
+        self.assertArrayShapesAre(la.lu(self.x, 'raw'), ((2, 3, 5), (2, 3)))
+        self.assertArrayShapesAre(la.lu(self.y, 'raw'), ((5, 3), (3,)))
 
 
 class TestValue(TestLinalg):

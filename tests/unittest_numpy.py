@@ -41,7 +41,9 @@ __unittest = True
 
 
 class NosortTestLoader(unittest.TestLoader):
-    """Test loader that does not sort if test methods by default
+    """Test loader that does not sort test methods by default
+
+    Use in place of `unittest.TestLoader` or `unittest.defaultTestLoader`.
     """
     sortTestMethodsUsing = None
 

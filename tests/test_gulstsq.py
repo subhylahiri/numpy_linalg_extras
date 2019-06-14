@@ -45,27 +45,21 @@ class TestQRPinvShape(TestQRPinv):
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            q, r = gfl.qr_m(self.wide)
-            self.assertArrayShape(q, (120, 10, 5, 5))
-            self.assertArrayShape(r, (120, 10, 5, 16))
-            r = gfl.qr_rm(self.wide)
-            self.assertArrayShape(r, (120, 10, 5, 16))
+            self.assertArrayShapesAre(gfl.qr_m(self.wide),
+                                      ((120, 10, 5, 5), (120, 10, 5, 16)))
+            self.assertArrayShape(gfl.qr_rm(self.wide), (120, 10, 5, 16))
             with self.assertRaisesRegex(*utn.invalid_err):
                 gfl.qr_n(self.wide)
         with self.subTest(msg='tall'):
-            q, r = gfl.qr_n(self.tall)
-            self.assertArrayShape(q, (120, 10, 16, 5))
-            self.assertArrayShape(r, (120, 10, 5, 5))
-            r = gfl.qr_rn(self.tall)
-            self.assertArrayShape(r, (120, 10, 5, 5))
+            self.assertArrayShapesAre(gfl.qr_n(self.tall),
+                                      ((120, 10, 16, 5), (120, 10, 5, 5)))
+            self.assertArrayShape(gfl.qr_rn(self.tall), (120, 10, 5, 5))
         with self.subTest(msg='complete'):
-            q, r = gfl.qr_m(self.tall)
-            self.assertArrayShape(q, (120, 10, 16, 16))
-            self.assertArrayShape(r, (120, 10, 16, 5))
+            self.assertArrayShapesAre(gfl.qr_m(self.tall),
+                                      ((120, 10, 16, 16), (120, 10, 16, 5)))
         with self.subTest(msg='raw'):
-            h, tau = gfl.qr_rawn(self.tall)
-            self.assertArrayShape(h, (120, 10, 5, 16))
-            self.assertArrayShape(tau, (120, 10, 5))
+            self.assertArrayShapesAre(gfl.qr_rawn(self.tall),
+                                      ((120, 10, 5, 16), (120, 10, 5)))
 
     @errstate
     def test_lq_shape(self):
@@ -73,54 +67,44 @@ class TestQRPinvShape(TestQRPinv):
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            lo, q = gfl.lq_m(self.wide)
-            self.assertArrayShape(lo, (120, 10, 5, 5))
-            self.assertArrayShape(q, (120, 10, 5, 16))
-            lo = gfl.lq_lm(self.wide)
-            self.assertArrayShape(lo, (120, 10, 5, 5))
+            self.assertArrayShapesAre(gfl.lq_m(self.wide),
+                                      ((120, 10, 5, 5), (120, 10, 5, 16)))
+            self.assertArrayShape(gfl.lq_lm(self.wide), (120, 10, 5, 5))
         with self.subTest(msg='tall'):
-            lo, q = gfl.lq_n(self.tall)
-            self.assertArrayShape(lo, (120, 10, 16, 5))
-            self.assertArrayShape(q, (120, 10, 5, 5))
-            lo = gfl.lq_ln(self.tall)
-            self.assertArrayShape(lo, (120, 10, 16, 5))
+            self.assertArrayShapesAre(gfl.lq_n(self.tall),
+                                      ((120, 10, 16, 5), (120, 10, 5, 5)))
+            self.assertArrayShape(gfl.lq_ln(self.tall), (120, 10, 16, 5))
             with self.assertRaisesRegex(*utn.invalid_err):
                 gfl.lq_m(self.tall)
         with self.subTest(msg='complete'):
-            lo, q = gfl.lq_n(self.wide)
-            self.assertArrayShape(lo, (120, 10, 5, 16))
-            self.assertArrayShape(q, (120, 10, 16, 16))
+            self.assertArrayShapesAre(gfl.lq_n(self.wide),
+                                      ((120, 10, 5, 16), (120, 10, 16, 16)))
         with self.subTest(msg='raw'):
-            h, tau = gfl.lq_rawn(self.tall)
-            self.assertArrayShape(h, (120, 10, 5, 16))
-            self.assertArrayShape(tau, (120, 10, 5))
+            self.assertArrayShapesAre(gfl.lq_rawn(self.tall),
+                                      ((120, 10, 5, 16), (120, 10, 5)))
 
     def test_pinv_shape(self):
         """Check that pinv gufuncs all return arrays with the expected shape
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            wide_p = gfl.pinv(self.wide)
-            self.assertArrayShape(wide_p, (120, 10, 16, 5))
+            self.assertArrayShape(gfl.pinv(self.wide), (120, 10, 16, 5))
         with self.subTest(msg='tall'):
-            tall_p = gfl.pinv(self.tall)
-            self.assertArrayShape(tall_p, (120, 10, 5, 16))
+            self.assertArrayShape(gfl.pinv(self.tall), (120, 10, 5, 16))
         with self.subTest(msg='wide,+qr'):
-            wide_p, wide_f, wide_tau = gfl.pinv_qrm(self.wide)
-            self.assertArrayShape(wide_p, (120, 10, 16, 5))
-            self.assertArrayShape(wide_f, (120, 10, 16, 5))
-            self.assertArrayShape(wide_tau, (120, 10, 5))
+            self.assertArrayShapesAre(gfl.pinv_qrm(self.wide), (
+                            (120, 10, 16, 5), (120, 10, 16, 5), (120, 10, 5)))
         with self.subTest(msg='tall,+qr'):
-            tall_p, tall_f, tall_tau = gfl.pinv_qrn(self.tall)
-            self.assertArrayShape(tall_p, (120, 10, 5, 16))
-            self.assertArrayShape(tall_f, (120, 10, 5, 16))
-            self.assertArrayShape(tall_tau, (120, 10, 5))
+            self.assertArrayShapesAre(gfl.pinv_qrn(self.tall), (
+                            (120, 10, 5, 16), (120, 10, 5, 16), (120, 10, 5)))
         with self.subTest(msg='wide,-qr'):
-            wide_p = gfl.qr_pinv(wide_f, wide_tau)
-            self.assertArrayShape(wide_p, (120, 10, 16, 5))
+            _, wide_f, wide_tau = gfl.pinv_qrm(self.wide)
+            self.assertArrayShape(
+                            gfl.qr_pinv(wide_f, wide_tau), (120, 10, 16, 5))
         with self.subTest(msg='tall,-qr'):
-            tall_p = gfl.qr_pinv(tall_f, tall_tau)
-            self.assertArrayShape(tall_p, (120, 10, 5, 16))
+            _, tall_f, tall_tau = gfl.pinv_qrn(self.tall)
+            self.assertArrayShape(
+                            gfl.qr_pinv(tall_f, tall_tau), (120, 10, 5, 16))
 
 
 class TestQR(TestQRPinv):

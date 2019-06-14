@@ -120,14 +120,16 @@ class TestBlas(TestMatsVecs):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.matmul(self.m_sb, self.v_s)
             with self.assertRaisesRegex(*utn.core_dim_err):
+                # This would work if interpreted as Mv: (3)(7,7) @ (3)(7)
                 self.gf.matmul(self.a_bb, self.m_sb)  # Mv would work, but MM
         with self.subTest('vector-matrix'):
             self.assertArrayShape(self.gf.matmul(self.v_s, self.m_ss), (3,))
             self.assertArrayShape(self.gf.matmul(self.v_b, self.a_bb), (3, 7))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.matmul(self.v_b, self.m_sb)
+            # This would fail if interpreted as vM: (3)(7) @ (2)(7,3)
             self.assertArrayShape(self.gf.matmul(self.m_sb, self.a_bs),
-                                  (2, 3, 3))  # Mv wouldn't work, but MM ok
+                                  (2, 3, 3))  # vM wouldn't work, but MM ok
         with self.subTest('vector-vector'):
             self.assertArrayShape(self.gf.matmul(self.v_s, self.v_s), ())
             with self.assertRaisesRegex(*utn.core_dim_err):
@@ -165,6 +167,7 @@ class TestBlas(TestMatsVecs):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.rmatmul(self.v_b, self.m_bs)
             with self.assertRaisesRegex(*utn.core_dim_err):
+                # This would work if interpreted as Mv: (3)(7,7) @ (3)(7)
                 self.gf.rmatmul(self.m_sb, self.a_bb)  # Mv would work, but MM
         with self.subTest('vector-matrix'):
             self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.v_s), (7,))
@@ -172,6 +175,7 @@ class TestBlas(TestMatsVecs):
                                   (4, 1, 7))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.rmatmul(self.m_bs, self.v_s)
+            # This would fail if interpreted as vM: (7)(7) @ (2)(7,3)
             self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb),
                                   (2, 7, 3))  # Mv wouldn't work, but MM ok
         with self.subTest('vector-vector'):

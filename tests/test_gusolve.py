@@ -28,37 +28,27 @@ class TestLU(TestMatsVecs):
     def test_lu_basic_shape(self):
         """Test shape of basic LU"""
         self.pick_var_type('d')
-        sq_l, sq_u, sq_ip = gfl.lu_m(self.a_bb)
         with self.subTest(msg="square"):
-            self.assertArrayShape(sq_l, (3, 7, 7))
-            self.assertArrayShape(sq_u, (3, 7, 7))
-            self.assertArrayShape(sq_ip, (3, 7))
-        wd_l, wd_u, wd_ip = gfl.lu_m(self.a_sb)
+            self.assertArrayShapesAre(gfl.lu_m(self.a_bb),
+                                      ((3, 7, 7), (3, 7, 7), (3, 7)))
         with self.subTest(msg="wide"):
-            self.assertArrayShape(wd_l, (4, 1, 3, 3))
-            self.assertArrayShape(wd_u, (4, 1, 3, 7))
-            self.assertArrayShape(wd_ip, (4, 1, 3))
-        tl_l, tl_u, tl_ip = gfl.lu_n(self.m_bs)
+            self.assertArrayShapesAre(gfl.lu_m(self.a_sb),
+                                      ((4, 1, 3, 3), (4, 1, 3, 7), (4, 1, 3)))
         with self.subTest(msg="tall"):
-            self.assertArrayShape(tl_l, (7, 3))
-            self.assertArrayShape(tl_u, (3, 3))
-            self.assertArrayShape(tl_ip, (3,))
+            self.assertArrayShapesAre(gfl.lu_n(self.m_bs),
+                                      ((7, 3), (3, 3), (3,)))
 
     def test_lu_raw_shape(self):
         """Test shape of raw LU"""
         self.pick_var_type('d')
-        sq_f, sq_ip = gfl.lu_rawm(self.a_bb)
         with self.subTest(msg="square"):
-            self.assertArrayShape(sq_f, (3, 7, 7))
-            self.assertArrayShape(sq_ip, (3, 7))
-        wd_f, wd_ip = gfl.lu_rawm(self.a_sb)
+            self.assertArrayShapesAre(gfl.lu_rawm(self.a_bb),
+                                      ((3, 7, 7), (3, 7)))
         with self.subTest(msg="wide"):
-            self.assertArrayShape(wd_f, (4, 1, 7, 3))
-            self.assertArrayShape(wd_ip, (4, 1, 3))
-        tl_f, tl_ip = gfl.lu_rawn(self.m_bs)
+            self.assertArrayShapesAre(gfl.lu_rawm(self.a_sb),
+                                      ((4, 1, 7, 3), (4, 1, 3)))
         with self.subTest(msg="tall"):
-            self.assertArrayShape(tl_f, (3, 7))
-            self.assertArrayShape(tl_ip, (3,))
+            self.assertArrayShapesAre(gfl.lu_rawn(self.m_bs), ((3, 7), (3,)))
 
     @utn.loop_test()
     def test_lu_basic_val(self, sctype):
@@ -67,9 +57,9 @@ class TestLU(TestMatsVecs):
         sq_l, sq_u, sq_ip = gfl.lu_m(self.a_bb)
         sq = gfl.rpivot(sq_l @ sq_u, sq_ip)
         sqp = gfl.pivot(self.a_bb, sq_ip)
-        dinds = (...,) + np.diag_indices(7, 2)
-        linds = (...,) + np.tril_indices(7, -1)
-        uinds = (...,) + np.triu_indices(7, 1)
+        dinds = (...,) + np.diag_indices(7, 2)  # to check l
+        uinds = (...,) + np.triu_indices(7, 1)  # to check l
+        linds = (...,) + np.tril_indices(7, -1)  # to check u
         with self.subTest(msg="square"):
             self.assertArrayAllClose(sq_l[dinds], 1.)
             self.assertArrayAllClose(sq_l[uinds], 0.)
@@ -79,9 +69,9 @@ class TestLU(TestMatsVecs):
         wd_l, wd_u, wd_ip = gfl.lu_m(self.a_sb)
         wd = gfl.rpivot(wd_l @ wd_u, wd_ip)
         wdp = gfl.pivot(self.a_sb, wd_ip)
-        dinds = (...,) + np.diag_indices(3, 2)
-        linds = (...,) + np.tril_indices(3, -1, 7)  # to check u
+        dinds = (...,) + np.diag_indices(3, 2)  # to check l
         uinds = (...,) + np.triu_indices(3, 1, 3)  # to check l
+        linds = (...,) + np.tril_indices(3, -1, 7)  # to check u
         with self.subTest(msg="wide"):
             self.assertArrayAllClose(wd_l[dinds], 1.)
             self.assertArrayAllClose(wd_l[uinds], 0.)
@@ -91,9 +81,9 @@ class TestLU(TestMatsVecs):
         tl_l, tl_u, tl_ip = gfl.lu_n(self.m_bs)
         tl = gfl.rpivot(tl_l @ tl_u, tl_ip)
         tlp = gfl.pivot(self.m_bs, tl_ip)
-        dinds = (...,) + np.diag_indices(3, 2)
-        linds = (...,) + np.tril_indices(3, -1, 3)
-        uinds = (...,) + np.triu_indices(7, 1, 3)
+        dinds = (...,) + np.diag_indices(3, 2)  # to check l
+        uinds = (...,) + np.triu_indices(7, 1, 3)  # to check l
+        linds = (...,) + np.tril_indices(3, -1, 3)  # to check u
         with self.subTest(msg="tall"):
             self.assertArrayAllClose(tl_l[dinds], 1.)
             self.assertArrayAllClose(tl_l[uinds], 0.)
@@ -138,16 +128,13 @@ class TestLU(TestMatsVecs):
         """
         self.pick_var_type('d')
         with self.subTest(msg='inv'):
-            square_i = gfl.inv(self.a_bb)
-            self.assertArrayShape(square_i, (3, 7, 7))
+            self.assertArrayShape(gfl.inv(self.a_bb), (3, 7, 7))
         with self.subTest(msg='inv,+lu'):
-            square_i, square_f, square_ip = gfl.inv_lu(self.a_bb)
-            self.assertArrayShape(square_i, (3, 7, 7))
-            self.assertArrayShape(square_f, (3, 7, 7))
-            self.assertArrayShape(square_ip, (3, 7))
+            _, square_f, square_ip = gfl.inv_lu(self.a_bb)
+            self.assertArrayShapesAre(gfl.inv_lu(self.a_bb),
+                                      ((3, 7, 7), (3, 7, 7), (3, 7)))
         with self.subTest(msg='inv,-lu'):
-            square_i = gfl.lu_inv(square_f, square_ip)
-            self.assertArrayShape(square_i, (3, 7, 7))
+            self.assertArrayShape(gfl.lu_inv(square_f, square_ip), (3, 7, 7))
 
     @utn.loop_test()
     def test_inv_val(self, sctype):
@@ -156,16 +143,14 @@ class TestLU(TestMatsVecs):
         self.pick_var_type(sctype)
         with self.subTest(msg='inv'):
             square_i = gfl.inv(self.a_bb)
-            self.assertArrayAllClose(square_i @ self.a_bb,
-                                     self.id_b)
-            self.assertArrayAllClose(self.a_bb @ square_i,
-                                     self.id_b)
+            self.assertArrayAllClose(square_i @ self.a_bb, self.id_b)
+            self.assertArrayAllClose(self.a_bb @ square_i, self.id_b)
         with self.subTest(msg='inv,+lu'):
             square_if, square_f, square_ip = gfl.inv_lu(self.a_bb)
             luf, ip = gfl.lu_rawn(self.a_bb)
             self.assertArrayAllClose(square_if, square_i)
             self.assertArrayAllClose(square_f, luf)
-            self.assertArrayAllClose(square_ip, ip)
+            self.assertEqual(square_ip, ip)
         with self.subTest(msg='inv,-lu'):
             square_fi = gfl.lu_inv(square_f, square_ip)
             self.assertArrayAllClose(square_fi, square_i)

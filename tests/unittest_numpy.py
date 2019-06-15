@@ -72,7 +72,11 @@ class NosortTestLoader(unittest.TestLoader):
         return testFnNames
 
     def loadTestsFromModule(self, module, *args, pattern=None, **kws):
-        """Return a suite of all test cases contained in the given module"""
+        """Return a suite of all test cases contained in the given module
+
+        If module has an `__all__` attribute but no `load_tests` function,
+        `TesCase`s will be loaded in the order they appear there.
+        """
         tests = super().loadTestsFromModule(self, module, *args, pattern=None,
                                             **kws)
         all_names = getattr(module, '__all__', None)
@@ -84,6 +88,10 @@ class NosortTestLoader(unittest.TestLoader):
                     tests.append(self.loadTestsFromTestCase(obj))
             tests = self.suiteClass(tests)
         return tests
+
+    def copy_from(self, other):
+        """Copy instance attributes from other loader"""
+        self._loading_packages = other._loading_packages
 
 
 nosortTestLoader = NosortTestLoader()
@@ -209,11 +217,13 @@ class TestCaseNumpy(unittest.TestCase):
     """
 
     def setUp(self):
-        # Scalar types:
+        # Variables used in testing:
         self.varnames = []
-        # so it can be extended in Subclass before calling super().setUp()
+        # Scalar types:
+        # can be extended in Subclass: assign before calling super().setUp()
         extra_sctypes = getattr(self, 'sctype', [])
         self.sctype = ['f', 'd', 'F', 'D'] + extra_sctypes
+        # testing ndarray values
         self.all_close_opts = {'atol': 1e-5, 'rtol': 1e-5, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 

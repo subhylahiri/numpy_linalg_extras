@@ -39,7 +39,7 @@ class TestArray(TestNewClasses):
     """Testing lnarray"""
 
     def setUp(self):
-        self.sctype.append = ['i']
+        self.sctype = ['i']
         super().setUp()
 
     def test_array_type(self):

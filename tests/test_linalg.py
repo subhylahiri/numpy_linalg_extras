@@ -4,14 +4,14 @@ It has been established, in test_gu*.py, that the gufuncs return the correct
 values. We just check that the python wrappers call the correct ones.
 """
 import numpy as np
-import unittest_numpy as utn
 import numpy_linalg as la
 import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
+import unittest_numpy as utn
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
-
+__all__ = ['TestShape', 'TestValue']
 # =============================================================================
 # %% Test python funcs
 # =============================================================================

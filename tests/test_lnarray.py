@@ -2,16 +2,19 @@
 """Test lnarray class
 """
 import numpy as np
-import unittest_numpy as utn
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
+import unittest_numpy as utn
+from test_gufunc import TestMatsVecs
 
+# =============================================================================
+__all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================
 # %% Test python classes
 # =============================================================================
 
 
-class TestNewClasses(utn.TestCaseNumpy):
+class TestNewClasses(TestMatsVecs):
     """Testing lnarray, pinvarray, etc"""
 
     def setUp(self):
@@ -36,8 +39,7 @@ class TestArray(TestNewClasses):
     """Testing lnarray"""
 
     def setUp(self):
-        super().setUp()
-        self.sctype.append('i')
+        self.sctype.append = ['i']
         super().setUp()
 
     def test_array_type(self):

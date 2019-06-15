@@ -3,12 +3,14 @@
 """
 import unittest
 import numpy as np
-import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
+import unittest_numpy as utn
 from test_gufunc import TestMatsVecs
 
 errstate = utn.errstate(invalid='raise')
+# =============================================================================
+__all__ = ['TestLU', 'TestSolveShape', 'TestSolveVal']
 # =============================================================================
 # %% Test LU
 # =============================================================================
@@ -16,14 +18,6 @@ errstate = utn.errstate(invalid='raise')
 
 class TestLU(TestMatsVecs):
     """Testing LU decomposition"""
-    id_b: np.ndarray
-
-    def setUp(self):
-        super().setUp()
-        self.varnames += ['id_b']
-        self._id_b = {}
-        for sctype in self.sctype:
-            self._id_b[sctype] = np.eye(7, dtype=sctype)
 
     def test_lu_basic_shape(self):
         """Test shape of basic LU"""
@@ -299,7 +293,7 @@ class TestSolveShape(TestSolve):
         with self.subTest('solve_lu'):
             self.assertArrayShapesAre(gfl.solve_lu(self.m_ss, self.v_s),
                                       ((3,), (3, 3), (3,)))
-            self.assertArrayShapesAre(gfl.solve(self.a_ss, self.v_s),
+            self.assertArrayShapesAre(gfl.solve_lu(self.a_ss, self.v_s),
                                       ((5, 1, 3), (5, 1, 3, 3), (5, 1, 3)))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.solve_lu(self.m_bb, self.v_s)
@@ -345,7 +339,7 @@ class TestSolveShape(TestSolve):
         with self.subTest('rsolve_lu'):
             self.assertArrayShapesAre(gfl.rsolve_lu(self.v_s, self.m_ss),
                                       ((3,), (3, 3), (3,)))
-            self.assertArrayShapesAre(gfl.solve(self.v_s, self.a_ss),
+            self.assertArrayShapesAre(gfl.rsolve_lu(self.v_s, self.a_ss),
                                       ((5, 1, 3), (5, 1, 3, 3), (5, 1, 3)))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.rsolve_lu(self.v_s, self.m_bb)
@@ -355,7 +349,7 @@ class TestSolveShape(TestSolve):
             self.assertArrayShapesAre(gfl.rsolve_lu(self.m_sb, self.a_bb),
                                       ((3, 3, 7), (3, 7, 7), (3, 7)))
         with self.subTest('rlu_solve'):
-            _, xf, p = gfl.solve_lu(self.m_ss, self.v_s)
+            _, xf, p = gfl.rsolve_lu(self.v_s, self.m_ss)
             self.assertArrayShape(gfl.rlu_solve(self.v_s, xf, p), (3,))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.rlu_solve(self.v_b, xf, p)
@@ -364,7 +358,7 @@ class TestSolveShape(TestSolve):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.lu_solve(xf, p, self.v_b)
         with self.subTest('rlu_solve'):
-            _, xf, p = gfl.solve_lu(self.a_bb, self.v_b)
+            _, xf, p = gfl.rsolve_lu(self.v_b, self.a_bb)
             self.assertArrayShape(gfl.rlu_solve(self.v_b, xf, p), (3, 7))
             # This would differ if interpreted as vM: (3)(7)/(3)(7,7)->(3)(7)
             self.assertArrayShape(gfl.rlu_solve(self.m_sb, xf, p), (3, 3, 7))

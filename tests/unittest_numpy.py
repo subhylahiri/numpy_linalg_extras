@@ -71,6 +71,20 @@ class NosortTestLoader(unittest.TestLoader):
             testFnNames.sort(key=key_fn)
         return testFnNames
 
+    def loadTestsFromModule(self, module, *args, pattern=None, **kws):
+        """Return a suite of all test cases contained in the given module"""
+        tests = super().loadTestsFromModule(self, module, *args, pattern=None,
+                                            **kws)
+        all_names = getattr(module, '__all__', None)
+        if all_names is not None and not hasattr(module, 'load_tests'):
+            tests = []
+            for name in all_names:
+                obj = getattr(module, name)
+                if isinstance(obj, type) and issubclass(obj, TestCaseNumpy):
+                    tests.append(self.loadTestsFromTestCase(obj))
+            tests = self.suiteClass(tests)
+        return tests
+
 
 nosortTestLoader = NosortTestLoader()
 
@@ -197,7 +211,9 @@ class TestCaseNumpy(unittest.TestCase):
     def setUp(self):
         # Scalar types:
         self.varnames = []
-        self.sctype = ['f', 'd', 'F', 'D']
+        # so it can be extended in Subclass before calling super().setUp()
+        extra_sctypes = getattr(self, 'sctype', [])
+        self.sctype = ['f', 'd', 'F', 'D'] + extra_sctypes
         self.all_close_opts = {'atol': 1e-5, 'rtol': 1e-5, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 

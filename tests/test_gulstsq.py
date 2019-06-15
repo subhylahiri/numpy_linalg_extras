@@ -3,33 +3,22 @@
 """
 import unittest
 import numpy as np
-import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
+import unittest_numpy as utn
 from test_gufunc import TestMatsVecs
 
 errstate = utn.errstate(invalid='raise')
+# =============================================================================
+__all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv',
+           'TestLstsqShape', 'TestLstsqVal']
 # =============================================================================
 # %% Test qr
 # =============================================================================
 
 
-class TestQRPinv(TestMatsVecs):
-    """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.varnames += ['id_s', 'id_b']
-        self._id_s = {}
-        self._id_b = {}
-        for sctype in self.sctype:
-            self._id_s[sctype] = np.eye(3, dtype=sctype)
-            self._id_b[sctype] = np.eye(7, dtype=sctype)
-
-
-class TestQRPinvShape(TestQRPinv):
+class TestQRPinvShape(TestMatsVecs):
     """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
     """
 
@@ -103,7 +92,7 @@ class TestQRPinvShape(TestQRPinv):
             self.assertArrayShape(gfl.qr_pinv(tall_f, tall_tau), (2, 3, 7))
 
 
-class TestQR(TestQRPinv):
+class TestQR(TestMatsVecs):
     """Testing gufuncs_lapack.qr_*
     """
 
@@ -211,7 +200,7 @@ class TestQR(TestQRPinv):
             self.assertArrayAllClose(r, self.a_bs)
 
 
-class TestLQ(TestQRPinv):
+class TestLQ(TestMatsVecs):
     """Testing gufuncs_lapack.lq_*
     """
 
@@ -321,7 +310,7 @@ class TestLQ(TestQRPinv):
             self.assertArrayAllClose(lo, self.a_bs)
 
 
-class TestPinv(TestQRPinv):
+class TestPinv(TestMatsVecs):
     """Testing gufuncs_lapack.pinv, pinv_qr and qr_pinv
     """
     @utn.loop_test(msg='pinv')
@@ -364,13 +353,13 @@ sh_ufuncs = [gfl.lstsq_qrm, gfl.lstsq_qrn]
 rsh_ufuncs = [gfl.rlstsq_qrm, gfl.rlstsq_qrn]
 
 
-class TestLstsq(utn.TestCaseNumpy):
+class TestLstsq(TestMatsVecs):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     def setUp(self):
         super().setUp()
-        self.varnames = ['u', 'v', 'w', 'x', 'y', 'z', 'wt', 'xt', 'yt', 'zt',
-                         'ones']
+        self.varnames += ['u', 'v', 'w', 'x', 'y', 'z', 'wt', 'xt', 'yt', 'zt',
+                          'ones']
         self._u = {}
         self._v = {}
         self._w = {}

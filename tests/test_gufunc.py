@@ -9,7 +9,7 @@ import numpy_linalg.gufuncs._gufuncs_blas as gfb
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
-
+__all__ = ['TestMatsVecs', 'TestBlas', 'TestCloop']
 # =============================================================================
 # %% Test BLAS ufuncs
 # =============================================================================
@@ -17,6 +17,8 @@ errstate = utn.errstate(invalid='raise')
 
 class TestMatsVecs(utn.TestCaseNumpy):
     """Collection of vectors and matrices for tests"""
+    id_s: np.ndarray
+    id_b: np.ndarray
     v_s: np.ndarray
     v_b: np.ndarray
     m_bs: np.ndarray
@@ -29,25 +31,18 @@ class TestMatsVecs(utn.TestCaseNumpy):
     a_bb: np.ndarray
 
     def setUp(self):
-        extra_sctypes = getattr(self, 'sctype', [])
         super().setUp()
-        self.sctype.extend(extra_sctypes)
         # prefixes: v(ector), m(atrix, a(rray of matrices)
         # suffixes: s(mall), b(ig)
-        self.varnames = ['v_s', 'v_b',
+        self.varnames = ['id_s', 'id_b', 'v_s', 'v_b',
                          'm_bs', 'm_sb', 'm_ss', 'm_bb',
                          'a_bs', 'a_sb', 'a_ss', 'a_bb']
-        self._v_s = {}
-        self._v_b = {}
-        self._m_bs = {}
-        self._m_sb = {}
-        self._m_ss = {}
-        self._m_bb = {}
-        self._a_bs = {}
-        self._a_sb = {}
-        self._a_ss = {}
-        self._a_bb = {}
+        self._id_s, self._id_b, self._v_s, self._v_b = {}, {}, {}, {}
+        self._m_bs, self._m_sb, self._m_ss, self._m_bb = {}, {}, {}, {}
+        self._a_bs, self._a_sb, self._a_ss, self._a_bb = {}, {}, {}, {}
         for sctype in self.sctype:
+            self._id_s[sctype] = np.eye(3, dtype=sctype)
+            self._id_b[sctype] = np.eye(7, dtype=sctype)
             self._v_s[sctype] = utn.randn_asa((3,), sctype)
             self._v_b[sctype] = utn.randn_asa((7,), sctype)
             self._m_bs[sctype] = utn.randn_asa((7, 3), sctype)
@@ -68,17 +63,15 @@ class TestBlas(TestMatsVecs):
         self.sctype = ['i']
         super().setUp()
         self.varnames += ['nrms', 'vecs', 'prod']
-        self._nrms = {}
-        self._vecs = {}
-        self._prod = {}
+        self._nrms, self._vecs, self._prod = {}, {}, {}
         for sctype in self.sctype:
-            self._prod[sctype] = self._a_sb[sctype] @ self._a_bs[sctype]
             self._vecs[sctype] = utn.asa(np.arange(24).reshape((2, 3, 4)),
                                          np.arange(8).reshape((2, 1, 4)),
                                          sctype)
             nsq = utn.asa(np.array([[14, 126, 366], [734, 1230, 1854]]),
                           np.array([[14], [126]]), sctype)
             self._nrms[sctype] = np.sqrt(nsq.real + nsq.imag)
+            self._prod[sctype] = self._a_sb[sctype] @ self._a_bs[sctype]
 
     def test_norm_shape(self):
         """Check that norm gufunc returns arrays with the expected shape

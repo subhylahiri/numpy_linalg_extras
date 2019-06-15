@@ -7,6 +7,7 @@ import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
+from test_gufunc import TestMatsVecs
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
@@ -14,25 +15,18 @@ errstate = utn.errstate(invalid='raise')
 # =============================================================================
 
 
-class TestQRPinv(utn.TestCaseNumpy):
+class TestQRPinv(TestMatsVecs):
     """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
     """
 
     def setUp(self):
         super().setUp()
-        self.varnames = ['tall', 'wide', 'id_small', 'id_big']
-        self._wide = {}
-        self._tall = {}
-        self._wide = {}
-        self._id_small = {}
-        self._id_big = {}
+        self.varnames += ['id_s', 'id_b']
+        self._id_s = {}
+        self._id_b = {}
         for sctype in self.sctype:
-            x = np.random.randn(120, 10, 5, 16)
-            y = np.random.randn(120, 10, 16, 5)
-            self._wide[sctype] = utn.asa(x, y.swapaxes(-2, -1), sctype)
-            self._tall[sctype] = utn.asa(x.swapaxes(-2, -1), y, sctype)
-            self._id_small[sctype] = np.eye(5, dtype=sctype)
-            self._id_big[sctype] = np.eye(16, dtype=sctype)
+            self._id_s[sctype] = np.eye(3, dtype=sctype)
+            self._id_b[sctype] = np.eye(7, dtype=sctype)
 
 
 class TestQRPinvShape(TestQRPinv):
@@ -45,21 +39,23 @@ class TestQRPinvShape(TestQRPinv):
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            self.assertArrayShapesAre(gfl.qr_m(self.wide),
-                                      ((120, 10, 5, 5), (120, 10, 5, 16)))
-            self.assertArrayShape(gfl.qr_rm(self.wide), (120, 10, 5, 16))
+            self.assertArrayShapesAre(gfl.qr_m(self.a_sb),
+                                      ((4, 1, 3, 3), (4, 1, 3, 7)))
+            self.assertArrayShape(gfl.qr_rm(self.a_sb), (4, 1, 3, 7))
             with self.assertRaisesRegex(*utn.invalid_err):
-                gfl.qr_n(self.wide)
+                gfl.qr_n(self.a_sb)
         with self.subTest(msg='tall'):
-            self.assertArrayShapesAre(gfl.qr_n(self.tall),
-                                      ((120, 10, 16, 5), (120, 10, 5, 5)))
-            self.assertArrayShape(gfl.qr_rn(self.tall), (120, 10, 5, 5))
+            self.assertArrayShapesAre(gfl.qr_n(self.a_bs),
+                                      ((2, 7, 3), (2, 3, 3)))
+            self.assertArrayShape(gfl.qr_rn(self.a_bs), (2, 3, 3))
         with self.subTest(msg='complete'):
-            self.assertArrayShapesAre(gfl.qr_m(self.tall),
-                                      ((120, 10, 16, 16), (120, 10, 16, 5)))
+            self.assertArrayShapesAre(gfl.qr_m(self.a_bs),
+                                      ((2, 7, 7), (2, 7, 3)))
         with self.subTest(msg='raw'):
-            self.assertArrayShapesAre(gfl.qr_rawn(self.tall),
-                                      ((120, 10, 5, 16), (120, 10, 5)))
+            self.assertArrayShapesAre(gfl.qr_rawm(self.a_sb),
+                                      ((4, 1, 7, 3), (4, 1, 3)))
+            self.assertArrayShapesAre(gfl.qr_rawn(self.a_bs),
+                                      ((2, 3, 7), (2, 3)))
 
     @errstate
     def test_lq_shape(self):
@@ -67,44 +63,44 @@ class TestQRPinvShape(TestQRPinv):
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            self.assertArrayShapesAre(gfl.lq_m(self.wide),
-                                      ((120, 10, 5, 5), (120, 10, 5, 16)))
-            self.assertArrayShape(gfl.lq_lm(self.wide), (120, 10, 5, 5))
+            self.assertArrayShapesAre(gfl.lq_m(self.a_sb),
+                                      ((4, 1, 3, 3), (4, 1, 3, 7)))
+            self.assertArrayShape(gfl.lq_lm(self.a_sb), (4, 1, 3, 3))
         with self.subTest(msg='tall'):
-            self.assertArrayShapesAre(gfl.lq_n(self.tall),
-                                      ((120, 10, 16, 5), (120, 10, 5, 5)))
-            self.assertArrayShape(gfl.lq_ln(self.tall), (120, 10, 16, 5))
+            self.assertArrayShapesAre(gfl.lq_n(self.a_bs),
+                                      ((2, 7, 3), (2, 3, 3)))
+            self.assertArrayShape(gfl.lq_ln(self.a_bs), (2, 7, 3))
             with self.assertRaisesRegex(*utn.invalid_err):
-                gfl.lq_m(self.tall)
+                gfl.lq_m(self.a_bs)
         with self.subTest(msg='complete'):
-            self.assertArrayShapesAre(gfl.lq_n(self.wide),
-                                      ((120, 10, 5, 16), (120, 10, 16, 16)))
+            self.assertArrayShapesAre(gfl.lq_n(self.a_sb),
+                                      ((4, 1, 3, 7), (4, 1, 7, 7)))
         with self.subTest(msg='raw'):
-            self.assertArrayShapesAre(gfl.lq_rawn(self.tall),
-                                      ((120, 10, 5, 16), (120, 10, 5)))
+            self.assertArrayShapesAre(gfl.lq_rawm(self.a_sb),
+                                      ((4, 1, 7, 3), (4, 1, 3)))
+            self.assertArrayShapesAre(gfl.lq_rawn(self.a_bs),
+                                      ((2, 3, 7), (2, 3)))
 
     def test_pinv_shape(self):
         """Check that pinv gufuncs all return arrays with the expected shape
         """
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
-            self.assertArrayShape(gfl.pinv(self.wide), (120, 10, 16, 5))
+            self.assertArrayShape(gfl.pinv(self.a_sb), (4, 1, 7, 3))
         with self.subTest(msg='tall'):
-            self.assertArrayShape(gfl.pinv(self.tall), (120, 10, 5, 16))
+            self.assertArrayShape(gfl.pinv(self.a_bs), (2, 3, 7))
         with self.subTest(msg='wide,+qr'):
-            self.assertArrayShapesAre(gfl.pinv_qrm(self.wide), (
-                            (120, 10, 16, 5), (120, 10, 16, 5), (120, 10, 5)))
+            self.assertArrayShapesAre(gfl.pinv_qrm(self.a_sb), (
+                                        (4, 1, 7, 3), (4, 1, 7, 3), (4, 1, 3)))
         with self.subTest(msg='tall,+qr'):
-            self.assertArrayShapesAre(gfl.pinv_qrn(self.tall), (
-                            (120, 10, 5, 16), (120, 10, 5, 16), (120, 10, 5)))
+            self.assertArrayShapesAre(gfl.pinv_qrn(self.a_bs), (
+                                                (2, 3, 7), (2, 3, 7), (2, 3)))
         with self.subTest(msg='wide,-qr'):
-            _, wide_f, wide_tau = gfl.pinv_qrm(self.wide)
-            self.assertArrayShape(
-                            gfl.qr_pinv(wide_f, wide_tau), (120, 10, 16, 5))
+            _, wide_f, wide_tau = gfl.pinv_qrm(self.a_sb)
+            self.assertArrayShape(gfl.qr_pinv(wide_f, wide_tau), (4, 1, 7, 3))
         with self.subTest(msg='tall,-qr'):
-            _, tall_f, tall_tau = gfl.pinv_qrn(self.tall)
-            self.assertArrayShape(
-                            gfl.qr_pinv(tall_f, tall_tau), (120, 10, 5, 16))
+            _, tall_f, tall_tau = gfl.pinv_qrn(self.a_bs)
+            self.assertArrayShape(gfl.qr_pinv(tall_f, tall_tau), (2, 3, 7))
 
 
 class TestQR(TestQRPinv):
@@ -116,45 +112,45 @@ class TestQR(TestQRPinv):
         """Check that qr_m returns the expected values on wide matrices
         """
         self.pick_var_type(sctype)
-        q, r = gfl.qr_m(self.wide)
+        q, r = gfl.qr_m(self.a_sb)
         wide = q @ r
         eye = dagger(q) @ q
         eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
-            self.assertArrayAllClose(wide, self.wide)
+            self.assertArrayAllClose(wide, self.a_sb)
         with self.subTest(msg='q^T q'):
-            self.assertArrayAllClose(self.id_small, eye)
+            self.assertArrayAllClose(self.id_s, eye)
         with self.subTest(msg='q q^T'):
-            self.assertArrayAllClose(self.id_small, eyet)
+            self.assertArrayAllClose(self.id_s, eyet)
 
     @utn.loop_test(msg='tall')
     def test_qr_tall(self, sctype):
         """Check that qr_n returns the expected values
         """
         self.pick_var_type(sctype)
-        q, r = gfl.qr_n(self.tall)
+        q, r = gfl.qr_n(self.a_bs)
         tall = q @ r
         eye = dagger(q) @ q
         with self.subTest(msg='qr'):
-            self.assertArrayAllClose(tall, self.tall)
+            self.assertArrayAllClose(tall, self.a_bs)
         with self.subTest(msg='q^T q'):
-            self.assertArrayAllClose(self.id_small, eye)
+            self.assertArrayAllClose(self.id_s, eye)
 
     @utn.loop_test(msg='complete')
     def test_qr_complete(self, sctype):
         """Check that qr_m returns the expected values on tall matrices
         """
         self.pick_var_type(sctype)
-        q, r = gfl.qr_m(self.tall)
+        q, r = gfl.qr_m(self.a_bs)
         tall = q @ r
         eye = dagger(q) @ q
         eyet = q @ dagger(q)
         with self.subTest(msg='qr'):
-            self.assertArrayAllClose(tall, self.tall)
+            self.assertArrayAllClose(tall, self.a_bs)
         with self.subTest(msg='q^T q'):
-            self.assertArrayAllClose(self.id_big, eye)
+            self.assertArrayAllClose(self.id_b, eye)
         with self.subTest(msg='q q^T'):
-            self.assertArrayAllClose(self.id_big, eyet)
+            self.assertArrayAllClose(self.id_b, eyet)
 
     @utn.loop_test(msg='r')
     def test_qr_r(self, sctype):
@@ -162,12 +158,12 @@ class TestQR(TestQRPinv):
         """
         self.pick_var_type(sctype)
         with self.subTest(msg='r_m'):
-            r = gfl.qr_rm(self.wide)
-            rr = gfl.qr_m(self.wide)[1]
+            r = gfl.qr_rm(self.a_sb)
+            rr = gfl.qr_m(self.a_sb)[1]
             self.assertArrayAllClose(r, rr)
         with self.subTest(msg='r_n'):
-            r = gfl.qr_rn(self.tall)
-            rr = gfl.qr_n(self.tall)[1]
+            r = gfl.qr_rn(self.a_bs)
+            rr = gfl.qr_n(self.a_bs)[1]
             self.assertArrayAllClose(r, rr)
 
     @utn.loop_test(msg='rawm')
@@ -175,9 +171,9 @@ class TestQR(TestQRPinv):
         """Check that qr_rawm returns the expected values
         """
         self.pick_var_type(sctype)
-        rr = gfl.qr_m(self.wide)[1]
+        rr = gfl.qr_m(self.a_sb)[1]
         n = rr.shape[-2]
-        ht, tau = gfl.qr_rawm(self.wide)
+        ht, tau = gfl.qr_rawm(self.a_sb)
         h = transpose(ht)
         v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
@@ -190,16 +186,16 @@ class TestQR(TestQRPinv):
             vv = v[..., n-k-1:n-k]
             r -= scalar(tau[..., -k-1]) * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_m'):
-            self.assertArrayAllClose(r, self.wide)
+            self.assertArrayAllClose(r, self.a_sb)
 
     @utn.loop_test(msg='rawn')
     def test_qr_rawn(self, sctype):
         """Check that qr_rawn returns the expected values
         """
         self.pick_var_type(sctype)
-        rr = gfl.qr_n(self.tall)[1]
+        rr = gfl.qr_n(self.a_bs)[1]
         n = rr.shape[-1]
-        ht, tau = gfl.qr_rawn(self.tall)
+        ht, tau = gfl.qr_rawn(self.a_bs)
         h = transpose(ht)
         v = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
@@ -212,7 +208,7 @@ class TestQR(TestQRPinv):
             vv = v[..., n-k-1:n-k]
             r -= scalar(tau[..., -k-1]) * vv * (dagger(vv) @ r)
         with self.subTest(msg='h_n'):
-            self.assertArrayAllClose(r, self.tall)
+            self.assertArrayAllClose(r, self.a_bs)
 
 
 class TestLQ(TestQRPinv):
@@ -224,45 +220,45 @@ class TestLQ(TestQRPinv):
         """Check that lq_m returns the expected values
         """
         self.pick_var_type(sctype)
-        lo, q = gfl.lq_m(self.wide)
+        lo, q = gfl.lq_m(self.a_sb)
         wide = lo @ q
         eye = q @ dagger(q)
         with self.subTest(msg='lq'):
-            self.assertArrayAllClose(wide, self.wide)
+            self.assertArrayAllClose(wide, self.a_sb)
         with self.subTest(msg='q q^T'):
-            self.assertArrayAllClose(self.id_small, eye)
+            self.assertArrayAllClose(self.id_s, eye)
 
     @utn.loop_test(msg='tall')
     def test_lq_tall(self, sctype):
         """Check that lq_n returns the expected values on tall matrices
         """
         self.pick_var_type(sctype)
-        lo, q = gfl.lq_n(self.tall)
+        lo, q = gfl.lq_n(self.a_bs)
         tall = lo @ q
         eye = q @ dagger(q)
         eyet = dagger(q) @ q
         with self.subTest(msg='lq'):
-            self.assertArrayAllClose(tall, self.tall)
+            self.assertArrayAllClose(tall, self.a_bs)
         with self.subTest(msg='q q^T'):
-            self.assertArrayAllClose(self.id_small, eye)
+            self.assertArrayAllClose(self.id_s, eye)
         with self.subTest(msg='q^T q'):
-            self.assertArrayAllClose(self.id_small, eyet)
+            self.assertArrayAllClose(self.id_s, eyet)
 
     @utn.loop_test(msg='complete')
     def test_lq_complete(self, sctype):
         """Check that lq_n returns the expected values on wide matrices
         """
         self.pick_var_type(sctype)
-        lo, q = gfl.lq_n(self.wide)
+        lo, q = gfl.lq_n(self.a_sb)
         wide = lo @ q
         eye = q @ dagger(q)
         eyet = dagger(q) @ q
         with self.subTest(msg='lq'):
-            self.assertArrayAllClose(wide, self.wide)
+            self.assertArrayAllClose(wide, self.a_sb)
         with self.subTest(msg='q q^T'):
-            self.assertArrayAllClose(self.id_big, eye)
+            self.assertArrayAllClose(self.id_b, eye)
         with self.subTest(msg='q^T q'):
-            self.assertArrayAllClose(self.id_big, eyet)
+            self.assertArrayAllClose(self.id_b, eyet)
 
     @utn.loop_test(msg='l')
     def test_lq_l(self, sctype):
@@ -270,12 +266,12 @@ class TestLQ(TestQRPinv):
         """
         self.pick_var_type(sctype)
         with self.subTest(msg='l_m'):
-            lo = gfl.lq_lm(self.wide)
-            llo = gfl.lq_m(self.wide)[0]
+            lo = gfl.lq_lm(self.a_sb)
+            llo = gfl.lq_m(self.a_sb)[0]
             self.assertArrayAllClose(lo, llo)
         with self.subTest(msg='l_n'):
-            lo = gfl.lq_ln(self.tall)
-            llo = gfl.lq_n(self.tall)[0]
+            lo = gfl.lq_ln(self.a_bs)
+            llo = gfl.lq_n(self.a_bs)[0]
             self.assertArrayAllClose(lo, llo)
 
     @utn.loop_test(msg='rawm')
@@ -283,9 +279,9 @@ class TestLQ(TestQRPinv):
         """Check that lq_rawm returns the expected values
         """
         self.pick_var_type(sctype)
-        llo = gfl.lq_m(self.wide)[0]
+        llo = gfl.lq_m(self.a_sb)[0]
         n = llo.shape[-2]
-        ht, tau = gfl.lq_rawm(self.wide)
+        ht, tau = gfl.lq_rawm(self.a_sb)
         h = transpose(ht)
         v = np.triu(h, 1)
         v[(...,) + np.diag_indices(n)] = 1
@@ -299,16 +295,16 @@ class TestLQ(TestQRPinv):
             vv = v[..., n-k-1:n-k, :]
             lo -= scalar(tau[..., -k-1].conj()) * (lo @ dagger(vv)) * vv
         with self.subTest(msg='h_m'):
-            self.assertArrayAllClose(lo, self.wide)
+            self.assertArrayAllClose(lo, self.a_sb)
 
     @utn.loop_test(msg='rawn')
     def test_lq_rawn(self, sctype):
         """Check that lq_rawn returns the expected values
         """
         self.pick_var_type(sctype)
-        llo = gfl.lq_n(self.tall)[0]
+        llo = gfl.lq_n(self.a_bs)[0]
         n = llo.shape[-1]
-        ht, tau = gfl.lq_rawn(self.tall)
+        ht, tau = gfl.lq_rawn(self.a_bs)
         h = transpose(ht)
         v = np.triu(h, 1)
         v[(...,) + np.diag_indices(n)] = 1
@@ -322,7 +318,7 @@ class TestLQ(TestQRPinv):
             vv = v[..., n-k-1:n-k, :]
             lo -= scalar(tau[..., -k-1].conj()) * (lo @ dagger(vv)) * vv
         with self.subTest(msg='h_n'):
-            self.assertArrayAllClose(lo, self.tall)
+            self.assertArrayAllClose(lo, self.a_bs)
 
 
 class TestPinv(TestQRPinv):
@@ -334,24 +330,22 @@ class TestPinv(TestQRPinv):
         """
         self.pick_var_type(sctype)
         with self.subTest(msg='wide'):
-            wide_p = gfl.pinv(self.wide)
-            self.assertArrayAllClose(self.wide @ wide_p,
-                                     self.id_small)
+            wide_p = gfl.pinv(self.a_sb)
+            self.assertArrayAllClose(self.a_sb @ wide_p, self.id_s)
         with self.subTest(msg='tall'):
-            tall_p = gfl.pinv(self.tall)
-            self.assertArrayAllClose(tall_p @ self.tall,
-                                     self.id_small)
+            tall_p = gfl.pinv(self.a_bs)
+            self.assertArrayAllClose(tall_p @ self.a_bs, self.id_s)
         with self.subTest(msg='wide,+qr'):
-            wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.wide)
+            wide_pq, wide_f, wide_tau = gfl.pinv_qrm(self.a_sb)
             # actually want lq here
-            qrf, tau = gfl.lq_rawm(self.wide)
+            qrf, tau = gfl.lq_rawm(self.a_sb)
             # qrf = dagger(qrf)
             self.assertArrayAllClose(wide_pq, wide_p)
             # self.assertArrayAllClose(wide_f, qrf)
             # self.assertArrayAllClose(wide_tau, tau)
         with self.subTest(msg='tall,+qr'):
-            tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.tall)
-            qrf, tau = gfl.qr_rawn(self.tall)
+            tall_pq, tall_f, tall_tau = gfl.pinv_qrn(self.a_bs)
+            qrf, tau = gfl.qr_rawn(self.a_bs)
             self.assertArrayAllClose(tall_pq, tall_p)
             self.assertArrayAllClose(tall_f, qrf)
             self.assertArrayAllClose(tall_tau, tau)

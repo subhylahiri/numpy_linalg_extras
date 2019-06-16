@@ -18,32 +18,7 @@ __all__ = ['TestShape', 'TestValue']
 # =============================================================================
 
 
-class TestLinalg(TestMatsVecs):
-    """Testing row, col, scal and transpose"""
-
-    def setUp(self):
-        super().setUp()
-        self.varnames += ['u', 'v', 'w', 'x', 'y', 'z', 'ones', 'zeros']
-        self._u = {}
-        self._v = {}
-        self._w = {}
-        self._x = {}
-        self._y = {}
-        self._z = {}
-        self._ones = {}
-        self._zeros = {}
-        for sctype in self.sctype:
-            self._u[sctype] = utn.randn_asa((7, 5), sctype)
-            self._v[sctype] = utn.randn_asa((5, 2), sctype)
-            self._w[sctype] = utn.randn_asa((2, 3, 3), sctype)
-            self._x[sctype] = utn.randn_asa((2, 5, 3), sctype)
-            self._y[sctype] = utn.randn_asa((3, 5), sctype)
-            self._z[sctype] = utn.randn_asa((3,), sctype)
-            self._ones[sctype] = utn.ones_asa((3, 3), sctype)
-            self._zeros[sctype] = utn.zeros_asa((3, 3), sctype)
-
-
-class TestShape(TestLinalg):
+class TestShape(TestMatsVecs):
     """Testing shapes returned by linalg functions"""
 
     def test_shape_fn(self):
@@ -179,7 +154,7 @@ class TestShape(TestLinalg):
         self.assertArrayShapesAre(la.lu(self.m_sb, 'raw'), ((7, 3), (3,)))
 
 
-class TestValue(TestLinalg):
+class TestValue(TestMatsVecs):
     """Testing values returned by linalg functions"""
 
     @utn.loop_test()
@@ -329,11 +304,11 @@ class TestValue(TestLinalg):
         """
         self.pick_var_type(sctype)
         with self.assertRaises(np.linalg.LinAlgError):
-            la.solve(self.ones, self.m_sb)
-        q, r = la.qr(self.ones)
-        self.assertArrayAllClose(q @ r, self.ones)
-        low, up, piv = la.lu(self.ones)
-        self.assertArrayAllClose(low @ up, self.ones)
+            la.solve(self.ones_ss, self.m_sb)
+        q, r = la.qr(self.ones_ss)
+        self.assertArrayAllClose(q @ r, self.ones_ss)
+        low, up, piv = la.lu(self.ones_ss)
+        self.assertArrayAllClose(low @ up, self.ones_ss)
 
 
 # =============================================================================

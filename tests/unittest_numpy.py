@@ -84,7 +84,7 @@ class NosortTestLoader(unittest.TestLoader):
             tests = []
             for name in all_names:
                 obj = getattr(module, name)
-                if isinstance(obj, type) and issubclass(obj, TestCaseNumpy):
+                if isinstance(obj, type) and issubclass(obj, unittest.TestCase):
                     tests.append(self.loadTestsFromTestCase(obj))
             tests = self.suiteClass(tests)
         return tests

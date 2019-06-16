@@ -155,19 +155,7 @@ class TestLU(TestMatsVecs):
 # =============================================================================
 
 
-class TestSolve(TestMatsVecs):
-    """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
-    ones: np.ndarray
-
-    def setUp(self):
-        super().setUp()
-        self.varnames += ['ones']
-        self._ones = {}
-        for sctype in self.sctype:
-            self._ones[sctype] = utn.ones_asa((3, 3), sctype)
-
-
-class TestSolveShape(TestSolve):
+class TestSolveShape(TestMatsVecs):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
     def test_solve_shape(self):
@@ -369,7 +357,7 @@ class TestSolveShape(TestSolve):
                 gfl.lu_solve(xf, p, self.m_sb)
 
 
-class TestSolveVal(TestSolve):
+class TestSolveVal(TestMatsVecs):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
     @utn.loop_test()
@@ -423,7 +411,7 @@ class TestSolveVal(TestSolve):
         """
         self.pick_var_type(sctype)
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.solve(self.ones, self.m_sb)
+            gfl.solve(self.ones_ss, self.m_sb)
 
 
 # =============================================================================

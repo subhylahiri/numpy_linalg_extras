@@ -17,6 +17,9 @@ __all__ = ['TestMatsVecs', 'TestBlas', 'TestCloop']
 
 class TestMatsVecs(utn.TestCaseNumpy):
     """Collection of vectors and matrices for tests"""
+    ones_ss: np.ndarray
+    ones_sb: np.ndarray
+    ones_bs: np.ndarray
     id_s: np.ndarray
     id_b: np.ndarray
     v_s: np.ndarray
@@ -34,13 +37,18 @@ class TestMatsVecs(utn.TestCaseNumpy):
         super().setUp()
         # prefixes: v(ector), m(atrix, a(rray of matrices)
         # suffixes: s(mall), b(ig)
-        self.varnames = ['id_s', 'id_b', 'v_s', 'v_b',
+        self.varnames = ['ones_ss', 'ones_sb', 'ones_bs',
+                         'id_s', 'id_b', 'v_s', 'v_b',
                          'm_bs', 'm_sb', 'm_ss', 'm_bb',
                          'a_bs', 'a_sb', 'a_ss', 'a_bb']
+        self._ones_ss, self._ones_sb, self._ones_bs = {}, {}, {}
         self._id_s, self._id_b, self._v_s, self._v_b = {}, {}, {}, {}
         self._m_bs, self._m_sb, self._m_ss, self._m_bb = {}, {}, {}, {}
         self._a_bs, self._a_sb, self._a_ss, self._a_bb = {}, {}, {}, {}
         for sctype in self.sctype:
+            self._ones_ss[sctype] = utn.ones_asa((3, 3), sctype)
+            self._ones_sb[sctype] = utn.ones_asa((3, 7), sctype)
+            self._ones_bs[sctype] = utn.ones_asa((7, 3), sctype)
             self._id_s[sctype] = np.eye(3, dtype=sctype)
             self._id_b[sctype] = np.eye(7, dtype=sctype)
             self._v_s[sctype] = utn.randn_asa((3,), sctype)

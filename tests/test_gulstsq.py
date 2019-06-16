@@ -353,18 +353,7 @@ sh_ufuncs = [gfl.lstsq_qrm, gfl.lstsq_qrn]
 rsh_ufuncs = [gfl.rlstsq_qrm, gfl.rlstsq_qrn]
 
 
-class TestLstsq(TestMatsVecs):
-    """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
-
-    def setUp(self):
-        super().setUp()
-        self.varnames += ['ones']
-        self._ones = {}
-        for sctype in self.sctype:
-            self._ones[sctype] = utn.ones_asa((7, 3), sctype)
-
-
-class TestLstsqShape(TestLstsq):
+class TestLstsqShape(TestMatsVecs):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @errstate
@@ -664,7 +653,7 @@ class TestLstsqShape(TestLstsq):
                 gfl.qr_lstsq(xf, tau, self.a_ss)
 
 
-class TestLstsqVal(TestLstsq):
+class TestLstsqVal(TestMatsVecs):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @utn.loop_test()
@@ -788,7 +777,7 @@ class TestLstsqVal(TestLstsq):
         """
         self.pick_var_type(sctype)
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.lstsq_qr(self.ones, self.a_bs)
+            gfl.lstsq_qr(self.ones_bs, self.a_bs)
 
 
 # =============================================================================

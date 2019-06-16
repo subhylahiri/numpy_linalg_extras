@@ -358,30 +358,9 @@ class TestLstsq(TestMatsVecs):
 
     def setUp(self):
         super().setUp()
-        self.varnames += ['u', 'v', 'w', 'x', 'y', 'z', 'wt', 'xt', 'yt', 'zt',
-                          'ones']
-        self._u = {}
-        self._v = {}
-        self._w = {}
-        self._x = {}
-        self._y = {}
-        self._z = {}
-        self._wt = {}
-        self._xt = {}
-        self._yt = {}
-        self._zt = {}
+        self.varnames += ['ones']
         self._ones = {}
         for sctype in self.sctype:
-            self._u[sctype] = utn.randn_asa((5, 4), sctype)
-            self._v[sctype] = utn.randn_asa((4, 5), sctype)
-            self._w[sctype] = utn.randn_asa((3, 1, 1, 5), sctype)
-            self._x[sctype] = utn.randn_asa((2, 8, 5), sctype)
-            self._y[sctype] = utn.randn_asa((8, 2), sctype)
-            self._z[sctype] = utn.randn_asa((3, 1, 8, 4), sctype)
-            self._wt[sctype] = dagger(self._w[sctype])
-            self._xt[sctype] = dagger(self._x[sctype])
-            self._yt[sctype] = dagger(self._y[sctype])
-            self._zt[sctype] = dagger(self._z[sctype])
             self._ones[sctype] = utn.ones_asa((7, 3), sctype)
 
 
@@ -694,100 +673,112 @@ class TestLstsqVal(TestLstsq):
         """
         self.pick_var_type(sctype)
         # overconstrained
-        a = gfl.lstsq(self.x, self.y)
+        a = gfl.lstsq(self.a_bs, self.m_bb)
+        a_bs_t = dagger(self.a_bs)
         with self.subTest(msg='lstsq(over)'):
-            self.assertArrayAllClose(self.xt @ self.x @ a,
-                                     self.xt @ self.y)
+            self.assertArrayAllClose(a_bs_t @ self.a_bs @ a,
+                                     a_bs_t @ self.m_bb)
+        a = gfl.rlstsq(self.a_bb, self.a_sb)
+        a_sb_t = dagger(self.a_sb)
+        with self.subTest(msg='rlstsq(over)'):
+            self.assertArrayAllClose(a @ self.a_sb @ a_sb_t,
+                                     self.a_bb @ a_sb_t)
         # underconstrained
-        b = gfl.rlstsq(self.v, self.x)
+        a = gfl.lstsq(self.a_sb, self.m_ss)
+        with self.subTest(msg='lstsq(under)'):
+            self.assertArrayAllClose(self.a_sb @ a, self.m_ss)
+        a = gfl.rlstsq(self.a_ss, self.a_bs)
         with self.subTest(msg='rlstsq(under)'):
-            self.assertArrayAllClose(b @ self.x, self.v)
+            self.assertArrayAllClose(a @ self.a_bs, self.a_ss)
 
     @utn.loop_test()
-    def test_lstsqqr_val(self, sctype):
+    def test_lstsqqr_tall_val(self, sctype):
         """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
         """
         self.pick_var_type(sctype)
         # overconstrained
-        a0 = gfl.lstsq(self.x, self.y)
+        a0 = gfl.lstsq(self.a_bs, self.m_bb)
         # overconstrained
         for ufunc, suffix in zip(sh_ufuncs, [',cross)', ')']):
-            a, xf, tau = ufunc(self.x, self.y)
+            a, xf, tau = ufunc(self.a_bs, self.m_bb)
             with self.subTest('lstsq_qr(over' + suffix):
                 self.assertArrayAllClose(a, a0)
             # overconstrained
-            aa = gfl.qr_lstsq(xf, tau, self.y)
+            aa = gfl.qr_lstsq(xf, tau, self.m_bb)
             with self.subTest('qr_lstsq(over' + suffix):
                 self.assertArrayAllClose(aa, a0)
             # underconstrained
-            b = gfl.rqr_lstsq(self.v, xf, tau)
+            b = gfl.rqr_lstsq(self.a_ss, xf, tau)
             with self.subTest('rqr_lstsq(under' + suffix):
-                self.assertArrayAllClose(b @ self.x, self.v)
+                self.assertArrayAllClose(b @ self.a_bs, self.a_ss)
 
     @utn.loop_test()
-    def test_rlstsqqr_val(self, sctype):
+    def test_rlstsqqr_wide_val(self, sctype):
         """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
         """
         self.pick_var_type(sctype)
-        # underconstrained
-        a0 = gfl.rlstsq(self.w, self.x)
-        # underconstrained
+        # overconstrained
+        a0 = gfl.rlstsq(self.a_bb, self.a_sb)
+        # overconstrained
         for ufunc, suffix in zip(rsh_ufuncs, [')', ',cross)']):
-            a, xf, tau = ufunc(self.w, self.x)
+            a, xf, tau = ufunc(self.a_bb, self.a_sb)
             with self.subTest('rlstsq_qr(under' + suffix):
                 self.assertArrayAllClose(a, a0)
-            # underconstrained
-            aa = gfl.rqr_lstsq(self.w, xf, tau)
+            # overconstrained
+            aa = gfl.rqr_lstsq(self.a_bb, xf, tau)
             with self.subTest('rqr_rlstsq(under' + suffix):
                 self.assertArrayAllClose(aa, a0)
-            # overconstrained
-            b = gfl.qr_lstsq(xf, tau, self.z)
+            # underconstrained
+            b = gfl.qr_lstsq(xf, tau, self.m_ss)
             with self.subTest('qr_rlstsq(over' + suffix):
-                self.assertArrayAllClose(self.xt @ self.x @ b,
-                                         self.xt @ self.z)
+                self.assertArrayAllClose(self.a_sb @ b,
+                                         self.m_ss)
 
     @utn.loop_test()
-    def test_lstsqqrt_val(self, sctype):
+    def test_lstsqqr_wide_val(self, sctype):
         """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
         """
         self.pick_var_type(sctype)
         # underconstrained
-        a0 = gfl.lstsq(self.xt, self.u)
+        a0 = gfl.lstsq(self.a_sb, self.m_ss)
         # underconstrained
         for ufunc, suffix in zip(sh_ufuncs, [')', ',cross)']):
-            a, xf, tau = ufunc(self.xt, self.u)
+            a, xf, tau = ufunc(self.a_sb, self.m_ss)
             with self.subTest('lstsq_qr(under' + suffix):
                 self.assertArrayAllClose(a, a0)
             # underconstrained
-            aa = gfl.qr_lstsq(xf, tau, self.u)
+            aa = gfl.qr_lstsq(xf, tau, self.m_ss)
             with self.subTest('qr_lstsq(under' + suffix):
                 self.assertArrayAllClose(aa, a0)
             # overconstrained
-            b = gfl.rqr_lstsq(self.zt, xf, tau)
+            b = gfl.rqr_lstsq(self.a_bb, xf, tau)
+            a_sb_t = dagger(self.a_sb)
             with self.subTest('rqr_lstsq(over' + suffix):
-                self.assertArrayAllClose(b @ self.xt @ self.x,
-                                         self.zt @ self.x)
+                self.assertArrayAllClose(b @ self.a_sb @ a_sb_t,
+                                         self.a_bb @ a_sb_t)
 
     @utn.loop_test()
-    def test_rlstsqqrt_val(self, sctype):
+    def test_rlstsqqr_tall_val(self, sctype):
         """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
         """
         self.pick_var_type(sctype)
-        # overconstrained
-        a0 = gfl.rlstsq(self.yt, self.xt)
-        # overconstrained
+        # underconstrained
+        a0 = gfl.rlstsq(self.a_ss, self.a_bs)
+        # underconstrained
         for ufunc, suffix in zip(rsh_ufuncs, [',cross)', ')']):
-            a, xf, tau = ufunc(self.yt, self.xt)
+            a, xf, tau = ufunc(self.a_ss, self.a_bs)
             with self.subTest('rlstsq_qr(over' + suffix):
                 self.assertArrayAllClose(a, a0)
-            # overconstrained
-            aa = gfl.rqr_lstsq(self.yt, xf, tau)
+            # underconstrained
+            aa = gfl.rqr_lstsq(self.a_ss, xf, tau)
             with self.subTest('rqr_rlstsq(over' + suffix):
                 self.assertArrayAllClose(aa, a0)
-            # underconstrained
-            b = gfl.qr_lstsq(xf, tau, self.wt)
+            # overconstrained
+            b = gfl.qr_lstsq(xf, tau, self.m_bb)
+            a_bs_t = dagger(self.a_bs)
             with self.subTest('qr_rlstsq(under' + suffix):
-                self.assertArrayAllClose(self.xt @ b, self.wt)
+                self.assertArrayAllClose(a_bs_t @ self.a_bs @ b,
+                                         a_bs_t @ self.m_bb)
 
     @unittest.expectedFailure
     @errstate

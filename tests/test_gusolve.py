@@ -14,7 +14,7 @@ else:
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
-__all__ = ['TestLU', 'TestSolveShape', 'TestSolveVal']
+__all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
 # =============================================================================
 # %% Test LU
 # =============================================================================
@@ -259,7 +259,11 @@ class TestSolveShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.rlu_solve(transpose(self.a_bs), xf, p)
 
-    @unittest.expectedFailure
+
+@unittest.expectedFailure
+class TestSolveVectors(TestMatsVecs):
+    """Testing (r)solve, (r)solve_lu and (r)lu_solve with vectors"""
+
     def test_solve_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('solve'):
@@ -304,7 +308,6 @@ class TestSolveShape(TestMatsVecs):
             # This would differ if interpreted as vM: (3)(7)/(3)(7,7) -> (3)(3)
             self.assertArrayShape(gfl.rlu_solve(self.m_sb, xf, p), (3, 3, 7))
 
-    @unittest.expectedFailure
     def test_rsolve_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('rsolve'):

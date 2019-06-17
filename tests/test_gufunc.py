@@ -12,7 +12,7 @@ else:
 gfb = gfc
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
-__all__ = ['TestMatsVecs', 'TestBlas', 'TestCloop']
+__all__ = ['TestMatsVecs', 'TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
 # %% Test BLAS ufuncs
 # =============================================================================
@@ -108,7 +108,36 @@ class TestBlas(TestMatsVecs):
         with self.assertRaisesRegex(*utn.broadcast_err):
             self.gf.matmul(self.a_ss, self.a_sb)
 
-    @unittest.expectedFailure
+    @utn.loop_test(msg='matmul values')
+    def test_matmul_returns_expected_values(self, sctype):
+        self.pick_var_type(sctype)
+        pout = np.empty((4, 2, 3, 3), sctype)
+        prod = self.gf.matmul(self.a_sb, self.a_bs, out=pout)
+        self.assertArrayAllClose(prod, self.prod)
+        self.assertArrayAllClose(pout, self.prod)
+
+    def test_rmatmul_returns_expected_shapes(self):
+        self.pick_var_type('d')
+        self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.m_bs), (7, 7))
+        self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb), (2, 7, 3))
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(self.m_bs, self.m_bs)
+        with self.assertRaisesRegex(*utn.broadcast_err):
+            self.gf.rmatmul(self.a_sb, self.a_ss)
+
+    @utn.loop_test(msg='rmatmul values')
+    def test_rmatmul_returns_expected_values(self, sctype):
+        self.pick_var_type(sctype)
+        pout = np.empty((4, 2, 3, 3), sctype)
+        prod = self.gf.rmatmul(self.a_bs, self.a_sb, out=pout)
+        self.assertArrayAllClose(prod, self.prod)
+        self.assertArrayAllClose(pout, self.prod)
+
+
+@unittest.expectedFailure
+class TestBlasVectors(TestMatsVecs):
+    """Testing matmul and rmatmul"""
+
     def test_matmul_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('matrix-vector'):
@@ -132,24 +161,6 @@ class TestBlas(TestMatsVecs):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.matmul(self.v_s, self.v_b)
 
-    @utn.loop_test(msg='matmul values')
-    def test_matmul_returns_expected_values(self, sctype):
-        self.pick_var_type(sctype)
-        pout = np.empty((4, 2, 3, 3), sctype)
-        prod = self.gf.matmul(self.a_sb, self.a_bs, out=pout)
-        self.assertArrayAllClose(prod, self.prod)
-        self.assertArrayAllClose(pout, self.prod)
-
-    def test_rmatmul_returns_expected_shapes(self):
-        self.pick_var_type('d')
-        self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.m_bs), (7, 7))
-        self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb), (2, 7, 3))
-        with self.assertRaisesRegex(*utn.core_dim_err):
-            self.gf.rmatmul(self.m_bs, self.m_bs)
-        with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.rmatmul(self.a_sb, self.a_ss)
-
-    @unittest.expectedFailure
     def test_rmatmul_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('matrix-vector'):
@@ -174,14 +185,6 @@ class TestBlas(TestMatsVecs):
             self.assertArrayShape(self.gf.rmatmul(self.v_b, self.v_b), ())
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.rmatmul(self.v_b, self.v_s)
-
-    @utn.loop_test(msg='rmatmul values')
-    def test_rmatmul_returns_expected_values(self, sctype):
-        self.pick_var_type(sctype)
-        pout = np.empty((4, 2, 3, 3), sctype)
-        prod = self.gf.rmatmul(self.a_bs, self.a_sb, out=pout)
-        self.assertArrayAllClose(prod, self.prod)
-        self.assertArrayAllClose(pout, self.prod)
 
 
 # =============================================================================

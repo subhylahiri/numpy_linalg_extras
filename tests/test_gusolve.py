@@ -19,7 +19,7 @@ __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVal']
 class TestLU(TestMatsVecs):
     """Testing LU decomposition"""
 
-    def test_lu_basic_shape(self):
+    def test_lu_basic_returns_expected_shapes(self):
         """Test shape of basic LU"""
         self.pick_var_type('d')
         with self.subTest(msg="square"):
@@ -32,7 +32,7 @@ class TestLU(TestMatsVecs):
             self.assertArrayShapesAre(gfl.lu_n(self.m_bs),
                                       ((7, 3), (3, 3), (3,)))
 
-    def test_lu_raw_shape(self):
+    def test_lu_raw_returns_expected_shapes(self):
         """Test shape of raw LU"""
         self.pick_var_type('d')
         with self.subTest(msg="square"):
@@ -45,7 +45,7 @@ class TestLU(TestMatsVecs):
             self.assertArrayShapesAre(gfl.lu_rawn(self.m_bs), ((3, 7), (3,)))
 
     @utn.loop_test()
-    def test_lu_basic_val(self, sctype):
+    def test_lu_basic_returns_expected_values(self, sctype):
         """Test values of basic LU"""
         self.pick_var_type(sctype)
         sq_l, sq_u, sq_ip = gfl.lu_m(self.a_bb)
@@ -86,7 +86,7 @@ class TestLU(TestMatsVecs):
             self.assertArrayAllClose(tl, self.m_bs)
 
     @utn.loop_test()
-    def test_lu_raw_val(self, sctype):
+    def test_lu_raw_returns_expected_values(self, sctype):
         """Test values of raw LU"""
         self.pick_var_type(sctype)
         sq_l, sq_u, sq_ip0 = gfl.lu_m(self.a_bb)
@@ -117,7 +117,7 @@ class TestLU(TestMatsVecs):
             self.assertArrayAllClose(tl_f[uinds], tl_u[uinds])
             self.assertEqual(tl_ip, tl_ip0)
 
-    def test_inv_shape(self):
+    def test_inv_returns_expected_shapes(self):
         """Check that inv gufuncs all return arrays with the expected shape
         """
         self.pick_var_type('d')
@@ -131,7 +131,7 @@ class TestLU(TestMatsVecs):
             self.assertArrayShape(gfl.lu_inv(square_f, square_ip), (3, 7, 7))
 
     @utn.loop_test()
-    def test_inv_val(self, sctype):
+    def test_inv_returns_expected_values(self, sctype):
         """Check that inv gufuncs all return arrays with the expected values
         """
         self.pick_var_type(sctype)
@@ -158,9 +158,7 @@ class TestLU(TestMatsVecs):
 class TestSolveShape(TestMatsVecs):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
-    def test_solve_shape(self):
-        """Check if solve returns arrays with the expected shape
-        """
+    def test_solve_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(gfl.solve(self.m_ss, self.m_sb), (3, 7))
         self.assertArrayShape(gfl.solve(self.a_ss, self.m_sb), (5, 1, 3, 7))
@@ -172,9 +170,7 @@ class TestSolveShape(TestMatsVecs):
         with self.assertRaisesRegex(*utn.broadcast_err):
             gfl.solve(self.a_ss, self.a_sb)
 
-    def test_rsolve_shape(self):
-        """Check if rsolve returns arrays with the expected shape
-        """
+    def test_rsolve_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(gfl.rsolve(self.m_sb, self.m_bb), (3, 7))
         self.assertArrayShape(gfl.rsolve(self.a_bs, self.a_ss), (5, 2, 7, 3))
@@ -185,9 +181,7 @@ class TestSolveShape(TestMatsVecs):
         with self.assertRaisesRegex(*utn.broadcast_err):
             gfl.rsolve(transpose(self.a_sb), self.a_ss)
 
-    def test_solvelu_shape(self):
-        """Check if solve_lu, (r)lu_solve return arrays with the expected shape
-        """
+    def test_solve_lu_returns_expected_shapes(self):
         self.pick_var_type('d')
         with self.subTest('solve_lu'):
             self.assertArrayShapesAre(gfl.solve_lu(self.m_ss, self.m_sb),
@@ -225,9 +219,7 @@ class TestSolveShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.rlu_solve(transpose(self.a_sb), xf, p)
 
-    def test_rsolvelu_shape(self):
-        """Check if rsolve_lu, rlu_solve return arrays with the expected shape
-        """
+    def test_rsolve_lu_returns_expected_shapes(self):
         self.pick_var_type('d')
         with self.subTest('solve_lu'):
             self.assertArrayShapesAre(gfl.rsolve_lu(self.m_sb, self.m_bb),
@@ -264,9 +256,7 @@ class TestSolveShape(TestMatsVecs):
                 gfl.rlu_solve(transpose(self.a_bs), xf, p)
 
     @unittest.expectedFailure
-    def test_solve_shape_flexible_signature(self):
-        """Check if solve  gufunc deals with vectors correctly
-        """
+    def test_solve_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('solve'):
             self.assertArrayShape(gfl.solve(self.m_ss, self.v_s), (3,))
@@ -311,9 +301,7 @@ class TestSolveShape(TestMatsVecs):
             self.assertArrayShape(gfl.rlu_solve(self.m_sb, xf, p), (3, 3, 7))
 
     @unittest.expectedFailure
-    def test_rsolve_shape_flexible_signature(self):
-        """Check if rsolve gufunc deals with vectors correctly
-        """
+    def test_rsolve_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('rsolve'):
             self.assertArrayShape(gfl.rsolve(self.v_s, self.m_ss), (3,))
@@ -361,9 +349,7 @@ class TestSolveVal(TestMatsVecs):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
     @utn.loop_test()
-    def test_solve_val(self, sctype):
-        """Check if solve, rsolve return the expected values
-        """
+    def test_solve_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         a = gfl.solve(self.a_ss, self.m_sb)
         with self.subTest(msg='solve'):
@@ -373,9 +359,7 @@ class TestSolveVal(TestMatsVecs):
             self.assertArrayAllClose(b @ self.a_ss, self.a_bs)
 
     @utn.loop_test()
-    def test_solvelu_val(self, sctype):
-        """Check if solve_lu, lu_solve, rlu_solve return the expected values
-        """
+    def test_solve_lu_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         a0 = gfl.solve(self.a_ss, self.m_sb)
         a, xf, p = gfl.solve_lu(self.a_ss, self.m_sb)
@@ -389,9 +373,7 @@ class TestSolveVal(TestMatsVecs):
             self.assertArrayAllClose(b @ self.a_ss, self.a_bs)
 
     @utn.loop_test()
-    def test_rsolvelu_val(self, sctype):
-        """Check if rsolve_lu, lu_solve, rlu_solve return the expected values
-        """
+    def test_rsolve_lu_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         a0 = gfl.rsolve(self.a_bs, self.a_ss)
         a, xf, p = gfl.rsolve_lu(self.a_bs, self.a_ss)
@@ -406,9 +388,7 @@ class TestSolveVal(TestMatsVecs):
 
     @errstate
     @utn.loop_test(msg='rank')
-    def test_rank(self, sctype):
-        """Check if solve raises an exception when divisor is rank deficient
-        """
+    def test_solve_raises_with_low_rank(self, sctype):
         self.pick_var_type(sctype)
         with self.assertRaisesRegex(*utn.invalid_err):
             gfl.solve(self.ones_ss, self.m_sb)

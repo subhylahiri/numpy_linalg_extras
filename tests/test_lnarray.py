@@ -51,9 +51,7 @@ class TestArray(TestNewClasses):
         self.sctype = ['i']
         super().setUp()
 
-    def test_array_type(self):
-        """Check that functions & operators return the correct type
-        """
+    def test_return_array_types(self):
         self.pick_var_type('d')
         m_sb, m_bs, m_ss, m_bb = self.lm_sb, self.lm_bs, self.lm_ss, self.lm_bb
         a_bs = self.la_bs
@@ -79,9 +77,7 @@ class TestArray(TestNewClasses):
         self.assertIsInstance(la.lqr(self.m_bs)[0], np.ndarray)
         self.assertIsInstance(npl.qr(m_ss)[0], np.ndarray)
 
-    def test_array_shape(self):
-        """Check that shape manipulation properties & methods work
-        """
+    def test_lnarray_shape_methods(self):
         self.pick_var_type('D')
         a_bs, m_ss = self.la_bs, self.lm_ss
         self.assertArrayShape(a_bs.t, (2, 3, 7))
@@ -101,9 +97,7 @@ class TestArray(TestNewClasses):
             (a_bs.s * m_ss).flattish(3, -3)
 
     @utn.loop_test(attr_inds=slice(4))
-    def test_array_value(self, sctype):
-        """Check that operators and functions return the correct value
-        """
+    def test_lnarray_operations_return_expected_values(self, sctype):
         self.pick_var_type(sctype)
         m_ss, a_bs, lv_s = self.lm_ss, self.la_bs, self.lv_s
         xwout = np.empty((2, 7, 3), sctype)
@@ -124,9 +118,7 @@ class TestPinvarray(TestNewClasses):
     """test pinvarray & invarray classes
     """
 
-    def test_pinv_type(self):
-        """test type attributes
-        """
+    def test_pinvarray_attribute_types(self):
         self.pick_var_type('D')
         m_ss = self.lm_ss
         self.assertIsInstance(m_ss.pinv, la.pinvarray)
@@ -151,9 +143,7 @@ class TestPinvarray(TestNewClasses):
         with self.assertRaises(TypeError):
             m_ss.inv.pinv
 
-    def test_pinv_shape(self):
-        """test shape attributes
-        """
+    def test_pinvarray_shape_methods(self):
         self.pick_var_type('d')
         a_bs_p = self.la_bs.pinv
         self.assertEqual(a_bs_p.ndim, 3)
@@ -168,9 +158,7 @@ class TestPinvarray(TestNewClasses):
         self.assertArrayShape(a_bs_p.swapaxes(-1, -2), (2, 7, 3, 1))
 
     @utn.loop_test()
-    def test_pinv_funcs(self, sctype):
-        """test pinvarray behaviour in gufuncs
-        """
+    def test_pinvarray_in_functions(self, sctype):
         self.pick_var_type(sctype)
         m_sb, m_bs, a_bs = self.lm_sb, self.lm_bs, self.la_bs
         self.assertArrayAllClose(gf.matmul(a_bs.pinv, m_bs),
@@ -199,9 +187,7 @@ class TestPinvarray(TestNewClasses):
             gf.rsolve(m_sb, a_bs.pinv)
 
     @utn.loop_test()
-    def test_inv_funcs(self, sctype):
-        """test invarray behaviour in gufuncs
-        """
+    def test_invarray_in_functions(self, sctype):
         self.pick_var_type(sctype)
         la_ss, la_bs, lm_sb = self.la_ss, self.la_bs, self.lm_sb
         xw = la_bs[:, :3]
@@ -233,9 +219,7 @@ class TestPinvarray(TestNewClasses):
             gf.rlstsq(la_bs, la_ss.inv)
 
     @utn.loop_test()
-    def test_pinv_ops(self, sctype):
-        """test pinvarray behaviour in operators
-        """
+    def test_pinvarray_operators(self, sctype):
         self.pick_var_type(sctype)
         m_sb, m_bs, a_bs = self.lm_sb, self.m_bs, self.la_bs
         vs = self.lm_bs[..., :2].s
@@ -264,9 +248,7 @@ class TestPinvarray(TestNewClasses):
         self.assertArrayAllClose(a_bs, xold / 2)
 
     @utn.loop_test()
-    def test_inv_ops(self, sctype):
-        """test invarray behaviour in operators
-        """
+    def test_invarray_operators(self, sctype):
         self.pick_var_type(sctype)
         vs, m_ss = self.lm_bs[..., :2].s, self.lm_ss
         a_bs, m_sb = self.la_bs, self.lm_sb

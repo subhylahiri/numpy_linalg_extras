@@ -81,28 +81,22 @@ class TestBlas(TestMatsVecs):
             self._nrms[sctype] = np.sqrt(nsq.real + nsq.imag)
             self._prod[sctype] = self._a_sb[sctype] @ self._a_bs[sctype]
 
-    def test_norm_shape(self):
-        """Check that norm gufunc returns arrays with the expected shape
-        """
+    def test_norm_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(self.gf.norm(self.a_bs), (2, 7))
         self.assertArrayShape(self.gf.norm(self.a_bs, axis=1), (2, 3))
         self.assertArrayShape(self.gf.norm(self.v_b, keepdims=True), (1,))
         self.assertArrayShape(self.gf.norm(self.v_b), ())
 
-    @utn.loop_test(msg='norm val', attr_inds=slice(-1))
-    def test_norm_val(self, sctype: str):
-        """Check that norm gufunc returns the expected values
-        """
-        self.pick_var_type('d')
+    @utn.loop_test(msg='norm values', attr_inds=slice(-1))
+    def test_norm_returns_expected_values(self, sctype: str):
+        self.pick_var_type(sctype)
         nout = np.empty((2, 3), dtype=sctype.lower())
         nrms = self.gf.norm(self.vecs, out=nout)
         self.assertArrayAllClose(nrms, self.nrms)
         self.assertArrayAllClose(nout, self.nrms)
 
-    def test_matmul_shape(self):
-        """Check that matmul gufunc returns arrays with the expected shape
-        """
+    def test_matmul_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(self.gf.matmul(self.m_sb, self.m_bs), (3, 3))
         self.assertArrayShape(self.gf.matmul(self.a_bs, self.m_ss), (2, 7, 3))
@@ -112,9 +106,8 @@ class TestBlas(TestMatsVecs):
             self.gf.matmul(self.a_ss, self.a_sb)
 
     @unittest.expectedFailure
-    def test_matmul_shape_flexible_signature(self):
-        """Check that matmul gufunc deals with vectors correctly
-        """
+    def test_matmul_flexible_signature_with_vectors(self):
+        self.pick_var_type('d')
         with self.subTest('matrix-vector'):
             self.assertArrayShape(self.gf.matmul(self.m_sb, self.v_b), (3,))
             self.assertArrayShape(self.gf.matmul(self.a_bs, self.v_s), (2, 7))
@@ -136,19 +129,15 @@ class TestBlas(TestMatsVecs):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.matmul(self.v_s, self.v_b)
 
-    @utn.loop_test(msg='matmul val')
-    def test_matmul_val(self, sctype):
-        """Check that matmul gufunc returns the expected values
-        """
+    @utn.loop_test(msg='matmul values')
+    def test_matmul_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         pout = np.empty((4, 2, 3, 3), sctype)
         prod = self.gf.matmul(self.a_sb, self.a_bs, out=pout)
         self.assertArrayAllClose(prod, self.prod)
         self.assertArrayAllClose(pout, self.prod)
 
-    def test_rmatmul_shape(self):
-        """Check that rmatmul gufunc returns arrays with the expected shape
-        """
+    def test_rmatmul_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.m_bs), (7, 7))
         self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb), (2, 7, 3))
@@ -158,9 +147,8 @@ class TestBlas(TestMatsVecs):
             self.gf.rmatmul(self.a_sb, self.a_ss)
 
     @unittest.expectedFailure
-    def test_rmatmul_shape_flexible_signature(self):
-        """Check that rmatmul gufunc deals with vectors correctly
-        """
+    def test_rmatmul_flexible_signature_with_vectors(self):
+        self.pick_var_type('d')
         with self.subTest('matrix-vector'):
             self.assertArrayShape(self.gf.rmatmul(self.v_s, self.m_bs), (7,))
             self.assertArrayShape(self.gf.rmatmul(self.v_b, self.a_sb),
@@ -184,10 +172,8 @@ class TestBlas(TestMatsVecs):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 self.gf.rmatmul(self.v_b, self.v_s)
 
-    @utn.loop_test(msg='rmatmul val')
-    def test_rmatmul_val(self, sctype):
-        """Check that rmatmul gufunc returns the expected values
-        """
+    @utn.loop_test(msg='rmatmul values')
+    def test_rmatmul_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         pout = np.empty((4, 2, 3, 3), sctype)
         prod = self.gf.rmatmul(self.a_bs, self.a_sb, out=pout)
@@ -208,9 +194,7 @@ class TestCloop(TestBlas):
         super().setUp()
         self.gf = gfc
 
-    def test_rdiv_shape(self):
-        """Check that rtrue_divide returns arrays with the expected shape
-        """
+    def test_rtrue_divide_returns_expected_shapes(self):
         self.pick_var_type('d')
         self.assertArrayShape(self.gf.rtrue_divide(self.m_sb, self.a_sb),
                               (4, 1, 3, 7))
@@ -218,9 +202,7 @@ class TestCloop(TestBlas):
             self.gf.rtrue_divide(self.a_sb, self.prod)
 
     @utn.loop_test(msg="x \\ y == y / x. ", attr_inds=slice(-1,))
-    def test_rdiv_val(self, sctype):
-        """Check that rtrue_divide returns the expected values
-        """
+    def test_rtrue_divide_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         zout = np.empty((4, 1, 3, 7), sctype)
         x = self.m_bs.T

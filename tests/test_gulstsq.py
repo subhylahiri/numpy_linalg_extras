@@ -23,9 +23,7 @@ class TestQRPinvShape(TestMatsVecs):
     """
 
     @errstate
-    def test_qr_shape(self):
-        """Check that qr_* all return arrays with the expected shape
-        """
+    def test_qr_returns_expected_shapes(self):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             self.assertArrayShapesAre(gfl.qr_m(self.a_sb),
@@ -47,9 +45,7 @@ class TestQRPinvShape(TestMatsVecs):
                                       ((2, 3, 7), (2, 3)))
 
     @errstate
-    def test_lq_shape(self):
-        """Check that lq_* all return arrays with the expected shape
-        """
+    def test_lq_returns_expected_shapes(self):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             self.assertArrayShapesAre(gfl.lq_m(self.a_sb),
@@ -70,9 +66,7 @@ class TestQRPinvShape(TestMatsVecs):
             self.assertArrayShapesAre(gfl.lq_rawn(self.a_bs),
                                       ((2, 3, 7), (2, 3)))
 
-    def test_pinv_shape(self):
-        """Check that pinv gufuncs all return arrays with the expected shape
-        """
+    def test_pinv_returns_expected_shapes(self):
         self.pick_var_type('d')
         with self.subTest(msg='wide'):
             self.assertArrayShape(gfl.pinv(self.a_sb), (4, 1, 7, 3))
@@ -97,9 +91,7 @@ class TestQR(TestMatsVecs):
     """
 
     @utn.loop_test(msg='wide')
-    def test_qr_wide(self, sctype):
-        """Check that qr_m returns the expected values on wide matrices
-        """
+    def test_qr_returns_expected_values_with_wide(self, sctype):
         self.pick_var_type(sctype)
         q, r = gfl.qr_m(self.a_sb)
         wide = q @ r
@@ -113,9 +105,7 @@ class TestQR(TestMatsVecs):
             self.assertArrayAllClose(self.id_s, eyet)
 
     @utn.loop_test(msg='tall')
-    def test_qr_tall(self, sctype):
-        """Check that qr_n returns the expected values
-        """
+    def test_qr_returns_expected_values_with_tall(self, sctype):
         self.pick_var_type(sctype)
         q, r = gfl.qr_n(self.a_bs)
         tall = q @ r
@@ -126,9 +116,7 @@ class TestQR(TestMatsVecs):
             self.assertArrayAllClose(self.id_s, eye)
 
     @utn.loop_test(msg='complete')
-    def test_qr_complete(self, sctype):
-        """Check that qr_m returns the expected values on tall matrices
-        """
+    def test_qr_complete_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         q, r = gfl.qr_m(self.a_bs)
         tall = q @ r
@@ -142,9 +130,7 @@ class TestQR(TestMatsVecs):
             self.assertArrayAllClose(self.id_b, eyet)
 
     @utn.loop_test(msg='r')
-    def test_qr_r(self, sctype):
-        """Check that qr_rm, qr_rn return the expected values
-        """
+    def test_qr_r_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         with self.subTest(msg='r_m'):
             r = gfl.qr_rm(self.a_sb)
@@ -156,9 +142,7 @@ class TestQR(TestMatsVecs):
             self.assertArrayAllClose(r, rr)
 
     @utn.loop_test(msg='rawm')
-    def test_qr_rawm(self, sctype):
-        """Check that qr_rawm returns the expected values
-        """
+    def test_qr_rawm_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         rr = gfl.qr_m(self.a_sb)[1]
         n = rr.shape[-2]
@@ -178,9 +162,7 @@ class TestQR(TestMatsVecs):
             self.assertArrayAllClose(r, self.a_sb)
 
     @utn.loop_test(msg='rawn')
-    def test_qr_rawn(self, sctype):
-        """Check that qr_rawn returns the expected values
-        """
+    def test_qr_rawn_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         rr = gfl.qr_n(self.a_bs)[1]
         n = rr.shape[-1]
@@ -205,9 +187,7 @@ class TestLQ(TestMatsVecs):
     """
 
     @utn.loop_test(msg='wide')
-    def test_lq_wide(self, sctype):
-        """Check that lq_m returns the expected values
-        """
+    def test_lq_returns_expected_values_with_wide(self, sctype):
         self.pick_var_type(sctype)
         lo, q = gfl.lq_m(self.a_sb)
         wide = lo @ q
@@ -218,9 +198,7 @@ class TestLQ(TestMatsVecs):
             self.assertArrayAllClose(self.id_s, eye)
 
     @utn.loop_test(msg='tall')
-    def test_lq_tall(self, sctype):
-        """Check that lq_n returns the expected values on tall matrices
-        """
+    def test_lq_returns_expected_values_with_tall_matrices(self, sctype):
         self.pick_var_type(sctype)
         lo, q = gfl.lq_n(self.a_bs)
         tall = lo @ q
@@ -234,9 +212,7 @@ class TestLQ(TestMatsVecs):
             self.assertArrayAllClose(self.id_s, eyet)
 
     @utn.loop_test(msg='complete')
-    def test_lq_complete(self, sctype):
-        """Check that lq_n returns the expected values on wide matrices
-        """
+    def test_lq_complete_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         lo, q = gfl.lq_n(self.a_sb)
         wide = lo @ q
@@ -250,9 +226,7 @@ class TestLQ(TestMatsVecs):
             self.assertArrayAllClose(self.id_b, eyet)
 
     @utn.loop_test(msg='l')
-    def test_lq_l(self, sctype):
-        """Check that lq_lm, lq_ln return the expected values
-        """
+    def test_lq_l_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         with self.subTest(msg='l_m'):
             lo = gfl.lq_lm(self.a_sb)
@@ -264,9 +238,7 @@ class TestLQ(TestMatsVecs):
             self.assertArrayAllClose(lo, llo)
 
     @utn.loop_test(msg='rawm')
-    def test_lq_rawm(self, sctype):
-        """Check that lq_rawm returns the expected values
-        """
+    def test_lq_rawm_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         llo = gfl.lq_m(self.a_sb)[0]
         n = llo.shape[-2]
@@ -287,9 +259,7 @@ class TestLQ(TestMatsVecs):
             self.assertArrayAllClose(lo, self.a_sb)
 
     @utn.loop_test(msg='rawn')
-    def test_lq_rawn(self, sctype):
-        """Check that lq_rawn returns the expected values
-        """
+    def test_lq_rawn_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         llo = gfl.lq_n(self.a_bs)[0]
         n = llo.shape[-1]
@@ -314,9 +284,7 @@ class TestPinv(TestMatsVecs):
     """Testing gufuncs_lapack.pinv, pinv_qr and qr_pinv
     """
     @utn.loop_test(msg='pinv')
-    def test_pinv_val(self, sctype):
-        """Check that pinv gufuncs all return arrays with the expected values
-        """
+    def test_pinv_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         with self.subTest(msg='wide'):
             wide_p = gfl.pinv(self.a_sb)
@@ -357,9 +325,7 @@ class TestLstsqShape(TestMatsVecs):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @errstate
-    def test_lstsq_shape(self):
-        """Check if (r)lstsq return arrays with the expected shape
-        """
+    def test_lstsq_returns_expected_shape(self):
         self.pick_var_type('d')
         with self.subTest('overconstrained'):
             self.assertArrayShape(gfl.lstsq(self.m_bs, self.m_bb), (3, 7))
@@ -381,9 +347,7 @@ class TestLstsqShape(TestMatsVecs):
                 gfl.lstsq(self.a_sb, self.a_ss)
 
     @errstate
-    def test_rlstsq_shape(self):
-        """Check if (r)lstsq return arrays with the expected shape
-        """
+    def test_rlstsq_returns_expected_shape(self):
         self.pick_var_type('d')
         with self.subTest('underconstrained'):
             self.assertArrayShape(gfl.rlstsq(self.m_ss, self.m_bs), (3, 7))
@@ -404,9 +368,7 @@ class TestLstsqShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.rlstsq(self.a_bb, transpose(self.a_bs))
 
-    def test_lstsqqr_shape_tall(self):
-        """Check if lstsq_qrn, (r)qr_lstsq return arrays of the expected shape
-        """
+    def test_lstsq_qr_returns_expected_shape_tall(self):
         self.pick_var_type('d')
         with self.subTest('lstq_qrm'):
             self.assertArrayShapesAre(gfl.lstsq_qrm(self.m_bs, self.m_bb),
@@ -465,9 +427,7 @@ class TestLstsqShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.qr_lstsq(xf, tau, self.a_bb)
 
-    def test_lstsqqr_shape_wide(self):
-        """Check if lstsq_qrn, (r)qr_lstsq return arrays of the expected shape
-        """
+    def test_lstsq_qr_returns_expected_shape_wide(self):
         self.pick_var_type('d')
         with self.subTest('lstq_qrm'):
             self.assertArrayShapesAre(gfl.lstsq_qrm(self.m_sb, self.m_ss),
@@ -526,9 +486,7 @@ class TestLstsqShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.qr_lstsq(xf, tau, self.a_bb)
 
-    def test_rlstsqqr_shape_tall(self):
-        """Check if lstsq_qrn, (r)qr_lstsq return arrays of the expected shape
-        """
+    def test_rlstsq_qr_returns_expected_shape_tall(self):
         self.pick_var_type('d')
         with self.subTest('lstq_qrm'):
             self.assertArrayShapesAre(gfl.rlstsq_qrm(self.m_ss, self.m_bs),
@@ -587,9 +545,7 @@ class TestLstsqShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.qr_lstsq(xf, tau, self.a_bb)
 
-    def test_rlstsqqr_shape_wide(self):
-        """Check if lstsq_qrn, (r)qr_lstsq return arrays of the expected shape
-        """
+    def test_rlstsq_qr_returns_expected_shape_wide(self):
         self.pick_var_type('d')
         with self.subTest('lstq_qrm'):
             self.assertArrayShapesAre(gfl.rlstsq_qrm(self.m_bb, self.m_sb),
@@ -652,14 +608,15 @@ class TestLstsqShape(TestMatsVecs):
             with self.assertRaisesRegex(*utn.broadcast_err):
                 gfl.qr_lstsq(xf, tau, self.a_ss)
 
+    def test_lstsq_flexible_signature_with_vectors(self):
+        self.pick_var_type('d')
+
 
 class TestLstsqVal(TestMatsVecs):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @utn.loop_test()
-    def test_lstsq_val(self, sctype):
-        """Check if (r)lstsq return the expected values
-        """
+    def test_lstsq_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
         # overconstrained
         a = gfl.lstsq(self.a_bs, self.m_bb)
@@ -681,9 +638,7 @@ class TestLstsqVal(TestMatsVecs):
             self.assertArrayAllClose(a @ self.a_bs, self.a_ss)
 
     @utn.loop_test()
-    def test_lstsqqr_tall_val(self, sctype):
-        """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
-        """
+    def test_lstsqqr_returns_expected_values_with_tall(self, sctype):
         self.pick_var_type(sctype)
         # overconstrained
         a0 = gfl.lstsq(self.a_bs, self.m_bb)
@@ -702,9 +657,7 @@ class TestLstsqVal(TestMatsVecs):
                 self.assertArrayAllClose(b @ self.a_bs, self.a_ss)
 
     @utn.loop_test()
-    def test_rlstsqqr_wide_val(self, sctype):
-        """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
-        """
+    def test_rlstsqqr_returns_expected_values_with_wide(self, sctype):
         self.pick_var_type(sctype)
         # overconstrained
         a0 = gfl.rlstsq(self.a_bb, self.a_sb)
@@ -724,9 +677,7 @@ class TestLstsqVal(TestMatsVecs):
                                          self.m_ss)
 
     @utn.loop_test()
-    def test_lstsqqr_wide_val(self, sctype):
-        """Check lstsq_qr{m,n}, (r)qr_lstsq return the expected values (wide)
-        """
+    def test_lstsqqr_returns_expected_values_with_wide(self, sctype):
         self.pick_var_type(sctype)
         # underconstrained
         a0 = gfl.lstsq(self.a_sb, self.m_ss)
@@ -747,9 +698,7 @@ class TestLstsqVal(TestMatsVecs):
                                          self.a_bb @ a_sb_t)
 
     @utn.loop_test()
-    def test_rlstsqqr_tall_val(self, sctype):
-        """Check rlstsq_qr{m,n}, (r)qr_lstsq return the expected values (tall)
-        """
+    def test_rlstsqqr_returns_expected_values_with_tall(self, sctype):
         self.pick_var_type(sctype)
         # underconstrained
         a0 = gfl.rlstsq(self.a_ss, self.a_bs)
@@ -772,9 +721,7 @@ class TestLstsqVal(TestMatsVecs):
     @unittest.expectedFailure
     @errstate
     @utn.loop_test(msg='rank')
-    def test_rank(self, sctype):
-        """Check if lstsq_qr raises an exception when divisor is rank deficient
-        """
+    def test_lstsq_qr_raises_with_low_rank(self, sctype):
         self.pick_var_type(sctype)
         with self.assertRaisesRegex(*utn.invalid_err):
             gfl.lstsq_qr(self.ones_bs, self.a_bs)

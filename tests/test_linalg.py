@@ -21,9 +21,7 @@ __all__ = ['TestShape', 'TestValue']
 class TestShape(TestMatsVecs):
     """Testing shapes returned by linalg functions"""
 
-    def test_shape_fn(self):
-        """Check transpose, row, col, scal returns arrays of expected shape
-        """
+    def test_shape_functions(self):
         self.pick_var_type('d')
         # shape
         self.assertArrayShape(la.transpose(self.a_bs), (2, 3, 7))
@@ -31,9 +29,7 @@ class TestShape(TestMatsVecs):
         self.assertArrayShape(la.col(self.a_bs), (2, 7, 3, 1))
         self.assertArrayShape(la.scalar(self.a_bs), (2, 7, 3, 1, 1))
 
-    def test_la_fn(self):
-        """Check (r)matmul, (r)solve, (r)lstsq, return arrays of correct shape
-        """
+    def test_linalg_functions(self):
         self.pick_var_type('d')
         # matmul
         self.assertArrayShape(la.matmul(self.a_bs, self.m_sb), (2, 7, 7))
@@ -63,9 +59,7 @@ class TestShape(TestMatsVecs):
         self.assertArrayShape(la.rlstsq(self.a_ss, self.v_s), (5, 1, 3))
         self.assertArrayShape(la.rlstsq(self.v_s, self.a_bs), (2, 7))
 
-    def test_div_fn(self):
-        """Check matldiv, matrdiv return correct shape
-        """
+    def test_matdiv_functions(self):
         self.pick_var_type('d')
         # solve
         self.assertArrayShape(la.matldiv(self.a_ss, self.m_sb), (5, 1, 3, 7))
@@ -85,8 +79,6 @@ class TestShape(TestMatsVecs):
         self.assertArrayShape(la.matrdiv(self.v_s, self.a_bs), (2, 7))
 
     def test_qr(self):
-        """Check that qr returns correct shape in each mode
-        """
         self.pick_var_type('d')
         self.assertArrayShapesAre(la.qr(self.a_bs, 'reduced'),
                                   ((2, 7, 3), (2, 3, 3)))
@@ -102,8 +94,6 @@ class TestShape(TestMatsVecs):
         self.assertArrayShapesAre(la.qr(self.m_sb, 'raw'), ((7, 3), (3,)))
 
     def test_lq(self):
-        """Check that lq returns correct shape in each mode
-        """
         self.pick_var_type('d')
         self.assertArrayShapesAre(la.lq(self.a_bs, 'reduced'),
                                   ((2, 7, 3), (2, 3, 3)))
@@ -119,8 +109,6 @@ class TestShape(TestMatsVecs):
         self.assertArrayShapesAre(la.lq(self.m_sb, 'raw'), ((7, 3), (3,)))
 
     def test_lqr(self):
-        """Check that lqr returns correct shape in each mode
-        """
         self.pick_var_type('d')
         self.assertArrayShapesAre(la.lqr(self.a_bs, 'reduced'),
                                   ((2, 7, 3), (2, 3, 3)))
@@ -139,8 +127,6 @@ class TestShape(TestMatsVecs):
         self.assertArrayShapesAre(la.lqr(self.m_sb, 'raw'), ((7, 3), (3,)))
 
     def test_lu(self):
-        """Check that lu returns correct shape in each mode
-        """
         self.pick_var_type('d')
         self.assertArrayShapesAre(la.lu(self.a_ss, 'separate'),
                                   ((5, 1, 3, 3), (5, 1, 3, 3), (5, 1, 3)))
@@ -158,9 +144,7 @@ class TestValue(TestMatsVecs):
     """Testing values returned by linalg functions"""
 
     @utn.loop_test()
-    def test_la_fn(self, sctype):
-        """Check (r)matmul, (r)solve, (r)lstsq, return arrays of correct value
-        """
+    def test_linalg_functions(self, sctype):
         self.pick_var_type(sctype)
         # matmul
         self.assertArrayAllClose(la.matmul(self.a_bs, self.m_sb),
@@ -192,9 +176,7 @@ class TestValue(TestMatsVecs):
                                  gf.rlstsq(la.row(self.v_b), self.m_sb))
 
     @utn.loop_test()
-    def test_div_fn(self, sctype):
-        """Check matldiv, matrdiv return correct value
-        """
+    def test_matdiv_functions(self, sctype):
         self.pick_var_type(sctype)
         # solve
         self.assertArrayAllClose(la.matldiv(self.a_ss, self.m_sb),
@@ -218,8 +200,6 @@ class TestValue(TestMatsVecs):
 
     @utn.loop_test()
     def test_qr(self, sctype):
-        """Check that qr returns correct value in each mode
-        """
         self.pick_var_type(sctype)
         q, r = la.qr(self.a_bs, 'reduced')
         self.assertArrayAllClose(q @ r, self.a_bs)
@@ -238,8 +218,6 @@ class TestValue(TestMatsVecs):
 
     @utn.loop_test()
     def test_lq(self, sctype):
-        """Check that lq returns correct value in each mode
-        """
         self.pick_var_type(sctype)
         lo, q = la.lq(self.a_bs, 'reduced')
         self.assertArrayAllClose(lo @ q, self.a_bs)
@@ -258,8 +236,6 @@ class TestValue(TestMatsVecs):
 
     @utn.loop_test()
     def test_lqr(self, sctype):
-        """Check that lqr returns correct value in each mode
-        """
         self.pick_var_type(sctype)
         q, r = la.lqr(self.a_bs, 'reduced')
         self.assertArrayAllClose(q @ r, self.a_bs)
@@ -278,8 +254,6 @@ class TestValue(TestMatsVecs):
 
     @utn.loop_test()
     def test_lu(self, sctype):
-        """Check that lu returns correct value in each mode
-        """
         self.pick_var_type(sctype)
         low, up, piv = la.lu(self.a_ss, 'separate')
         luf, piv = la.lu(self.a_ss, 'raw')
@@ -300,8 +274,6 @@ class TestValue(TestMatsVecs):
 
     @utn.loop_test()
     def test_low_rank(self, sctype):
-        """Check low rank matrices are handled appropriately
-        """
         self.pick_var_type(sctype)
         with self.assertRaises(np.linalg.LinAlgError):
             la.solve(self.ones_ss, self.m_sb)

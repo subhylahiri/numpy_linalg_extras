@@ -279,12 +279,12 @@ class TestValue(TestMatsVecs):
     @utn.loop_test()
     def test_low_rank(self, sctype):
         self.pick_var_type(sctype)
-        with self.assertRaises(np.linalg.LinAlgError):
-            la.solve(self.ones_ss, self.m_sb)
         q, r = la.qr(self.ones_ss)
         self.assertArrayAllClose(q @ r, self.ones_ss)
         low, up, piv = la.lu(self.ones_ss)
         self.assertArrayAllClose(low @ up, self.ones_ss)
+        with self.assertRaisesRegex(*utn.invalid_err):
+            la.solve(self.ones_ss, self.m_sb)
 
 
 # =============================================================================

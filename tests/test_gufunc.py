@@ -138,6 +138,11 @@ class TestBlas(TestMatsVecs):
 class TestBlasVectors(TestMatsVecs):
     """Testing matmul and rmatmul"""
 
+    def setUp(self):
+        self.gf = gfb
+        self.sctype = ['i']
+        super().setUp()
+
     def test_matmul_flexible_signature_with_vectors(self):
         self.pick_var_type('d')
         with self.subTest('matrix-vector'):

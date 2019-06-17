@@ -3,9 +3,12 @@
 """
 import unittest
 import numpy as np
-import unittest_numpy as utn
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
+if __name__.find('tests.') < 0:
+    import unittest_numpy as utn
+else:
+    from . import unittest_numpy as utn
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================

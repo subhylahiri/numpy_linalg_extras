@@ -3,6 +3,11 @@
 """
 import os
 from .unittest_numpy import nosortTestLoader as nosort_loader
+from . import (
+        test_gufunc, test_gusolve, test_gulstsq, test_linalg, test_lnarray)
+
+assert any((
+        test_gufunc, test_gusolve, test_gulstsq, test_linalg, test_lnarray))
 
 
 def load_tests(loader, standard_tests, pattern):

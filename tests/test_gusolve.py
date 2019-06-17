@@ -5,8 +5,12 @@ import unittest
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
-import unittest_numpy as utn
-from test_gufunc import TestMatsVecs
+if __name__.find('tests.') < 0:
+    import unittest_numpy as utn
+    from test_gufunc import TestMatsVecs
+else:
+    from . import unittest_numpy as utn
+    from .test_gufunc import TestMatsVecs
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================

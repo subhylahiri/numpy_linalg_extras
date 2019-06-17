@@ -5,8 +5,12 @@ import numpy as np
 import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
-import unittest_numpy as utn
-from test_gufunc import TestMatsVecs
+if __name__.find('tests.') < 0:
+    import unittest_numpy as utn
+    from test_gufunc import TestMatsVecs
+else:
+    from . import unittest_numpy as utn
+    from .test_gufunc import TestMatsVecs
 
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']

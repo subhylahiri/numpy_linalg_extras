@@ -6,8 +6,12 @@ import numpy as np
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
-import unittest_numpy as utn
-from test_gufunc import TestMatsVecs
+if __name__.find('tests.') < 0:
+    import unittest_numpy as utn
+    from test_gufunc import TestMatsVecs
+else:
+    from . import unittest_numpy as utn
+    from .test_gufunc import TestMatsVecs
 
 errstate = utn.errstate(invalid='raise')
 # =============================================================================

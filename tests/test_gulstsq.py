@@ -561,9 +561,9 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rlstsq(self.a_sb, self.v_b), (4, 1, 3))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.rlstsq(self.m_bs, self.v_b)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as Mv: (5,1)(3,3)/(7)(3)
-                gfl.rlstsq(self.a_ss, self.m_bs)
+            # If interpreted as Mv, this would be: (5,1)(3,3)/(7)(3)->(5,7)(3)
+            self.assertArrayShape(gfl.rlstsq(self.a_ss, self.m_bs),
+                                  (5, 1, 3, 7))
         with self.subTest('Vector-Matrix'):
             self.assertArrayShape(gfl.rlstsq(self.v_b, self.m_sb), (3,))
             self.assertArrayShape(gfl.rlstsq(self.v_s, self.m_bs), (7,))
@@ -571,16 +571,15 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rlstsq(self.v_s, self.a_bs), (2, 7))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.rlstsq(self.v_b, self.m_bs)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as vM: (3)(7)/(4,1)(3,7)
-                gfl.rlstsq(self.m_sb, self.a_sb)
+            # If interpreted as vM, this would be: (3)(7)/(4,1)(3,7)->(4,3)(3)
+            self.assertArrayShape(gfl.rlstsq(self.m_sb, self.a_sb),
+                                  (4, 1, 3, 3))
         with self.subTest('Vector-Vector'):
             self.assertArrayShape(gfl.rlstsq(self.v_s, self.v_s), ())
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.rlstsq(self.v_s, self.v_b)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as vv: ()(3)/(7)(3)
-                gfl.rlstsq(self.v_s, self.m_bs)
+            # If interpreted as vv, this would be: (7)(3)/(2,7)(3)->(2,7)
+            self.assertArrayShape(gfl.rlstsq(self.m_bs, self.a_bs), (2, 7, 7))
 
     @utn.loop_test(attr_name=('func', 'tau_len'), attr_inds=np.s_[:2])
     def test_lstsq_qr_flexible_signature_with_vectors(self, func, tau_len):
@@ -604,9 +603,9 @@ class TestLstsqVectors(TestLstsq):
         with self.subTest('Vector-Matrix'):
             tau = tau_len['vs']
             self.assertArrayShapesAre(func(self.v_s, self.m_sb),
-                                      ((7,), tau, (3,)))
+                                      ((7,), (3,), tau))
             self.assertArrayShapesAre(func(self.v_s, self.a_sb),
-                                      ((4, 1, 7), (3,), tau))
+                                      ((4, 1, 7), (4, 1, 3), (4, 1) + tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.v_s, self.m_bs)
             with self.assertRaisesRegex(*utn.core_dim_err):
@@ -629,7 +628,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShapesAre(func(self.m_sb, self.v_b),
                                       ((3,), (7,), tau))
             self.assertArrayShapesAre(func(self.a_sb, self.v_b),
-                                      ((4, 1, 3), (7,), tau))
+                                      ((4, 1, 3), (4, 1, 7), (4, 1) + tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.m_bs, self.v_b)
             with self.assertRaisesRegex(*utn.core_dim_err):
@@ -657,9 +656,10 @@ class TestLstsqVectors(TestLstsq):
                                       ((), (3,), tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.v_s, self.v_b)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as vv: ()(3)/(7)(3)
-                func(self.v_s, self.m_bs)
+            tau = tau_len['bs']
+            # If interpreted as vv, this would be: (7)(3)/(2,7)(3)->(2,7)
+            self.assertArrayShapesAre(func(self.m_bs, self.a_bs),
+                                      ((2, 7, 7), (2, 3, 7), (2,) + tau))
 
     @utn.loop_test(attr_name='func', attr_inds=np.s_[:2])
     def test_qr_lstsq_flexible_signature_with_vectors(self, func):
@@ -678,7 +678,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rqr_lstsq(self.v_b, xf, tau), (4, 1, 3))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 # This would work if interpreted as Mv: (4,1)(3,7)\(7)(3)
-                gfl.qr_lstsq_qrm(xf, tau, self.m_bs)
+                gfl.qr_lstsq(xf, tau, self.m_bs)
 
             _, xf, tau = func(self.m_sb, self.v_s)
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.v_s), (7,))
@@ -691,7 +691,7 @@ class TestLstsqVectors(TestLstsq):
                 gfl.qr_lstsq(xf, tau, self.a_bb)
 
             _, xf, tau = func(self.v_s, self.m_sb)
-            self.assertArrayShape(gfl.qr_lstsq_qrm(xf, tau, self.m_sb), (7,))
+            self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.m_sb), (7,))
             self.assertArrayShape(gfl.rqr_lstsq(self.m_bs, xf, tau), (7,))
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.a_sb), (4, 1, 7))
             self.assertArrayShape(gfl.rqr_lstsq(self.a_bs, xf, tau), (2, 7))
@@ -729,7 +729,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rqr_lstsq(self.v_b, xf, tau), (4, 1, 3))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 # This would work if interpreted as Mv: (4,1)(3,7)\(7)(3)
-                gfl.qr_lstsq_qrm(xf, tau, self.m_bs)
+                gfl.qr_lstsq(xf, tau, self.m_bs)
 
             _, xf, tau = func(self.v_b, self.m_sb)
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.v_s), (7,))
@@ -742,7 +742,7 @@ class TestLstsqVectors(TestLstsq):
                 gfl.qr_lstsq(xf, tau, self.a_bb)
 
             _, xf, tau = func(self.m_bs, self.v_s)
-            self.assertArrayShape(gfl.qr_lstsq_qrm(xf, tau, self.m_sb), (7,))
+            self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.m_sb), (7,))
             self.assertArrayShape(gfl.rqr_lstsq(self.m_bs, xf, tau), (7,))
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.a_sb), (4, 1, 7))
             self.assertArrayShape(gfl.rqr_lstsq(self.a_bs, xf, tau), (2, 7))

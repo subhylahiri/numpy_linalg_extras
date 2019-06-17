@@ -356,12 +356,19 @@ def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
     def loop_dec(func):
         @functools.wraps(func)
         def loop_func(self, *args, **kwds):
-            the_attr = getattr(self, attr_name)
-#                __unittest = False
-            for val in the_attr[attr_inds]:
-                opts = {attr_name: val}
-                with self.subTest(msg=msg, **opts):
-                    func(self, *args, **opts, **kwds)
+            if isinstance(attr_name, str):
+                the_attr = getattr(self, attr_name)
+    #                __unittest = False
+                for val in the_attr[attr_inds]:
+                    opts = {attr_name: val}
+                    with self.subTest(msg=msg, **opts):
+                        func(self, *args, **opts, **kwds)
+            else:
+                the_attr = [getattr(self, nam)[attr_inds] for nam in attr_name]
+                for vals in zip(*the_attr):
+                    opts = {name: val for name, val in zip(attr_name, vals)}
+                    with self.subTest(msg=msg, **opts):
+                        func(self, *args, **opts, **kwds)
         return loop_func
     return loop_dec
 

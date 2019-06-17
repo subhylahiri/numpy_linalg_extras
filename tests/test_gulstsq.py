@@ -632,9 +632,10 @@ class TestLstsqVectors(TestLstsq):
                                       ((4, 1, 3), (4, 1, 7), (4, 1) + tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.m_bs, self.v_b)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as Mv: (5,1)(3,3)/(7)(3)
-                func(self.a_ss, self.m_bs)
+            tau = tau_len['bs']
+            # If interpreted as Mv, this would be: (5,1)(3,3)/(7)(3)->(5,7)(3)
+            self.assertArrayShapesAre(func(self.a_ss, self.m_bs), (
+                                    (5, 1, 3, 7), (5, 1, 3, 7), (5, 1) + tau))
         with self.subTest('Vector-Matrix'):
             tau = tau_len['sb']
             self.assertArrayShapesAre(func(self.v_b, self.m_sb),
@@ -648,9 +649,10 @@ class TestLstsqVectors(TestLstsq):
                                       ((2, 7), (2, 3, 7), (2,) + tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.v_b, self.m_bs)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as vM: (3)(7)/(4,1)(3,7)
-                func(self.m_sb, self.a_sb)
+            tau = tau_len['sb']
+            # If interpreted as vM, this would be: (3)(7)/(4,1)(3,7)->(4,3)(3)
+            self.assertArrayShapesAre(func(self.m_sb, self.a_sb), (
+                                    (4, 1, 3, 3), (4, 1, 7, 3), (4, 1) + tau))
         with self.subTest('Vector-Vector'):
             tau = tau_len['vs']
             self.assertArrayShapesAre(func(self.v_s, self.v_s),
@@ -698,7 +700,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rqr_lstsq(self.a_bs, xf, tau), (2, 7))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.qr_lstsq(xf, tau, self.m_bs)
-            self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), (7,))
+            self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), ())
         with self.subTest('Vector-Vector'):
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.v_s), ())
             self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), ())
@@ -736,7 +738,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.v_s), (7,))
             self.assertArrayShape(gfl.rqr_lstsq(self.v_b, xf, tau), (3,))
             with self.assertRaisesRegex(*utn.core_dim_err):
-                func(xf, tau, self.v_b)
+                gfl.qr_lstsq(xf, tau, self.v_b)
         with self.subTest('Vector-Matrix'):
             with self.assertRaisesRegex(*utn.core_dim_err):
                 # This would work if interpreted as vM: (3)(7)\(3)(7,7)
@@ -749,7 +751,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShape(gfl.rqr_lstsq(self.a_bs, xf, tau), (2, 7))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 gfl.qr_lstsq(xf, tau, self.m_bs)
-            self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), (7,))
+            self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), ())
         with self.subTest('Vector-Vector'):
             self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.v_s), ())
             self.assertArrayShape(gfl.rqr_lstsq(self.v_s, xf, tau), ())

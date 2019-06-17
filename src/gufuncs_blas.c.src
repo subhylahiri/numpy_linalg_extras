@@ -43,7 +43,7 @@ Copyright/licence info for that file:
 
 #include "rearrange_data.h"
 
-static const char* gufuncs_blas_version_string = "0.1.1";
+static const char* gufuncs_blas_version_string = "0.2.0";
 
 /*
 *****************************************************************************

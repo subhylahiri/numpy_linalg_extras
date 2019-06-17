@@ -34,14 +34,6 @@ Copyright/licence info for that file:
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/*       Table of Contents
-49.  Includes
-65.  Outer loop macros
-126.  Error signaling functions
-151. Constants
-192. Ufunc definition
-*/
-
 #ifndef GUC_INCLUDE
 #define GUC_INCLUDE
 

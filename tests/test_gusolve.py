@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test solve & lu families of gufuncs
 """
-import unittest
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
@@ -260,7 +259,6 @@ class TestSolveShape(TestMatsVecs):
                 gfl.rlu_solve(transpose(self.a_bs), xf, p)
 
 
-@unittest.expectedFailure
 class TestSolveVectors(TestMatsVecs):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve with vectors"""
 

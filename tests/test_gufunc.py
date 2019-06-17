@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test C-loop and BLAS ufuncs + qr
 """
-import unittest
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 # import numpy_linalg.gufuncs._gufuncs_blas as gfb
@@ -134,9 +133,13 @@ class TestBlas(TestMatsVecs):
         self.assertArrayAllClose(pout, self.prod)
 
 
-@unittest.expectedFailure
 class TestBlasVectors(TestMatsVecs):
     """Testing matmul and rmatmul"""
+
+    def setUp(self):
+        self.gf = gfb
+        self.sctype = ['i']
+        super().setUp()
 
     def test_matmul_flexible_signature_with_vectors(self):
         self.pick_var_type('d')

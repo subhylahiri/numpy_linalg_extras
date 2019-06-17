@@ -523,7 +523,6 @@ class TestLstsqShape(TestLstsq):
             gfl.qr_lstsq(xf, tau, self.a_ss)
 
 
-@unittest.expectedFailure
 class TestLstsqVectors(TestLstsq):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
@@ -646,7 +645,7 @@ class TestLstsqVectors(TestLstsq):
             self.assertArrayShapesAre(func(self.v_s, self.m_bs),
                                       ((7,), (3, 7), tau))
             self.assertArrayShapesAre(func(self.v_s, self.a_bs),
-                                      ((2, 7), (2, 3, 7), (2) + tau))
+                                      ((2, 7), (2, 3, 7), (2,) + tau))
             with self.assertRaisesRegex(*utn.core_dim_err):
                 func(self.v_b, self.m_bs)
             with self.assertRaisesRegex(*utn.core_dim_err):

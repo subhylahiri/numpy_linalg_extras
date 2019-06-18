@@ -106,10 +106,12 @@ from ._util import make_errobj, MatmulOperatorsMixin, LNArrayOperatorsMixin
 from . import _vectors as vec
 
 from ..version import max_version as _version
-# __version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
-#                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
 __version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
+# __version__ = _version("0.1.0", _gufuncs_cloop,
+#                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
+# __version__ = _version("0.1.0", _gufuncs_blas,
+#                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
 
 # fool pyflakes
 assert any((norm, rtrue_divide, matmul, rmatmul))

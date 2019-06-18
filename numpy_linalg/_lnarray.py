@@ -167,7 +167,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.flattish
+        numpy_linalg.flattish
         """
         return la.flattish(self, start, stop)
 
@@ -179,7 +179,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.expand_dims
+        numpy_linalg.expand_dims
         """
         return la.expand_dims(self, *axis)
 
@@ -196,7 +196,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.transpose
+        numpy_linalg.transpose
         """
         return la.transpose(self)
 
@@ -213,7 +213,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.dagger
+        numpy_linalg.dagger
         """
         return la.dagger(self)
 
@@ -229,7 +229,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.row
+        numpy_linalg.row
         """
         return la.row(self)
 
@@ -245,7 +245,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.col
+        numpy_linalg.col
         """
         return la.col(self)
 
@@ -261,7 +261,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        linalg.scalar
+        numpy_linalg.scalar
         """
         return la.scalar(self)
 
@@ -360,6 +360,7 @@ def _inv_input(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
         The original ufunc that was called
     pinv_in: Sequence[bool]
         Tells us if each original argument was a (p)invarray
+
     Returns
     -------
     left, right
@@ -378,7 +379,7 @@ def _inv_input(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     return tuple(x ^ y for x, y in zip(pinv_in, func_in)) + (swap,)
 
 
-def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> bool:
+def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     """Is the other ufunc input a numerator (after swapping for inverse, etc)?
 
     Parameters
@@ -387,6 +388,11 @@ def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> bool:
         The original ufunc that was called
     pinv_in: Sequence[bool]
         Tells us if each original argument was a (p)invarray
+
+    Returns
+    -------
+    left, right : bool
+        `gufuncs.fam.inverse_scalar_arguments` of ufunc to call
     """
     # inverse_scalar_arguments tells us if the other argument is a numerator.
     # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
@@ -437,7 +443,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     performing the pseudoinversion and using that instead (except for `len`,
     `shape`, `size`, 'ndim`, `repr`, `str`, `t`, `h` and `inv`).
 
-    It uses `gufuncs.lstsq`,`gufuncs.rlstsq` for @ and `np.linalg.pinv` for ().
+    It uses `gufuncs.lstsq`,`gufuncs.rlstsq` for @ and `gufuncs.pinv` for ().
 
     Examples
     --------
@@ -672,7 +678,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
             self._inverted = self._to_invert / gf.norm(self._to_invert)**2
         elif self.ndim >= 2:
             # pinv broadcasts
-            self._inverted = np.linalg.pinv(self._to_invert).view(lnarray)
+            self._inverted = gf.pinv(self._to_invert)
         else:
             raise ValueError('Nothing to invert? ' + str(self._to_invert))
 

@@ -8,6 +8,10 @@ Linear algebra routines.
 
 Functions
 ---------
+flattish
+    Flatten a subset of axes.
+expand_dims
+    Add new singleton axes.
 transpose
     Transpose last two indices.
 dagger
@@ -39,6 +43,8 @@ import numpy.linalg.linalg as nla
 from . import gufuncs as gf
 
 __all__ = [
+    'flattish',
+    'expand_dims',
     'transpose',
     'dagger',
     'col',
@@ -63,7 +69,7 @@ __all__ = [
 # =============================================================================
 
 
-def flattish(arr: np.ndarray, start: int, stop: int) -> np.ndarray:
+def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     """Partial flattening.
 
     Flattens those axes in the range [start:stop)
@@ -72,16 +78,18 @@ def flattish(arr: np.ndarray, start: int, stop: int) -> np.ndarray:
     ----------
     arr : np.ndarray (...,L,M,N,...,P,Q,R,...)
         Array to be partially flattened.
-    start : int
+    start : int, optional, default: 0
         First axis of group to be flattened.
-    stop : int
-        First axis *after* group to be flattened.
+    stop : int or None, optional, default: None
+        First axis *after* group to be flattened. Goes to end if it is None.
 
     Returns
     -------
     new_arr : np.ndarray (...,L,M*N*...*P*Q,R,...)
         Partially flattened array.
     """
+    if stop is None:
+        stop = arr.ndim
     newshape = arr.shape[:start] + (-1,) + arr.shape[stop:]
     if len(newshape) > arr.ndim + 1:
         raise ValueError("start={} > stop={}".format(start, stop))

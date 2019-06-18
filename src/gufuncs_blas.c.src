@@ -517,7 +517,7 @@ GUFUNC_FUNC_ARRAY_REAL_COMPLEX(norm);
 
 // info for creating ufunc object
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
-    { "matmul", "(m?,k),(k,n?)->(m,n?)", matmul__doc__, 5, 2, 1,
+    { "matmul", "(m?,k),(k,n?)->(m?,n?)", matmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(matmul), ufn_types_5_3 },
     { "rmatmul", "(k,n?),(m?,k)->(m?,n?)", rmatmul__doc__, 5, 2, 1,
       FUNC_ARRAY_NAME(rmatmul), ufn_types_5_3 },

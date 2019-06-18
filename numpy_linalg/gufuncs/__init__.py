@@ -88,9 +88,9 @@ return_shape_mat:
     Shape of result of broadcasted matrix multiplication
 """
 from . import _gufuncs_cloop
+from . import _gufuncs_blas
 from . import _gufuncs_lu_solve
 from . import _gufuncs_qr_lstsq
-# from . import _gufuncs_blas
 # In _families we choose which versions of matmul, rmatmul, norm to use.
 from ._families import (matmul, rmatmul, norm, rtrue_divide)
 from ._gufuncs_lu_solve import (lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot,
@@ -108,7 +108,7 @@ from . import _vectors as vec
 from ..version import max_version as _version
 # __version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
 #                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
-__version__ = _version("0.1.0", _gufuncs_cloop,
+__version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
 
 # fool pyflakes

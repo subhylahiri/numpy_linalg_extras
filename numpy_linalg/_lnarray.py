@@ -128,37 +128,37 @@ class lnarray(np.ndarray):
      __rmatmul__,
      __imatmul__) = _mix._numeric_methods(gf.matmul, 'matmul')
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        """Customise ufunc behaviour
-        """
-        args = list(cv.conv_loop_in_view(lnarray, inputs)[0])
-        # Set of ufuncs that need special handling for vectors
-        if ufunc in gf.fam.inverse_arguments.keys():
-            args[0], args[1], squeeze = gf.vec.vec2mat(
-                    args[0], args[1], gf.fam.inverse_arguments[ufunc]
-            )
-        args = tuple(args)
-
-        outputs = kwargs.pop('out', None)
-        if outputs:
-            out_args = cv.conv_loop_in_view(lnarray, outputs)[0]
-            kwargs['out'] = tuple(out_args)
-        else:
-            outputs = (None,) * ufunc.nout
-
-        if ufunc in gf.fam.inverse_arguments.keys():
-            gf.make_errobj("Failure in routine: " + ufunc.__name__, kwargs)
-        results = super().__array_ufunc__(ufunc, method, *args, **kwargs)
-        if results is NotImplemented:
-            return NotImplemented
-
-        if ufunc.nout == 1:
-            results = (results,)
-        if ufunc in gf.fam.inverse_arguments.keys() and any(squeeze):
-            results = (gf.vec.mat2vec(results[0], squeeze),) + results[1:]
-        results = cv.conv_loop_out_view(self, results, outputs)
-
-        return results[0] if len(results) == 1 else results
+    # def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    #     """Customise ufunc behaviour
+    #     """
+    #     args = list(cv.conv_loop_in_view(lnarray, inputs)[0])
+    #     # Set of ufuncs that need special handling for vectors
+    #     if ufunc in gf.fam.inverse_arguments.keys():
+    #         args[0], args[1], squeeze = gf.vec.vec2mat(
+    #                 args[0], args[1], gf.fam.inverse_arguments[ufunc]
+    #         )
+    #     args = tuple(args)
+    #
+    #     outputs = kwargs.pop('out', None)
+    #     if outputs:
+    #         out_args = cv.conv_loop_in_view(lnarray, outputs)[0]
+    #         kwargs['out'] = tuple(out_args)
+    #     else:
+    #         outputs = (None,) * ufunc.nout
+    #
+    #     if ufunc in gf.fam.inverse_arguments.keys():
+    #         gf.make_errobj("Failure in routine: " + ufunc.__name__, kwargs)
+    #     results = super().__array_ufunc__(ufunc, method, *args, **kwargs)
+    #     if results is NotImplemented:
+    #         return NotImplemented
+    #
+    #     if ufunc.nout == 1:
+    #         results = (results,)
+    #     if ufunc in gf.fam.inverse_arguments.keys() and any(squeeze):
+    #         results = (gf.vec.mat2vec(results[0], squeeze),) + results[1:]
+    #     results = cv.conv_loop_out_view(self, results, outputs)
+    #
+    #     return results[0] if len(results) == 1 else results
 
     def flattish(self, start: int, stop: int) -> lnarray:
         """Partial flattening.

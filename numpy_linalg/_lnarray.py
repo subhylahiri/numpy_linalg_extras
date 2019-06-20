@@ -694,7 +694,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
             self._inverted = self._to_invert / gf.norm(self._to_invert)**2
         elif self.ndim >= 2:
             # pinv broadcasts
-            self._inverted = gf.pinv(self._to_invert).view(lnarray)
+            self._inverted = gf.pinv(self._to_invert)
         else:
             raise ValueError('Nothing to invert? ' + str(self._to_invert))
 

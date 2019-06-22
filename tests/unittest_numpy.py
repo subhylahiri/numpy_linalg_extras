@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """Customised unittest for numpy
 """
-import unittest
-import contextlib
-import functools
+import unittest as _ut
+import contextlib as _cx
+import functools as _ft
 from fnmatch import fnmatchcase
 import numpy as np
 
 __all__ = [
         'TestCaseNumpy',
         'NosortTestLoader',
+        'nosortTestLoader',
         'TestResultStopTB',
         'TestRunnerStopTB',
         'main',
@@ -40,7 +41,7 @@ invalid_err = (FloatingPointError, 'invalid value encountered')
 __unittest = True
 
 
-class NosortTestLoader(unittest.TestLoader):
+class NosortTestLoader(_ut.TestLoader):
     """Test loader that does not sort test methods by default
 
     Use in place of `unittest.TestLoader` or `unittest.defaultTestLoader`.
@@ -67,7 +68,7 @@ class NosortTestLoader(unittest.TestLoader):
             testFnNames = dir(testCaseClass)
         testFnNames = list(filter(shouldIncludeMethod, testFnNames))
         if self.sortTestMethodsUsing:
-            key_fn = functools.cmp_to_key(self.sortTestMethodsUsing)
+            key_fn = _ft.cmp_to_key(self.sortTestMethodsUsing)
             testFnNames.sort(key=key_fn)
         return testFnNames
 
@@ -84,7 +85,7 @@ class NosortTestLoader(unittest.TestLoader):
             tests = []
             for name in all_names:
                 obj = getattr(module, name)
-                if isinstance(obj, type) and issubclass(obj, unittest.TestCase):
+                if isinstance(obj, type) and issubclass(obj, _ut.TestCase):
                     tests.append(self.loadTestsFromTestCase(obj))
             tests = self.suiteClass(tests)
         return tests
@@ -97,7 +98,7 @@ class NosortTestLoader(unittest.TestLoader):
 nosortTestLoader = NosortTestLoader()
 
 
-class TestResultStopTB(unittest.TextTestResult):
+class TestResultStopTB(_ut.TextTestResult):
     """TestResult that does not print beyond certain frames in tracebacks
 
     Use in place of `unittest.TextTestResult`.
@@ -138,7 +139,7 @@ class TestResultStopTB(unittest.TextTestResult):
         # return '__unittest' in f_vars and f_vars['__unittest']
 
 
-class TestRunnerStopTB(unittest.TextTestRunner):
+class TestRunnerStopTB(_ut.TextTestRunner):
     """TestRunner that does not print certain frames in tracebacks
 
     Use in place of `unittest.TextTestRunner`. It uses `TestResultStopTB` by
@@ -179,7 +180,7 @@ def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
     """
     if testRunner is None:
         testRunner = TestRunnerStopTB
-    unittest.main(testLoader=testLoader, testRunner=testRunner, **kwds)
+    _ut.main(testLoader=testLoader, testRunner=testRunner, **kwds)
 
 
 # =============================================================================
@@ -187,7 +188,7 @@ def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
 # =============================================================================
 
 
-class TestCaseNumpy(unittest.TestCase):
+class TestCaseNumpy(_ut.TestCase):
     """Test case with methods for comparing numpy arrays.
 
     Subclass this class to make your own unit test suite.
@@ -354,7 +355,7 @@ def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
         which elements of ``TestCase.attr_name`` to loop over.
     """
     def loop_dec(func):
-        @functools.wraps(func)
+        @_ft.wraps(func)
         def loop_func(self, *args, **kwds):
             if isinstance(attr_name, str):
                 the_attr = getattr(self, attr_name)
@@ -467,7 +468,7 @@ def ones_asa(shape, sctype):
     return asa(np.ones(shape), np.zeros(shape), sctype)
 
 
-@contextlib.contextmanager
+@_cx.contextmanager
 def errstate(*args, **kwds):
     """Context manager like np.errstate that can also be used as a decorator
     """

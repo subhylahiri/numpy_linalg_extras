@@ -67,10 +67,6 @@ Examples
 >>> w = x @ y.pinv
 >>> u = x @ y.t
 >>> v = (x.r @ y[:, None, ...].t).ur
->>> a = sp.ldarray(np.random.rand(2, 3, 4))
->>> b = sp.ldarray(np.random.rand(2, 3, 4))
->>> c = (a << b)
->>> d = (a >> b)
 """
 from . import _lnarray, _linalg
 from ._lnarray import lnarray, pinvarray, invarray
@@ -96,7 +92,7 @@ from ._ln_manipulation import (
 
 from . import version
 __version__ = version.max_version(
-    "0.1.0", gufuncs, wrappers, random, _lnarray, _linalg)
+    "0.2.0", gufuncs, wrappers, random, _lnarray, _linalg)
 
 assert all((gufuncs, wrappers, random, norm))
 assert all((lnarray, pinvarray, invarray))

@@ -3,7 +3,6 @@
 It has been established, in test_gu*.py, that the gufuncs return the correct
 values. We just check that the python wrappers call the correct ones.
 """
-import unittest
 import numpy as np
 import numpy_linalg as la
 import numpy_linalg._linalg as lr
@@ -277,7 +276,7 @@ class TestValue(TestMatsVecs):
         self.assertArrayAllClose(np.tril(low, -1), np.tril(luf, -1)[:, :3])
         self.assertArrayAllClose(up, np.triu(luf))
 
-    @unittest.expectedFailure
+    @errstate
     @utn.loop_test()
     def test_low_rank(self, sctype):
         self.pick_var_type(sctype)

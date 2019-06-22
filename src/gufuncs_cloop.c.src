@@ -41,7 +41,7 @@ Copyright/licence info for that file:
 
 #include "gufunc_common.h"
 
-static const char* gufuncs_cloop_version_string = "0.1.1";
+static const char* gufuncs_cloop_version_string = "0.2.0";
 
 /*
 *****************************************************************************
@@ -52,47 +52,51 @@ static const char* gufuncs_cloop_version_string = "0.1.1";
 PyDoc_STRVAR(matmul__doc__,
 //"matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n"
 "Matrix-matrix product.\n\n"
-"Parameters\n-----------\n"
-"X: ndarray (...,M,N)\n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"with vector versions used *only* when one-dimensional.\n"
+"\nParameters\n-----------\n"
+"X: ndarray (...,M,N) or (N,)\n"
 "    Matrix multiplying from left.\n"
-"Y: ndarray (...,N,P)\n"
-"    Matrix multiplying from right.\n\n"
-"Returns\n-------\n"
-"Z: ndarray (...,M,P)\n"
+"Y: ndarray (...,N,P) or (N,)\n"
+"    Matrix multiplying from right.\n"
+"\nReturns\n-------\n"
+"Z: ndarray (...,M,P), (...,M), (...,P) or ()\n"
 "    Result of matrix multiplication.");
 
 PyDoc_STRVAR(rmatmul__doc__,
 //"matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n"
 "Reversed matrix-matrix product.\n\n"
-"Parameters\n-----------\n"
-"Y: ndarray (...,N,P)\n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"with vector versions used *only* when one-dimensional.\n"
+"\nParameters\n-----------\n"
+"Y: ndarray (...,N,P) or (N,)\n"
 "    Matrix multiplying from right.\n"
-"X: ndarray (...,M,N)\n"
-"    Matrix multiplying from left.\n\n"
-"Returns\n-------\n"
-"Z: ndarray (...,M,P)\n"
+"X: ndarray (...,M,N) or (N,)\n"
+"    Matrix multiplying from left.\n"
+"\nReturns\n-------\n"
+"Z: ndarray (...,M,P), (...,M), (...,P) or ()\n"
 "    Result of matrix multiplication.");
 
 PyDoc_STRVAR(norm__doc__,
 //"matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n"
-"Euclidean norm of a vector.\n"
-"Unlike `numpy.linalg.norm`, it only computes the vector 2-norm.\n\n"
-"Parameters\n-----------\n"
+"Euclidean norm of a vector.\n\n"
+"Unlike `numpy.linalg.norm`, it only computes the vector 2-norm.\n"
+"\nParameters\n-----------\n"
 "X: ndarray (...,N)\n"
-"    Vector, or array of vectors.\n\n"
-"Returns\n-------\n"
+"    Vector, or array of vectors.\n"
+"\nReturns\n-------\n"
 "Z: float\n"
 "    Euclidean norm of X.");
 
 PyDoc_STRVAR(rtruedivide__doc__,
 //"matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n"
-"Reversed division Z = X \\ Y.\n\n"
-"Parameters\n-----------\n"
+"Reversed division Z = X \\ Y.\n"
+"\nParameters\n-----------\n"
 "X: ndarray (...)\n"
 "    Denominator.\n"
 "Y: ndarray (...)\n"
-"    Numerator.\n\n"
-"Returns\n-------\n"
+"    Numerator.\n"
+"\nReturns\n-------\n"
 "Z: ndarray (...)\n"
 "    Result of division.");
 

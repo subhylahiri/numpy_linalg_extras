@@ -276,6 +276,7 @@ class TestValue(TestMatsVecs):
         self.assertArrayAllClose(np.tril(low, -1), np.tril(luf, -1)[:, :3])
         self.assertArrayAllClose(up, np.triu(luf))
 
+    @utn.errstate()
     @utn.loop_test()
     def test_low_rank(self, sctype):
         self.pick_var_type(sctype)

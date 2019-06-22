@@ -14,7 +14,7 @@ vec_wrap:
 """
 import functools as _ft
 import numpy as _np
-from ._families import inverse_arguments
+from ._families import inverse_arguments, same_family, solve, lstsq
 from ._util import make_errobj
 
 
@@ -105,8 +105,14 @@ def vec_wrap(gufunc, case=()):
 
     wrapper.__doc__ = wrapper.__doc__.replace("\nParameters",
                                               "\n" + _vec_doc + "\nParameters")
-    wrapper.__doc__ = wrapper.__doc__.replace("(...,M,N)",
-                                              "(...,M,N) or (N,)")
+    if all(case) or not any(case):
+        wrapper.__doc__ = wrapper.__doc__.replace("(...,M,N)",
+                                                  "(...,M,N) or (N,)")
+    else:
+        wrapper.__doc__ = wrapper.__doc__.replace("(...,M,N)",
+                                                  "(...,M,N) or (M,)")
+        wrapper.__doc__ = wrapper.__doc__.replace("(...,N,M)",
+                                                  "(...,N,M) or (M,)")
     wrapper.__doc__ = wrapper.__doc__.replace("(...,N,P)",
                                               "(...,N,P) or (N,)")
     wrapper.__doc__ = wrapper.__doc__.replace(
@@ -115,9 +121,15 @@ def vec_wrap(gufunc, case=()):
                                               "(...,M,NRHS) or (M,)")
     wrapper.__doc__ = wrapper.__doc__.replace("(...,NRHS,M)",
                                               "(...,NRHS,M) or (M,)")
-    wrapper.__doc__ = wrapper.__doc__.replace("(...,N,NRHS)",
-                                              "(...,N,NRHS) or (N,)")
-    wrapper.__doc__ = wrapper.__doc__.replace("(...,NRHS,N)",
-                                              "(...,NRHS,N) or (N,)")
+    if same_family(gufunc, solve):
+        wrapper.__doc__ = wrapper.__doc__.replace("(...,N,NRHS)",
+                                                  "(...,N,NRHS) or (N,)")
+        wrapper.__doc__ = wrapper.__doc__.replace("(...,NRHS,N)",
+                                                  "(...,NRHS,N) or (N,)")
+    elif same_family(gufunc, lstsq):
+        wrapper.__doc__ = wrapper.__doc__.replace(
+                    "(...,N,NRHS)", "(...,N,NRHS), (...,N), (...,NRHS) or ()")
+        wrapper.__doc__ = wrapper.__doc__.replace(
+                    "(...,NRHS,N)", "(...,NRHS,N), (...,N), (...,NRHS) or ()")
     wrapper.__doc__ = wrapper.__doc__.replace(_bin_doc, "")
     return wrapper

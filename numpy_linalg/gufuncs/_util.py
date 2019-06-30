@@ -63,6 +63,27 @@ def make_errobj(msg, kwdict=None):
 
 
 # =============================================================================
+# %%* Undo overbroadcast factors
+# =============================================================================
+
+
+def unbroadcast_factors(original, *factors):
+    """Undo broadcasting in factors returned by gufuncs.
+    """
+    if isinstance(original, _np.ndarray):
+        original = original.shape
+    bc_dim = factors[0].ndim - 2
+    if len(original) == 1:
+        bc_dim += 1
+    original = original[:-2]
+    squeeze = tuple(_np.arange(bc_dim - len(original)))
+    original = (1,)*len(squeeze) + original
+    shrink = [orig == 1 for orig in original]
+    slc = tuple(_np.where(shrink, slice(1), slice(None)))
+    return tuple(fac[slc].squeeze(squeeze) for fac in factors)
+
+
+# =============================================================================
 # Mixin for linear algebra operators
 # =============================================================================
 

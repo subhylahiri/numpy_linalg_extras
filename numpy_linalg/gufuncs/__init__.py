@@ -102,20 +102,18 @@ from ._gufuncs_qr_lstsq import (
     rlstsq_qrn, qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv)
 
 from . import _families as fam
-from ._util import make_errobj, MatmulOperatorsMixin, LNArrayOperatorsMixin
+from ._util import make_errobj, unbroadcast_factors
+from ._util import MatmulOperatorsMixin, LNArrayOperatorsMixin
 from . import _vectors as vec
 
 from ..version import max_version as _version
-__version__ = _version("0.1.0", _gufuncs_blas, _gufuncs_cloop,
+__version__ = _version("0.2.0", _gufuncs_blas, _gufuncs_cloop,
                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
-# __version__ = _version("0.1.0", _gufuncs_cloop,
-#                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
-# __version__ = _version("0.1.0", _gufuncs_blas,
-#                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
 
 # fool pyflakes
 assert any((norm, rtrue_divide, matmul, rmatmul))
-assert any((make_errobj, MatmulOperatorsMixin, LNArrayOperatorsMixin))
+assert any((make_errobj, unbroadcast_factors))
+assert any((MatmulOperatorsMixin, LNArrayOperatorsMixin))
 assert any((lu_m, lu_n, lu_rawm, lu_rawn, solve, rsolve, solve_lu, rsolve_lu,
             lu_solve, rlu_solve, pivot, rpivot, inv, inv_lu, lu_inv))
 assert any((

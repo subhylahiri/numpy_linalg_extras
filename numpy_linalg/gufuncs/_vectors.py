@@ -2,8 +2,12 @@
 """
 Generalized ufunc versions of `numpy.linalg` routines:
 
+.. deprecated:: 0.2.0
+    The `vec` module will be removed in numpy_linalg 0.3.0, it is no longer
+    needed thanks to the flexible gufunc signatures in NumPy 1.16.
+
 This module contains utilities (for internal use) that help in defining
-functions and classes that use these gufuncs:
+functions and classes that use these gufuncs with vectors.
 
 vec2mat:
     Convert vectors to single column/row matrices for linear algebra gufuncs.
@@ -20,6 +24,10 @@ from ._util import make_errobj
 
 def vec2mat(x, y, case=(False, False)):
     """Convert vectors to single column/row matrices for linear algebra gufuncs
+
+    .. deprecated:: 0.2.0
+        The `vec` module will be removed in numpy_linalg 0.3.0, it is no longer
+        needed thanks to the flexible gufunc signatures in NumPy 1.16.
 
     Only does anything when `x.ndim==1` or `y.ndim==1`.
 
@@ -57,6 +65,10 @@ def vec2mat(x, y, case=(False, False)):
 def mat2vec(z, squeeze):
     """Convert column/row-matrices back to vectors from linear algebra gufuncs
 
+    .. deprecated:: 0.2.0
+        The `vec` module will be removed in numpy_linalg 0.3.0, it is no longer
+        needed thanks to the flexible gufunc signatures in NumPy 1.16.
+
     Parameters
     ----------
     z : ndarray
@@ -84,6 +96,10 @@ _bin_doc = "It is intended for use in binary operators.\n"
 
 def vec_wrap(gufunc, case=()):
     """Wrap a gufunc with special handling for vectors
+
+    .. deprecated:: 0.2.0
+        The `vec` module will be removed in numpy_linalg 0.3.0, it is no longer
+        needed thanks to the flexible gufunc signatures in NumPy 1.16.
 
     Parameters
     ----------

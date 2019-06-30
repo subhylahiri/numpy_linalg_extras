@@ -136,7 +136,7 @@ reasons:
 
 ## Functions
 
-The following are implemented by operators/properties of the classes above.
+The following implement by operators/properties of the classes above.
 * `matmul`:
     Matrix multiplication with broadcasting and BLAS acceleration.
 * `solve`:
@@ -167,7 +167,7 @@ The following are implemented by operators/properties of the classes above.
 * `expand_dims`:
     Add new singleton axes.    
 
-The following are not implemented by operators/properties of the classes above.
+The following do not implement operators/properties of the classes above.
 * `matldiv`:
     Matrix division from left (exact or least-squares).
 * `matrdiv`:
@@ -210,13 +210,12 @@ Combining `invarray` and `pinvarray` will either fail or produce weird results.
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    These implement the functions above.
+    These are literally the same as the function above.
 * `gufuncs.solve`:
 * `gufuncs.rsolve`:
 * `gufuncs.lstsq`:
 * `gufuncs.rlstsq`:
 * `gufuncs.norm`:
-    This is literally the same as the function above.
 * `gufuncs.lu_m`:
     Implements `lu` for wide matrices.
 * `gufuncs.lu_n`:
@@ -273,10 +272,10 @@ The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.qr_pinv`:
     Use QR/LQ decomposition in `raw` form from previous use.
 * `gufuncs.rmatmul`
-    Reversed version of `matmul`. Used by `invarray`, otherwise not useful for the user.
+    Reversed version of `matmul`. Used by `invarray`, otherwise not useful.
 * `gufuncs.rtrue_tivide`:
     Reversed version of `np.true_divide`. Used by `pinvarray` and `invarray`, 
-    otherwise not useful for the user.
+    otherwise not useful.
 
 ## Wrappers
 
@@ -321,11 +320,6 @@ recently moved the headers to a different package. You can install them with:
 ```
 > conda install mkl-devel
 ```
-I found this wreaked havoc with its dependencies.
-Alternatively, you can downgrade to a version that has the headers, e.g.
-```
-> conda install mkl=2018.0.3
-```
 Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
@@ -366,7 +360,8 @@ The failure messages would have `sctype='f'` or `sctype='F'` in the titles and
 the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
 
 You can customise which tests are run and how the results are displayed
-using the command line options for the [unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).
+using the command line options for the 
+[unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).
 
 ## To dos
 

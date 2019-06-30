@@ -572,9 +572,9 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     #     else:
     #         raise AttributeError
 
-    # make this __call__? @property? get()? do()? __array__?
+    # make this __call__? __array__? @property? get()? do()?
     def __call__(self) -> lnarray:
-        """Get actual (pseudo)inverse
+        """Get the actual (pseudo)inverse
 
         Returns
         -------
@@ -627,7 +627,7 @@ class pinvarray(gf.LNArrayOperatorsMixin):
 
         Returns
         -------
-        a_swapped : ndarray
+        a_swapped : pinvarray
             For NumPy >= 1.10.0, if `a.pinv` is an ndarray, then new pinvarray
             containing a view of `a.pinv` is returned; otherwise a new array is
             created.

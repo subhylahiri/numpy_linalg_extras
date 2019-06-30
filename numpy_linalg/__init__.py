@@ -71,9 +71,8 @@ Examples
 from . import _lnarray, _linalg
 from ._lnarray import lnarray, pinvarray, invarray
 from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-                      matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv,
-                      flattish, expand_dims)
-from .gufuncs import norm
+                      matldiv, matrdiv, flattish, expand_dims)
+from .gufuncs import matmul, solve, rsolve, lstsq, rlstsq, norm
 from . import gufuncs
 from . import _ln_wrap as wrappers
 from . import random

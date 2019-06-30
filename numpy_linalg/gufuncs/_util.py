@@ -91,6 +91,10 @@ def unbroadcast_factors(original, *factors):
 class MatmulOperatorsMixin():
     """Mixin for defining __matmul__ special methods via gufuncs
     """
+    # .. deprecated:: 0.2.0
+    #       `MatmulOperatorsMixin` will be removed in numpy_linalg 0.3.0, it is
+    #       replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
+    #       latter now uses the `matmul` gufunc rendering this mixin obsolete.
     __matmul__, __rmatmul__, __imatmul__ = _mix._numeric_methods(matmul,
                                                                  'matmul')
 
@@ -102,6 +106,10 @@ class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin, MatmulOperatorsMixin):
     --------
     `numpy.lib.mixins.NDArrayOperatorsMixin` : base class.
     """
+    # .. deprecated:: 0.2.0
+    #       `LNArrayOperatorsMixin` will be removed in numpy_linalg 0.3.0, it
+    #       is replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
+    #       latter now uses the `matmul` gufunc rendering this mixin obsolete.
     pass
 
 
@@ -120,6 +128,6 @@ def return_shape_mat(x, y):
     if x.ndim == 1:
         return y.shape[:-2] + y.shape[-1:]
     if x.shape[-1] != y.shape[-2]:
-        msg = 'Inner matrix dimensions mismatch: {0} and {1}.'
-        raise ValueError(msg.format(x.shape, y.shape))
+        raise ValueError('Inner matrix dimensions mismatch: '
+                         f'{x.shape} and {y.shape}.')
     return _np.broadcast(x[..., :1], y[..., :1, :]).shape

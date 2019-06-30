@@ -37,7 +37,7 @@ import itertools as _it
 import numpy as _np
 from ._gufuncs_cloop import rtrue_divide, norm  # , matmul, rmatmul
 from ._gufuncs_blas import matmul, rmatmul  # , norm
-# from numpy import true_divide as rtrue_divide
+# from numpy import matmul
 from ._gufuncs_lu_solve import (solve, rsolve, solve_lu, rsolve_lu, lu_solve,
                                 rlu_solve)
 from ._gufuncs_qr_lstsq import (lstsq, rlstsq, lstsq_qrm, lstsq_qrn,

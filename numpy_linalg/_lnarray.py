@@ -124,9 +124,10 @@ class lnarray(np.ndarray):
 #    def __array_finalize__(self, obj):
 #        # We are not adding any attributes
 #        pass
-    (__matmul__,
-     __rmatmul__,
-     __imatmul__) = _mix._numeric_methods(gf.matmul, 'matmul')
+    # (__matmul__,
+    #  __rmatmul__,
+    #  __imatmul__) = _mix._numeric_methods(gf.matmul, 'matmul')
+    __imatmul__ = _mix._inplace_binary_method(gf.matmul, 'matmul')
 
     # def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
     #     """Customise ufunc behaviour
@@ -409,7 +410,7 @@ def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
 # =============================================================================
 
 
-class pinvarray(gf.LNArrayOperatorsMixin):
+class pinvarray(_mix.NDArrayOperatorsMixin):
     """Lazy matrix pseudoinverse of `lnarray`.
 
     Does not actually perform the matrix pseudoinversion.
@@ -493,8 +494,8 @@ class pinvarray(gf.LNArrayOperatorsMixin):
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         """Handling ufuncs with pinvarrays
         """
-        if ufunc is np.matmul:
-            ufunc = gf.matmul
+        # if ufunc is np.matmul:
+        #     ufunc = gf.matmul
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
         args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
@@ -544,13 +545,11 @@ class pinvarray(gf.LNArrayOperatorsMixin):
 
         results = self._to_invert.__array_ufunc__(ufunc, method, *args,
                                                   **kwargs)
-
         if results is NotImplemented:
             return NotImplemented
 
         if ufunc.nout == 1:
             results = (results,)
-
         results = cv.conv_loop_out_init(self, results, outputs, pinv_out)
 
         return results[0] if len(results) == 1 else results

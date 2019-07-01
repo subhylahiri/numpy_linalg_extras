@@ -90,26 +90,28 @@ def unbroadcast_factors(original, *factors):
 
 class MatmulOperatorsMixin():
     """Mixin for defining __matmul__ special methods via gufuncs
+
+    .. deprecated:: 0.2.0
+          `MatmulOperatorsMixin` will be removed in numpy_linalg 0.3.0, it is
+          replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
+          latter now uses the `matmul` gufunc rendering this mixin obsolete.
     """
-    # .. deprecated:: 0.2.0
-    #       `MatmulOperatorsMixin` will be removed in numpy_linalg 0.3.0, it is
-    #       replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
-    #       latter now uses the `matmul` gufunc rendering this mixin obsolete.
     __matmul__, __rmatmul__, __imatmul__ = _mix._numeric_methods(matmul,
                                                                  'matmul')
 
 
-class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin, MatmulOperatorsMixin):
+class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin):
     """Mixin for defining operator special methods via __array_ufunc__
+
+    .. deprecated:: 0.2.0
+          `LNArrayOperatorsMixin` will be removed in numpy_linalg 0.3.0, it
+          is replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
+          latter now uses the `matmul` gufunc rendering this mixin obsolete.
 
     See also
     --------
     `numpy.lib.mixins.NDArrayOperatorsMixin` : base class.
     """
-    # .. deprecated:: 0.2.0
-    #       `LNArrayOperatorsMixin` will be removed in numpy_linalg 0.3.0, it
-    #       is replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
-    #       latter now uses the `matmul` gufunc rendering this mixin obsolete.
     pass
 
 

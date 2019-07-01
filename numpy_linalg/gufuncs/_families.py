@@ -3,7 +3,7 @@
 Tools for generalized ufunc versions of `numpy.linalg` routines:
 
 The following variables, for internal use, are useful for determining the
-behaviour of 1D arrays, pinvarrays and invarrays in linear algebraic functions:
+behaviour of pinvarrays and invarrays in linear algebraic functions:
 
 solve_family, solve_lu_family, lu_solve_family:
     2x2 tuples of gufuncs used to interpret behaviour of `invarrays` in them.
@@ -36,8 +36,8 @@ __all__ = [
 import itertools as _it
 import numpy as _np
 from ._gufuncs_cloop import rtrue_divide, norm  # , matmul, rmatmul
-from ._gufuncs_blas import matmul, rmatmul  # , norm
-# from numpy import matmul
+from ._gufuncs_blas import rmatmul  # matmul, norm
+from numpy import matmul
 from ._gufuncs_lu_solve import (solve, rsolve, solve_lu, rsolve_lu, lu_solve,
                                 rlu_solve)
 from ._gufuncs_qr_lstsq import (lstsq, rlstsq, lstsq_qrm, lstsq_qrn,

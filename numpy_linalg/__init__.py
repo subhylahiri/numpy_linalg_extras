@@ -54,15 +54,15 @@ lq
     LQ decomposition with broadcasting and subclass passing.
 lqr
     For wide matrices LQ decomposition, otherwise QR decomposition.
-Also includes `gufuncs` for `matmul`, etc, and versions of most `numpy`array
+Also includes `gufuncs` for `linalg` etc, and versions of most `numpy`array
 creation and manipulation routines and `wrappers` for converting the rest.
 
 Examples
 --------
 >>> import numpy as np
->>> import linalg as sp
->>> x = sp.lnarray(np.random.rand(2, 3, 4))
->>> y = sp.lnarray(np.random.rand(2, 3, 4))
+>>> import linalg as la
+>>> x = la.random.rand(2, 3, 4)
+>>> y = la.random.rand(2, 3, 4)
 >>> z = x.pinv @ y
 >>> w = x @ y.pinv
 >>> u = x @ y.t

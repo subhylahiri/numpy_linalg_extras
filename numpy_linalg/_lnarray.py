@@ -127,6 +127,7 @@ class lnarray(np.ndarray):
     # (__matmul__,
     #  __rmatmul__,
     #  __imatmul__) = _mix._numeric_methods(gf.matmul, 'matmul')
+    # Last thing not implemented by ndarray:
     __imatmul__ = _mix._inplace_binary_method(gf.matmul, 'matmul')
 
     # def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -537,8 +538,8 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
 
         outputs = kwargs.pop('out', None)
         if outputs:
-            out_args, pinv_out = cv.conv_loop_in_attr('_to_invert',
-                                                      pinvarray, outputs)
+            out_args, pinv_out = cv.conv_loop_in_attr(
+                                            '_to_invert', pinvarray, outputs)
             kwargs['out'] = tuple(out_args)
         else:
             outputs = (None,) * ufunc.nout

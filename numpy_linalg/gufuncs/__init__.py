@@ -8,7 +8,7 @@
 Generalized ufunc versions of `numpy.linalg` routines:
 
 matmul
-    Matrix multiplication.
+    An alias of `numpy.matmul`.
 rmatmul
     Reversed matrix multiplication (only useful to implement binary operators).
 solve
@@ -63,25 +63,23 @@ lq_*
 rtrue_tivide
     Reversed division (only useful to implement binary operators).
 
-They raise `FloatingPointError` or warnings instead of `LinAlgError`,
-except when using `lnarrays`.
+They raise `FloatingPointError` or warnings instead of `LinAlgError`.
 
-`numpy.linalg` broadcasting rules apply. 1D arrays are not dealt with here (but
-see `lnarray` class).
+`numpy.linalg` broadcasting rules apply.
 
 This module also contains utilities (for internal use) that help in defining
 functions and classes that use these gufuncs:
 
 vec:
-    Module of functions for dealing with vector arguments
+    Module of functions for dealing with vector arguments. Deprecated.
 fam:
     Module with variables for determining the behaviour of 1D arrays,
     `pinvarrays` and `invarrays` in linear algebraic functions:
 MatmulOperatorsMixin
-    Mixin class that uses `matmul` from here to define @ operators.
+    Mixin class that uses `matmul` from here to define @ operators. Deprecated.
 LNArrayOperatorsMixin
     Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
-    from here to define @ operators.
+    from here to define @ operators. Deprecated.
 make_errobj:
     create an error handler object for use as ``extobj`` gufunc parameter.
 return_shape_mat:

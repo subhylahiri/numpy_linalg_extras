@@ -54,6 +54,8 @@ static const char* gufuncs_blas_version_string = "0.2.0";
 PyDoc_STRVAR(matmul__doc__,
 //"matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n"
 "Matrix-matrix product.\n\n"
+".. deprecated:: 0.2.0\n"
+"    This `gufunc` is no longer needed as NumPy switched to a gufunc in v1.16.\n\n"
 "Uses BLAS routine `_gemm` for acceleration.\n"
 "Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
 "with vector versions used *only* when one-dimensional.\n"

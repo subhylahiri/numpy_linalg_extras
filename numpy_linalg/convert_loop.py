@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Helper for writing __array_ufunc__
+Helpers for writing __array_ufunc__
 """
 import itertools as _itertools
 import typing as _ty

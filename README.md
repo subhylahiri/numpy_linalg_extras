@@ -25,15 +25,13 @@ matrix division.
 The main way of using this is package is via the `lnarray` class
 (the `lstsq` and `qr` functions are the only other things I find useful here).
 All of the functions will work with `numpy.ndarray` objects as well.
-Furthermore, `matmul` is implemented with a `gufunc` which should make
-broadcasting faster.
 
 The `lnarray` class has properties `t` for transposing, `h` for
 conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
 scalars in a way that fits with `numpy.linalg` broadcasting rules (`t,h` only
 transpose the last two indices, `r,c,s` add singleton axes so that linear
 algebra routines treat them as arrays of vectors/scalars rather than matrices,
-and `ur,uc,us` undo the effects of `r,c,s`).
+and `ur,uc,us` undo the effects of `r,c,s`).[^1]
 
 The `lnarray` class also has properties for delayed matrix division:
 ```python
@@ -50,6 +48,10 @@ To get the actual inverse matrices you can explicitly call the objects:
 >>> x = y.inv()
 >>> x = y.pinv()
 ```
+
+[^1]: It used to use a custom `gufunc` for `matmul`, but as of v1.16 `NumPy`
+    does this so we use that instead.
+
 
 ## Rationale
 
@@ -136,9 +138,9 @@ reasons:
 
 ## Functions
 
-The following implement by operators/properties of the classes above.
+The following implement operators/properties of the classes above.
 * `matmul`:
-    Matrix multiplication with broadcasting and BLAS acceleration.
+    Alias for `numpy.matmul`.
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
@@ -167,7 +169,7 @@ The following implement by operators/properties of the classes above.
 * `expand_dims`:
     Add new singleton axes.    
 
-The following do not implement operators/properties of the classes above.
+The following are not operators/properties of the classes above.
 * `matldiv`:
     Matrix division from left (exact or least-squares).
 * `matrdiv`:
@@ -204,14 +206,18 @@ The following are not defined:
 >>> lstsq(lnarray, pinvarray)
 >>> rlstsq(pinvarray, lnarray)
 ```
-Combining `invarray` and `pinvarray` will either fail or produce weird results.
+In addition, using `pinvarray` in `(r)solve` or `invarray` in `(r)lstsq` are
+not defined.
+Combining `invarray` and `pinvarray` in `(r)matmul` or `(r)solve` will either
+fail or produce weird results.
 
 ## GUfuncs
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    These are literally the same as the function above.
+    This is an alias for `numpy.matmul`
 * `gufuncs.solve`:
+    These are literally the same as the function above.
 * `gufuncs.rsolve`:
 * `gufuncs.lstsq`:
 * `gufuncs.rlstsq`:
@@ -301,8 +307,8 @@ The following can be found in `numpy_linalg.gufuncs`:
 ```python
 >>> import numpy as np
 >>> import numpy_linalg as la
->>> x = la.lnarray(np.random.rand(2, 3, 4))
->>> y = la.lnarray(np.random.rand(2, 3, 4))
+>>> x = la.random.rand(2, 3, 4)
+>>> y = la.random.rand(2, 3, 4)
 >>> z = x.pinv @ y
 >>> w = x @ y.pinv
 >>> u = x @ y.t

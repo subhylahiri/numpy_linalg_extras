@@ -203,13 +203,35 @@ The following operations will do the right thing, but may be better avoided:
 The following are not defined:
 ```python
 >>> matmul(pinvarray, pinvarray)
->>> lstsq(lnarray, pinvarray)
->>> rlstsq(pinvarray, lnarray)
+>>> lstsq(lnarray, (p)invarray)
+>>> rlstsq((p)invarray, lnarray)
+>>> (r)solve(pinvarray, lnarray)
+>>> (r)solve(lnarray, pinvarray)
+>>> (r)solve(pinvarray, pinvarray)
 ```
-In addition, using `pinvarray` in `(r)solve` or `invarray` in `(r)lstsq` are
-not defined.
-Combining `invarray` and `pinvarray` in `(r)matmul` or `(r)solve` will either
-fail or produce weird results.
+The following raise shape related exceptions:
+```python
+>>> matmul(invarray, pinvarray)
+>>> matmul(pinvarray, invarray)
+```
+The following could be defined (mathematically) but are not:
+```python
+>>> lstsq(invarray, lnarray)
+>>> rlstsq(lnarray, invarray)
+>>> (r)lstsq(invarray, (p)invarray)
+>>> (r)lstsq(pinvarray, invarray)
+```
+The following need not raise shape related exceptions but do:
+```python
+>>> solve(invarray, pinvarray)
+>>> rsolve(pinvarray, invarray)
+```
+The following should raise shape related exceptions but do not always:
+```python
+>>> solve(pinvarray, invarray)
+>>> rsolve(invarray, pinvarray)
+```
+
 
 ## GUfuncs
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Test lnarray class
 """
+import unittest
 import numpy as np
 import numpy.linalg as npl
 import numpy_linalg as la
@@ -221,6 +222,34 @@ class TestPinvarray(TestNewClasses):
             gf.lstsq(la_ss.inv, lm_sb)
         with self.assertRaises(TypeError):
             gf.rlstsq(la_bs, la_ss.inv)
+
+    def test_bad_p_invarray_combos_in_functions(self):
+        self.pick_var_type('d')
+        la_ss, la_bs, lm_sb = self.la_ss, self.la_bs, self.lm_sb
+        xw = la_bs[:, :3]
+        with self.assertRaises(TypeError):
+            la.solve(lm_sb.pinv, xw)
+        with self.assertRaises(TypeError):
+            la.solve(xw, la_bs.pinv)
+        with self.assertRaises(TypeError):
+            la.solve(lm_sb.pinv, la_bs.pinv)
+        with self.assertRaisesRegex(ValueError, 'not square'):
+            la.matmul(la_ss.inv, la_bs.pinv)
+        with self.assertRaisesRegex(ValueError, 'not square'):
+            la.matmul(lm_sb.pinv, xw.inv)
+
+    @unittest.expectedFailure
+    def test_good_p_invarray_combos_in_functions(self):
+        self.pick_var_type('d')
+        la_ss, la_bs, lm_sb = self.la_ss, self.la_bs, self.lm_sb
+        xw = la_bs[:, :3]
+        self.assertIsInstance(la.lstsq(xw.inv, lm_sb), la.lnarray)
+        self.assertIsInstance(la.lstsq(xw.inv, la_ss.pinv), la.lnarray)
+        self.assertIsInstance(la.lstsq(xw.inv, la_ss.inv), la.lnarray)
+        self.assertIsInstance(la.lstsq(la_bs.pinv, la_ss.inv), la.lnarray)
+        self.assertIsInstance(la.solve(xw.inv, la_bs.pinv), la.lnarray)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            la.solve(la_bs.pinv, xw.inv)
 
     @utn.loop_test()
     def test_pinvarray_operators(self, sctype):

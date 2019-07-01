@@ -124,43 +124,8 @@ class lnarray(np.ndarray):
 #    def __array_finalize__(self, obj):
 #        # We are not adding any attributes
 #        pass
-    # (__matmul__,
-    #  __rmatmul__,
-    #  __imatmul__) = _mix._numeric_methods(gf.matmul, 'matmul')
     # Last thing not implemented by ndarray:
     __imatmul__ = _mix._inplace_binary_method(gf.matmul, 'matmul')
-
-    # def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-    #     """Customise ufunc behaviour
-    #     """
-    #     args = list(cv.conv_loop_in_view(lnarray, inputs)[0])
-    #     # Set of ufuncs that need special handling for vectors
-    #     if ufunc in gf.fam.inverse_arguments.keys():
-    #         args[0], args[1], squeeze = gf.vec.vec2mat(
-    #                 args[0], args[1], gf.fam.inverse_arguments[ufunc]
-    #         )
-    #     args = tuple(args)
-    #
-    #     outputs = kwargs.pop('out', None)
-    #     if outputs:
-    #         out_args = cv.conv_loop_in_view(lnarray, outputs)[0]
-    #         kwargs['out'] = tuple(out_args)
-    #     else:
-    #         outputs = (None,) * ufunc.nout
-    #
-    #     if ufunc in gf.fam.inverse_arguments.keys():
-    #         gf.make_errobj("Failure in routine: " + ufunc.__name__, kwargs)
-    #     results = super().__array_ufunc__(ufunc, method, *args, **kwargs)
-    #     if results is NotImplemented:
-    #         return NotImplemented
-    #
-    #     if ufunc.nout == 1:
-    #         results = (results,)
-    #     if ufunc in gf.fam.inverse_arguments.keys() and any(squeeze):
-    #         results = (gf.vec.mat2vec(results[0], squeeze),) + results[1:]
-    #     results = cv.conv_loop_out_view(self, results, outputs)
-    #
-    #     return results[0] if len(results) == 1 else results
 
     def flattish(self, start: int, stop: int) -> lnarray:
         """Partial flattening.
@@ -492,36 +457,13 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         self._inverted = None
         self._factored = ()
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwds):
         """Handling ufuncs with pinvarrays
         """
-        # if ufunc is np.matmul:
-        #     ufunc = gf.matmul
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
         args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
-
-        pinv_out = [False] * ufunc.nout  # which outputs need converting back?
-        if ufunc in gf.fam.inverse_arguments.keys():
-            if not gf.fam.same_family(ufunc, self._gufunc_map[0][1]):
-                return NotImplemented
-            left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
-            ufunc = self._gufunc_map[left_arg][right_arg]
-            # NOTE: rmatmul doesn't fit the pattern, needs special handling
-            if swap:
-                args = (args[1], args[0]) + args[2:]
-            # only operation that returns `invarray` is `invarray @ invarray`
-            pinv_out[0] = left_arg and right_arg
-        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
-            left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
-            ufunc = self._ufunc_map[left_arg][right_arg]
-            pinv_out[0] = True  # one of left_arg/right_arg must be True
-        elif ufunc in self._unary_ufuncs:
-            # Apply ufunc to self._to_invert.
-            # Already converted input; just need to convert output back
-            pinv_out[0] = True
-        else:
-            return NotImplemented
+        ufunc, args, pinv_out = self._choose_ufunc(ufunc, args, pinv_in)
         if ufunc is None:
             return NotImplemented
         # Alternative: other ufuncs use implicit inversion.
@@ -532,40 +474,16 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         #         args.append(input_())
         #     else:
         #         args.append(input_)
-        # args = tuple(args)
-        # return self._to_invert.__array_ufunc__(ufunc, method, *args,
-        #                                        **kwargs)
-
-        outputs = kwargs.pop('out', None)
-        if outputs:
-            out_args, pinv_out = cv.conv_loop_in_attr(
-                                            '_to_invert', pinvarray, outputs)
-            kwargs['out'] = tuple(out_args)
-        else:
-            outputs = (None,) * ufunc.nout
-
-        results = self._to_invert.__array_ufunc__(ufunc, method, *args,
-                                                  **kwargs)
-        if results is NotImplemented:
-            return NotImplemented
-
-        if ufunc.nout == 1:
-            results = (results,)
-        results = cv.conv_loop_out_init(self, results, outputs, pinv_out)
-
-        return results[0] if len(results) == 1 else results
+        # return self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
+        outputs, pinv_out = cv.conv_loop_in_attr(
+                                    '_to_invert', pinvarray, kwds, pinv_out)
+        results = self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
+        return cv.conv_loop_out_init(self, results, outputs, pinv_out)
 
     # This would allow other operations to work with implicit inversion.
     # Not used on the basis that explicit > implicit. Use __call__ instead.
     # def __getattr__(self, name):
     #     """Get `np.ndarray proerties from actual (pseudo)inverse.
-    #
-    #     Get unknown attributes from `lnarray` stored as `self._inverted`.
-    #
-    #     Notes
-    #     -----
-    #     If self._to_invert has not been (pseudo)inverted, it will compute the
-    #     (pseudo)inverse first.
     #     """
     #     if hasattr(self._to_invert, name):
     #         return getattr(self(), name)
@@ -586,14 +504,6 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         out = self._inverted
         self._inverted = None
         return out
-        # """Get actual (pseudo)inverse
-        #
-        # Returns
-        # -------
-        # inverted
-        #     The (pseudo)inverse of the `lnarray` whose `(p)inv` this object
-        #     is, stored as `self._inverted`.
-        #
         # Notes
         # -----
         # If self._to_invert has not been (pseudo)inverted, it will compute the
@@ -686,6 +596,32 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
             _to_invert = self._to_invert.copy(order=order)
         return type(self)(_to_invert, **kwds)
 
+    def _choose_ufunc(self, ufunc, args, pinv_in):
+        """Choose which ufunc to use, etc"""
+        pinv_out = [False] * ufunc.nout  # which outputs need converting back?
+        if ufunc in gf.fam.inverse_arguments.keys():
+            if not gf.fam.same_family(ufunc, self._gufunc_map[0][1]):
+                # super()._gufunc_map might work?
+                return None, args, pinv_out
+            left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
+            ufunc = self._gufunc_map[left_arg][right_arg]
+            # NOTE: rmatmul doesn't fit the pattern, needs special handling
+            if swap:
+                args = [args[1], args[0]] + args[2:]
+            # only operation that returns `invarray` is `invarray @ invarray`
+            pinv_out[0] = left_arg and right_arg
+        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
+            left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
+            ufunc = self._ufunc_map[left_arg][right_arg]
+            pinv_out[0] = True  # one of left_arg/right_arg must be True
+        elif ufunc in self._unary_ufuncs:
+            # Apply ufunc to self._to_invert.
+            # Already converted input; just need to convert output back
+            pinv_out[0] = True
+        else:
+            ufunc = None
+        return ufunc, args, pinv_out
+
     def _invert(self):
         """Actually perform (pseudo)inverse
         """
@@ -768,12 +704,9 @@ class invarray(pinvarray):
 
     def __init__(self, to_invert: lnarray):
         super().__init__(to_invert)
-
         if to_invert.ndim < 2 or (to_invert.shape[-1] != to_invert.shape[-2]):
-            msg = ("Array to be inverted must have ndim >= 2 and be square, "
-                   + "but to_invert.shape = {}. ".format(to_invert.shape)
-                   + "Must be a matrix, or stack of matrices.")
-            raise ValueError(msg)
+            raise ValueError("Array to invert is not square: shape = "
+                             + f"{to_invert.shape}.")
 
     def __str__(self) -> str:
         return str(self._to_invert) + '**(-1)'

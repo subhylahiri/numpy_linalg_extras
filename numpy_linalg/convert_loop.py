@@ -1,26 +1,42 @@
 # -*- coding: utf-8 -*-
 """
 Helpers for writing __array_ufunc__
+
+Example
+-------
+    ```
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        '''Handling ufunce with MyClass
+        '''
+        args, _ = cvl.conv_loop_in_attr('attr', MyClass, inputs)
+        conv = [True] + [False] * (ufunc.nout-1)
+        outputs, conv = cvl.conv_loop_in_attr('attr', MyClass, kwargs, conv)
+        results = self.attr.__array_ufunc__(ufunc, method, *args, **kwargs)
+        return cvl.conv_loop_out_attr(self, 'attr', results, outputs, conv)
+    ```
 """
 import itertools as _itertools
 import typing as _ty
 import numpy as _np
 ArgTuple = _ty.Tuple[_ty.Any]
+ArgDict = _ty.Dict[str, _ty.Any]
+Args = _ty.Union[ArgTuple, ArgDict]
+BoolList = _ty.List[bool]
 # ======================================================================
 # %% Inputs
 # ======================================================================
 
 
-def conv_loop_in(converter: _ty.Callable,
-                 obj_typ,
-                 tup: ArgTuple) -> (ArgTuple, _ty.List[bool]):
+def conv_loop_input(converter: _ty.Callable,
+                    obj_typ,
+                    args: ArgTuple) -> (ArgTuple, BoolList):
     """Process inputs in an __array_ufunc__ method
 
     Parameters
     ----------
     obj_typ
         The type of object that needs converting.
-    tup: Tuple[Any]
+    args: Tuple[Any]
         Tuple of inputs to ufunc (or ``out`` argument)
 
     Returns
@@ -32,14 +48,50 @@ def conv_loop_in(converter: _ty.Callable,
     """
     out = []
     conv = []
-    for obj in tup:
+    for obj in args:
         if isinstance(obj, obj_typ):
             out.append(converter(obj))
             conv.append(True)
         else:
             out.append(obj)
             conv.append(False)
-    return tuple(out), conv
+    return out, conv
+
+
+def conv_loop_in_out(converter: _ty.Callable, obj_typ, kwargs: ArgDict,
+                     conv_out: BoolList) -> (ArgTuple, BoolList):
+    """Process the out keyword in an __array_ufunc__ method
+
+    Parameters
+    ----------
+    obj_typ
+        The type of object that needs converting.
+    kwargs: Dict[str, Any]
+        Dict of key word inputs to ufunc
+    conv_out: List[bool]
+        List of bools for converting outputs. Should have the correct length.
+
+    Returns
+    -------
+    out: Tuple[Any]
+        New tuple of inputs to ufunc (or ``out`` argument) with conversions.
+    conv: List[bool]
+        List of bools telling us if each input was converted.
+    """
+    outputs = kwargs.pop('out', None)
+    if outputs:
+        out_args, conv_out = conv_loop_input(converter, obj_typ, outputs)
+        kwargs['out'] = tuple(out_args)
+    else:
+        outputs = (None,) * len(conv_out)
+    return outputs, conv_out
+
+
+def _conv_loop_in(converter, obj_typ, tup, *conv_out):
+    """Call one of conv_loop_input or conv_loop_in_out"""
+    if isinstance(tup, tuple):
+        return conv_loop_input(converter, obj_typ, tup)
+    return conv_loop_in_out(converter, obj_typ, tup, *conv_out)
 
 
 def prepare_via_view() -> _ty.Callable:
@@ -67,15 +119,18 @@ def prepare_via_attr(attr: str) -> _ty.Callable:
     return converter
 
 
-def conv_loop_in_view(obj_typ, tup: ArgTuple) -> (ArgTuple, _ty.List[bool]):
+def conv_loop_in_view(obj_typ, tup: Args, *conv_out) -> (ArgTuple, BoolList):
     """Process inputs in an __array_ufunc__ method using view method
 
     Parameters
     ----------
     obj_typ
         The type of object that needs converting via ``view`` method.
-    tup: Tuple[Any]
+    tup: Tuple[Any], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
+        Dict of key word inputs to ufunc
+    conv_out: List[bool], optional
+        List of bools for converting outputs. Should have the correct length.
 
     Returns
     -------
@@ -84,11 +139,11 @@ def conv_loop_in_view(obj_typ, tup: ArgTuple) -> (ArgTuple, _ty.List[bool]):
     conv: List[bool]
         List of bools telling us if each input was converted.
     """
-    return conv_loop_in(prepare_via_view(), obj_typ, tup)
+    return _conv_loop_in(prepare_via_view(), obj_typ, tup, *conv_out)
 
 
-def conv_loop_in_attr(attr: str, obj_typ, tup: ArgTuple) -> (ArgTuple,
-                                                             _ty.List[bool]):
+def conv_loop_in_attr(attr: str, obj_typ, tup: Args,
+                      *conv_out) -> (ArgTuple, BoolList):
     """Process inputs in an __array_ufunc__ method using an attribute
 
     Parameters
@@ -97,8 +152,11 @@ def conv_loop_in_attr(attr: str, obj_typ, tup: ArgTuple) -> (ArgTuple,
         The name of the ``obj_typ`` attribute to use in place of class.
     obj_typ
         The type of object that needs converting with its ``attr`` attribute.
-    tup: Tuple[Any]
+    tup: Tuple[Any], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
+        Dict of key word inputs to ufunc
+    conv_out: List[bool], optional
+        List of bools for converting outputs. Should have the correct length.
 
     Returns
     -------
@@ -107,7 +165,7 @@ def conv_loop_in_attr(attr: str, obj_typ, tup: ArgTuple) -> (ArgTuple,
     conv: List[bool]
         List of bools telling us if each input was converted.
     """
-    return conv_loop_in(prepare_via_attr(attr), obj_typ, tup)
+    return _conv_loop_in(prepare_via_attr(attr), obj_typ, tup, *conv_out)
 
 
 # ======================================================================
@@ -138,6 +196,10 @@ def conv_loop_out(converter: _ty.Callable,
     results: Tuple[Any]
         New tuple of results from ufunc with conversions.
     """
+    if results is NotImplemented:
+        return NotImplemented
+    if not isinstance(results, tuple):
+        results = (results,)
     if not conv:
         conv = _itertools.repeat(True)
     results_out = []
@@ -149,6 +211,8 @@ def conv_loop_out(converter: _ty.Callable,
                 results_out.append(result)
         else:
             results_out.append(output)
+    if len(results_out) == 1:
+        return results_out[0]
     return tuple(results_out)
 
 

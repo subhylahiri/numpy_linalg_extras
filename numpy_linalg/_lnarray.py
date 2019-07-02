@@ -723,6 +723,21 @@ class invarray(pinvarray):
         """
         return self._to_invert
 
+    def _choose_ufunc(self, ufunc, args, pinv_in):
+        """Choose which ufunc to use, etc"""
+        new_ufunc, args, pinv_out = super()._choose_ufunc(ufunc, args, pinv_in)
+        if new_ufunc is None:
+            _gufunc_map = super()._gufunc_map
+            if gf.fam.same_family(ufunc, _gufunc_map[0][1]):
+                left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
+                new_ufunc = _gufunc_map[left_arg][right_arg]
+                # NOTE: rmatmul doesn't fit the pattern, needs special handling
+                if swap:
+                    args = [args[1], args[0]] + args[2:]
+                # only op that returns `invarray` is `invarray @ invarray`
+                pinv_out[0] = left_arg and right_arg
+        return new_ufunc, args, pinv_out
+
     def _invert(self):
         """Actually perform inverse
         """

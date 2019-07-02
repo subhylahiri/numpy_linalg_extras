@@ -247,21 +247,31 @@ class TestPinvarray(TestNewClasses):
         self.pick_var_type('d')
         la_ss, la_bs, lm_sb = self.la_ss, self.la_bs, self.lm_sb
         xw = la_bs[:, :3]
-        self.assertIsInstance(la.lstsq(xw.inv, lm_sb), la.lnarray)
-        self.assertIsInstance(la.rlstsq(la_bs, xw.inv), la.lnarray)
-        self.assertIsInstance(la.lstsq(xw.inv, la_bs.pinv), la.lnarray)
-        self.assertIsInstance(la.rlstsq(xw.inv, lm_sb.pinv), la.lnarray)
-        self.assertIsInstance(la.lstsq(la_bs.pinv, la_ss.inv), la.lnarray)
-        self.assertIsInstance(la.rlstsq(lm_sb.pinv, la_ss.inv), la.lnarray)
-        self.assertIsInstance(la.lstsq(xw.inv, la_ss.inv), la.lnarray)
-        self.assertIsInstance(la.rlstsq(xw.inv, la_ss.inv), la.lnarray)
+        self.assertArrayAllClose(la.lstsq(xw.inv, lm_sb),
+                                 la.matmul(xw, lm_sb))
+        self.assertArrayAllClose(la.rlstsq(la_bs, xw.inv),
+                                 la.matmul(la_bs, xw))
+        self.assertArrayAllClose(la.lstsq(xw.inv, la_bs.pinv),
+                                 la.rlstsq(xw, la_bs))
+        self.assertArrayAllClose(la.rlstsq(xw.inv, lm_sb.pinv),
+                                 la.solve(xw, lm_sb))
+        self.assertArrayAllClose(la.lstsq(xw.inv, la_ss.inv),
+                                 la.rsolve(xw, la_ss))
+        self.assertArrayAllClose(la.rlstsq(xw.inv, la_ss.inv),
+                                 la.solve(xw, la_ss))
+        self.assertArrayAllClose(la.lstsq(la_bs.pinv, la_ss.inv),
+                                 la.rsolve(la_bs, la_ss))
+        self.assertArrayAllClose(la.rlstsq(lm_sb.pinv, la_ss.inv),
+                                 la.lstsq(lm_sb, la_ss))
 
     def test_good_p_invarray_combos_in_solve(self):
         self.pick_var_type('d')
         la_ss, la_bs, lm_sb = self.la_ss, self.la_bs, self.lm_sb
         xw = la_bs[:, :3]
-        self.assertIsInstance(la.solve(la_ss.inv, la_bs.pinv), la.lnarray)
-        self.assertIsInstance(la.rsolve(lm_sb.pinv, xw.inv), la.lnarray)
+        self.assertArrayAllClose(la.solve(la_ss.inv, la_bs.pinv),
+                                 la.rlstsq(la_ss, la_bs))
+        self.assertArrayAllClose(la.rsolve(lm_sb.pinv, xw.inv),
+                                 la.lstsq(lm_sb, xw))
 
     @utn.loop_test()
     def test_pinvarray_operators(self, sctype):

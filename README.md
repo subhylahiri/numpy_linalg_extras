@@ -188,27 +188,27 @@ The following are not operators/properties of the classes above.
 
 The following operations will do the right thing, but may be better avoided:
 ```python
->>> matmul(invarray, invarray)
->>> solve(invarray, lnarray)
->>> solve(lnarray, invarray)
->>> solve(invarray, invarray)
->>> rsolve(invarray, lnarray)
->>> rsolve(lnarray, invarray)
->>> rsolve(invarray, invarray)
->>> lstsq(pinvarray, lnarray)
->>> lstsq(pinvarray, pinvarray)
->>> rlstsq(lnarray, pinvarray)
->>> rlstsq(pinvarray, pinvarray)
->>> lstsq(invarray, lnarray)
->>> rlstsq(lnarray, invarray)
->>> lstsq(invarray, pinvarray)
->>> rlstsq(invarray, pinvarray)
->>> lstsq(invarray, invarray)
->>> rlstsq(invarray, invarray)
->>> lstsq(pinvarray, invarray)
->>> rlstsq(pinvarray, invarray)
->>> solve(invarray, pinvarray)
->>> rsolve(pinvarray, invarray)
+>>> matmul(lhs_array.inv, rhs_array.inv)   -> matmul(rhs_array, lhs_array).inv
+>>> solve(lhs_array.inv, rhs_array)        -> matmul(lhs_array, rhs_array)
+>>> solve(lhs_array, rhs_array.inv)        -> matmul(rhs_array, lhs_array).inv
+>>> solve(lhs_array.inv, rhs_array.inv)    -> rsolve(lhs_array, rhs_array)
+>>> rsolve(lhs_array.inv, rhs_array)       -> matmul(rhs_array, lhs_array).inv
+>>> rsolve(lhs_array, rhs_array.inv)       -> matmul(lhs_array, rhs_array)
+>>> rsolve(lhs_array.inv, rhs_array.inv)   -> solve(lhs_array, rhs_array)
+>>> lstsq(lhs_array.pinv, rhs_array)       -> matmul(lhs_array, rhs_array)
+>>> lstsq(lhs_array.pinv, rhs_array.pinv)  -> rlstsq(lhs_array, rhs_array)
+>>> rlstsq(lhs_array, rhs_array.pinv)      -> matmul(lhs_array, rhs_array)
+>>> rlstsq(lhs_array.pinv, rhs_array.pinv) -> lstsq(lhs_array, rhs_array)
+>>> lstsq(lhs_array.inv, rhs_array)        -> matmul(lhs_array, rhs_array)
+>>> rlstsq(lhs_array, rhs_array.inv)       -> matmul(lhs_array, rhs_array)
+>>> lstsq(lhs_array.inv, rhs_array.pinv)   -> rlstsq(lhs_array, rhs_array)
+>>> rlstsq(lhs_array.inv, rhs_array.pinv)  -> solve(lhs_array, rhs_array)
+>>> lstsq(lhs_array.inv, rhs_array.inv)    -> rsolve(lhs_array, rhs_array)
+>>> rlstsq(lhs_array.inv, rhs_array.inv)   -> solve(lhs_array, rhs_array)
+>>> lstsq(lhs_array.pinv, rhs_array.inv)   -> rsolve(lhs_array, rhs_array)
+>>> rlstsq(lhs_array.pinv, rhs_array.inv)  -> lstsq(lhs_array, rhs_array)
+>>> solve(lhs_array.inv, rhs_array.pinv)   -> rlstsq(lhs_array, rhs_array)
+>>> rsolve(lhs_array.pinv, rhs_array.inv)  -> lstsq(lhs_array, rhs_array)
 ```
 The following are not defined:
 ```python

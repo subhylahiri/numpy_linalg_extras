@@ -371,6 +371,31 @@ def _inv_input_scalar(ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     return tuple(x ^ y for x, y in zip(pinv_in, func_in))
 
 
+def _disallow_solve_pinv(ufunc, is_pinv):
+    """Check that pinvarray is not in denominator of solve"""
+    if not gf.fam.same_family(ufunc, gf.solve) or (ufunc == gf.rmatmul):
+        return False
+    denom = gf.fam.inverse_arguments[ufunc]
+    return any(x and y for x, y in zip(denom, is_pinv))
+
+
+def _who_chooses(obj, ufunc, inputs, pinv_in):
+    """Which input's gufunc_map should we use"""
+    if ufunc not in gf.fam.inverse_arguments.keys():
+        return obj
+    denom = _inv_input(ufunc, pinv_in)[:2]
+    is_inv = [isinstance(x, invarray) for x in inputs]
+    is_pinv = [x and not y for x, y in zip(pinv_in, is_inv)]
+    choosers = [x and y for x, y in zip(pinv_in, denom)]
+
+    if _disallow_solve_pinv(ufunc, is_pinv):
+        return None
+    if all(choosers) and any(is_pinv):
+        return None
+    if any(choosers):
+        return inputs[choosers[1]]
+    return obj
+
 # =============================================================================
 # Class: pinvarray
 # =============================================================================
@@ -463,7 +488,10 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
         args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
-        ufunc, args, pinv_out = self._choose_ufunc(ufunc, args, pinv_in)
+        obj = _who_chooses(self, ufunc, inputs, pinv_in)
+        if obj is None:
+            return NotImplemented
+        ufunc, args, pinv_out = obj._choose_ufunc(ufunc, args, pinv_in)
         if ufunc is None:
             return NotImplemented
         # Alternative: other ufuncs use implicit inversion.
@@ -479,6 +507,30 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
                                     '_to_invert', pinvarray, kwds, pinv_out)
         results = self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
         return cv.conv_loop_out_init(self, results, outputs, pinv_out)
+
+    def _choose_ufunc(self, ufunc, args, pinv_in):
+        """Choose which ufunc to use, etc"""
+        pinv_out = [False] * ufunc.nout  # which outputs need converting back?
+        if ufunc in gf.fam.inverse_arguments.keys():
+            # _who_chooses -> correct choice across families
+            left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
+            ufunc = self._gufunc_map[left_arg][right_arg]
+            # NOTE: rmatmul doesn't fit the pattern, needs special handling
+            if swap:
+                args = [args[1], args[0]] + args[2:]
+            # only operation that returns `invarray` is `invarray @ invarray`
+            pinv_out[0] = left_arg and right_arg
+        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
+            left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
+            ufunc = self._ufunc_map[left_arg][right_arg]
+            pinv_out[0] = True  # one of left_arg/right_arg must be True
+        elif ufunc in self._unary_ufuncs:
+            # Apply ufunc to self._to_invert.
+            # Already converted input; just need to convert output back
+            pinv_out[0] = True
+        else:
+            ufunc = None
+        return ufunc, args, pinv_out
 
     # This would allow other operations to work with implicit inversion.
     # Not used on the basis that explicit > implicit. Use __call__ instead.
@@ -513,6 +565,18 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         # if self._inverted is None:
         #     self._invert()
         # return self._inverted
+
+    def _invert(self):
+        """Actually perform (pseudo)inverse
+        """
+        if self.ndim < 2:
+            # scalar or vector
+            self._inverted = self._to_invert / gf.norm(self._to_invert)**2
+        elif self.ndim >= 2:
+            # pinv broadcasts
+            self._inverted = gf.pinv(self._to_invert)
+        else:
+            raise ValueError('Nothing to invert? ' + str(self._to_invert))
 
     def __len__(self):
         return self.shape[0]
@@ -595,44 +659,6 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         if _to_invert is None:
             _to_invert = self._to_invert.copy(order=order)
         return type(self)(_to_invert, **kwds)
-
-    def _choose_ufunc(self, ufunc, args, pinv_in):
-        """Choose which ufunc to use, etc"""
-        pinv_out = [False] * ufunc.nout  # which outputs need converting back?
-        if ufunc in gf.fam.inverse_arguments.keys():
-            if not gf.fam.same_family(ufunc, self._gufunc_map[0][1]):
-                # super()._gufunc_map might work?
-                return None, args, pinv_out
-            left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
-            ufunc = self._gufunc_map[left_arg][right_arg]
-            # NOTE: rmatmul doesn't fit the pattern, needs special handling
-            if swap:
-                args = [args[1], args[0]] + args[2:]
-            # only operation that returns `invarray` is `invarray @ invarray`
-            pinv_out[0] = left_arg and right_arg
-        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
-            left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
-            ufunc = self._ufunc_map[left_arg][right_arg]
-            pinv_out[0] = True  # one of left_arg/right_arg must be True
-        elif ufunc in self._unary_ufuncs:
-            # Apply ufunc to self._to_invert.
-            # Already converted input; just need to convert output back
-            pinv_out[0] = True
-        else:
-            ufunc = None
-        return ufunc, args, pinv_out
-
-    def _invert(self):
-        """Actually perform (pseudo)inverse
-        """
-        if self.ndim < 2:
-            # scalar or vector
-            self._inverted = self._to_invert / gf.norm(self._to_invert)**2
-        elif self.ndim >= 2:
-            # pinv broadcasts
-            self._inverted = gf.pinv(self._to_invert)
-        else:
-            raise ValueError('Nothing to invert? ' + str(self._to_invert))
 
 
 # =============================================================================
@@ -722,21 +748,6 @@ class invarray(pinvarray):
         """Uninverted matrix
         """
         return self._to_invert
-
-    def _choose_ufunc(self, ufunc, args, pinv_in):
-        """Choose which ufunc to use, etc"""
-        new_ufunc, args, pinv_out = super()._choose_ufunc(ufunc, args, pinv_in)
-        if new_ufunc is None:
-            _gufunc_map = super()._gufunc_map
-            if gf.fam.same_family(ufunc, _gufunc_map[0][1]):
-                left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
-                new_ufunc = _gufunc_map[left_arg][right_arg]
-                # NOTE: rmatmul doesn't fit the pattern, needs special handling
-                if swap:
-                    args = [args[1], args[0]] + args[2:]
-                # only op that returns `invarray` is `invarray @ invarray`
-                pinv_out[0] = left_arg and right_arg
-        return new_ufunc, args, pinv_out
 
     def _invert(self):
         """Actually perform inverse

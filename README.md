@@ -199,35 +199,32 @@ The following operations will do the right thing, but may be better avoided:
 >>> lstsq(pinvarray, pinvarray)
 >>> rlstsq(lnarray, pinvarray)
 >>> rlstsq(pinvarray, pinvarray)
+>>> lstsq(invarray, lnarray)
+>>> rlstsq(lnarray, invarray)
+>>> lstsq(invarray, pinvarray)
+>>> rlstsq(invarray, pinvarray)
+>>> lstsq(invarray, invarray)
+>>> rlstsq(invarray, invarray)
+>>> lstsq(pinvarray, invarray)
+>>> rlstsq(pinvarray, invarray)
+>>> solve(invarray, pinvarray)
+>>> rsolve(pinvarray, invarray)
 ```
 The following are not defined:
 ```python
 >>> matmul(pinvarray, pinvarray)
->>> lstsq(lnarray, (p)invarray)
->>> rlstsq((p)invarray, lnarray)
->>> (r)solve(pinvarray, lnarray)
->>> (r)solve(lnarray, pinvarray)
->>> (r)solve(pinvarray, pinvarray)
-```
-The following raise shape related exceptions:
-```python
+>>> lstsq(lnarray, pinvarray)
+>>> rlstsq(pinvarray, lnarray)
+>>> lstsq(lnarray, invarray)
+>>> rlstsq(invarray, lnarray)
+>>> solve(pinvarray, lnarray)
+>>> rsolve(pinvarray, lnarray)
+>>> solve(lnarray, pinvarray)
+>>> rsolve(lnarray, pinvarray)
+>>> solve(pinvarray, pinvarray)
+>>> rsolve(pinvarray, pinvarray)
 >>> matmul(invarray, pinvarray)
 >>> matmul(pinvarray, invarray)
-```
-The following could be defined (mathematically) but are not:
-```python
->>> lstsq(invarray, lnarray)
->>> rlstsq(lnarray, invarray)
->>> (r)lstsq(invarray, (p)invarray)
->>> (r)lstsq(pinvarray, invarray)
-```
-The following need not raise shape related exceptions but do:
-```python
->>> solve(invarray, pinvarray)
->>> rsolve(pinvarray, invarray)
-```
-The following should raise shape related exceptions but do not always:
-```python
 >>> solve(pinvarray, invarray)
 >>> rsolve(invarray, pinvarray)
 ```

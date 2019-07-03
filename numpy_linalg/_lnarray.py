@@ -396,6 +396,37 @@ def _who_chooses(obj, ufunc, inputs, pinv_in):
         return inputs[choosers[1]]
     return obj
 
+
+def _implicit_ufunc(inputs):
+    """Convert (p)invarray to explicit (pseudo)inverse for other ufuncs.
+
+    Alternative to __array_ufunc__ returns `NotImplemented`: other ufuncs use
+    implicit inversion.
+    Not used on the basis that explicit > implicit.
+    Use __call__ if you want an actual (pseudo)inverse matrix.
+    """
+    args = []
+    for input_ in inputs:
+        if isinstance(input_, pinvarray):
+            args.append(input_())
+        else:
+            args.append(input_)
+    return args
+
+
+def _implicit_getattr(obj, attr):
+    """Convert (p)invarray to explicit (pseudo)inverse for otther attributes.
+
+    Alternative to returning `AttributeError()`: get it from explicit inverse.
+    This would allow other operations to work with implicit inversion.
+    Not used on the basis that explicit > implicit.
+    Use __call__ if you want an actual (pseudo)inverse matrix.
+    """
+    if hasattr(obj._to_invert, attr):
+        return getattr(obj(), attr)
+    raise AttributeError(f"Attribute {attr} not found in pinvarray or inverse")
+
+
 # =============================================================================
 # Class: pinvarray
 # =============================================================================
@@ -502,15 +533,6 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         ufunc, args, pinv_out = obj._choose_ufunc(ufunc, args, pinv_in)
         if ufunc is None:
             return NotImplemented
-        # Alternative: other ufuncs use implicit inversion.
-        # Not used on the basis that explicit > implicit. Use __call__ instead.
-        # args = []
-        # for input_ in inputs:
-        #     if isinstance(input_, pinvarray):
-        #         args.append(input_())
-        #     else:
-        #         args.append(input_)
-        # return self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
         outputs, pinv_out = cv.conv_loop_in_attr(
                                     '_to_invert', pinvarray, kwds, pinv_out)
         results = self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
@@ -537,18 +559,21 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
             # Already converted input; just need to convert output back
             pinv_out[0] = True
         else:
+            # Not a linalg operator ufunc. Not what this class is for.
+            # __array_ufunc__ should return NotImplemented. Use __call__ if
+            # you want an actual (pseudo)inverse matrix
             ufunc = None
+            # Alternative: other ufuncs use implicit inversion.
+            # args = _implicit_ufunc(inputs)
+            # Not used because explicit > implicit.
         return ufunc, args, pinv_out
 
     # This would allow other operations to work with implicit inversion.
-    # Not used on the basis that explicit > implicit. Use __call__ instead.
-    # def __getattr__(self, name):
+    # Not used because explicit > implicit.
+    # def __getattr__(self, attr):
     #     """Get `np.ndarray proerties from actual (pseudo)inverse.
     #     """
-    #     if hasattr(self._to_invert, name):
-    #         return getattr(self(), name)
-    #     else:
-    #         raise AttributeError
+    #    return _implicit_getattr(self, attr)
 
     # make this __call__? __array__? @property? get()? do()?
     def __call__(self) -> lnarray:

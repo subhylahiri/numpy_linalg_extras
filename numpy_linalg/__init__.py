@@ -4,11 +4,18 @@
 # @author: Subhy
 # package: linalg_tricks
 # =============================================================================
-"""
-Linear algebra routines.
+"""Linear algebra routines.
 
-Classes
--------
+This package contains classes and functions that make the syntax for linear
+algebra in `numpy` cleaner, particularly with respect to broadcasting and
+matrix division.
+
+It also includes versions of most `numpy`array creation and manipulation
+routines and `wrappers` for converting the rest.
+
+
+Routine Listings
+----------------
 lnarray
     Subclass of `numpy.ndarray` with properties such as `pinv/inv` for matrix
     division, `t` for transposing stacks of matrices, `c`, `r` and `s` for
@@ -25,9 +32,6 @@ invarray
     Does not actually invert the matrix unless it is explicitly called.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
-
-Functions
----------
 flattish
     Flatten a subset of axes.
 expand_dims
@@ -54,8 +58,14 @@ lq
     LQ decomposition with broadcasting and subclass passing.
 lqr
     For wide matrices LQ decomposition, otherwise QR decomposition.
-Also includes `gufuncs` for `linalg` etc, and versions of most `numpy`array
-creation and manipulation routines and `wrappers` for converting the rest.
+gufuncs
+    Module with `gufuncs` for `linalg` etc.
+convert_loop
+    Module with helpers for writing __array_ufunc__ methods.
+wrappers
+    Module with functions that change function return types to `lnarray`.
+version
+    Module with tools for dealing with version numbering.
 
 Examples
 --------

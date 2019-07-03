@@ -1,19 +1,35 @@
 # -*- coding: utf-8 -*-
-"""
-Helpers for writing __array_ufunc__
+"""Helpers for writing __array_ufunc__ methods.
+
+Routine Listings
+----------------
+conv_loop_in_attr
+    Process inputs in an __array_ufunc__ method using an attribute.
+conv_loop_in_view
+    Process inputs in an __array_ufunc__ method using view method.
+conv_loop_out_attr
+    Process outputs in an __array_ufunc__ method using an attribute.
+conv_loop_out_init
+    Process outputs in an __array_ufunc__ method using a constructor.
+conv_loop_out_view
+    Process outputs in an __array_ufunc__ method using a view method.
 
 Example
 -------
-    ```
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        '''Handling ufunce with MyClass
-        '''
-        args, _ = cvl.conv_loop_in_attr('attr', MyClass, inputs)
-        conv = [True] + [False] * (ufunc.nout-1)
-        outputs, conv = cvl.conv_loop_in_attr('attr', MyClass, kwargs, conv)
-        results = self.attr.__array_ufunc__(ufunc, method, *args, **kwargs)
-        return cvl.conv_loop_out_attr(self, 'attr', results, outputs, conv)
-    ```
+```
+import numpy_linalg.convert_loop as cv
+
+    class MyClass():
+
+        def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+            '''Handling ufunce with MyClass
+            '''
+            args, _ = cv.conv_loop_in_attr('attr', MyClass, inputs)
+            conv = [True] + [False] * (ufunc.nout-1)
+            outputs, conv = cv.conv_loop_in_attr('attr', MyClass, kwargs, conv)
+            results = self.attr.__array_ufunc__(ufunc, method, *args, **kwargs)
+            return cv.conv_loop_out_attr(self, 'attr', results, outputs, conv)
+```
 """
 import itertools as _itertools
 import typing as _ty
@@ -30,7 +46,7 @@ BoolList = _ty.List[bool]
 def conv_loop_input(converter: _ty.Callable,
                     obj_typ,
                     args: ArgTuple) -> (ArgTuple, BoolList):
-    """Process inputs in an __array_ufunc__ method
+    """Process inputs in an __array_ufunc__ method.
 
     Parameters
     ----------
@@ -60,7 +76,7 @@ def conv_loop_input(converter: _ty.Callable,
 
 def conv_loop_in_out(converter: _ty.Callable, obj_typ, kwargs: ArgDict,
                      conv_out: BoolList) -> (ArgTuple, BoolList):
-    """Process the out keyword in an __array_ufunc__ method
+    """Process the out keyword in an __array_ufunc__ method.
 
     Parameters
     ----------
@@ -95,7 +111,7 @@ def _conv_loop_in(converter, obj_typ, tup, *conv_out):
 
 
 def prepare_via_view() -> _ty.Callable:
-    """Create function to convert object to an array using view method
+    """Create function to convert object to an array using view method.
     """
     def converter(thing):
         """convert to array using view method
@@ -105,7 +121,7 @@ def prepare_via_view() -> _ty.Callable:
 
 
 def prepare_via_attr(attr: str) -> _ty.Callable:
-    """Create function to convert object to an array using an attribute
+    """Create function to convert object to an array using an attribute.
 
     Parameters
     ----------
@@ -120,7 +136,7 @@ def prepare_via_attr(attr: str) -> _ty.Callable:
 
 
 def conv_loop_in_view(obj_typ, tup: Args, *conv_out) -> (ArgTuple, BoolList):
-    """Process inputs in an __array_ufunc__ method using view method
+    """Process inputs in an __array_ufunc__ method using view method.
 
     Parameters
     ----------
@@ -144,7 +160,7 @@ def conv_loop_in_view(obj_typ, tup: Args, *conv_out) -> (ArgTuple, BoolList):
 
 def conv_loop_in_attr(attr: str, obj_typ, tup: Args,
                       *conv_out) -> (ArgTuple, BoolList):
-    """Process inputs in an __array_ufunc__ method using an attribute
+    """Process inputs in an __array_ufunc__ method using an attribute.
 
     Parameters
     ----------
@@ -177,7 +193,7 @@ def conv_loop_out(converter: _ty.Callable,
                   results: ArgTuple,
                   outputs: ArgTuple,
                   conv: _ty.Sequence[bool] = ()) -> ArgTuple:
-    """Process outputs in an __array_ufunc__ method
+    """Process outputs in an __array_ufunc__ method.
 
     Parameters
     ----------
@@ -217,7 +233,7 @@ def conv_loop_out(converter: _ty.Callable,
 
 
 def restore_via_attr(obj, attr: str) -> _ty.Callable:
-    """Create function to convert arrays by setting obj.attr
+    """Create function to convert arrays by setting obj.attr.
 
     Parameters
     ----------
@@ -242,7 +258,7 @@ def restore_via_attr(obj, attr: str) -> _ty.Callable:
 
 
 def restore_via_init(obj) -> _ty.Callable:
-    """Create function to convert arrays  using obj.__init__
+    """Create function to convert arrays  using obj.__init__.
 
     Parameters
     ----------
@@ -257,7 +273,7 @@ def restore_via_init(obj) -> _ty.Callable:
 
 
 def restore_via_view(obj) -> _ty.Callable:
-    """Create function to convert arrays using array.view
+    """Create function to convert arrays using array.view.
 
     Parameters
     ----------
@@ -276,7 +292,7 @@ def conv_loop_out_attr(obj,
                        results: ArgTuple,
                        outputs: ArgTuple,
                        conv: _ty.Sequence[bool] = ()) -> ArgTuple:
-    """Process outputs in an __array_ufunc__ method
+    """Process outputs in an __array_ufunc__ method using an attribute.
 
     Makes a copy of ``obj`` with ``obj.attr = result``.
 
@@ -311,7 +327,7 @@ def conv_loop_out_init(obj,
                        results: ArgTuple,
                        outputs: ArgTuple,
                        conv: _ty.Sequence[bool] = ()) -> ArgTuple:
-    """Process outputs in an __array_ufunc__ method
+    """Process outputs in an __array_ufunc__ method using a constructor.
 
     Creates an instance of ``type(obj)`` with ``result`` as its argument.
 
@@ -339,7 +355,7 @@ def conv_loop_out_view(obj,
                        results: ArgTuple,
                        outputs: ArgTuple,
                        conv: _ty.Sequence[bool] = ()) -> ArgTuple:
-    """Process outputs in an __array_ufunc__ method
+    """Process outputs in an __array_ufunc__ method using a view method.
 
     Calls ``result.view`` with ``type(obj)`` with as its argument.
 

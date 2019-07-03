@@ -10,15 +10,19 @@ Generalized ufunc versions of `numpy.linalg` routines:
 This module also contains utilities (for internal use) that help in defining
 functions and classes that use these gufuncs:
 
+Routine Listings
+----------------
+unbroadcast_factors
+    Undo broadcasting in factors returned by gufuncs.
+make_errobj
+    create an error handler object for use as ``extobj`` gufunc parameter.
+return_shape_mat
+    Shape of result of broadcasted matrix multiplication.
 MatmulOperatorsMixin
-    Mixin class that uses `matmul` from here to define @ operators.
+    Mixin class that uses `matmul` from here to define @ operators. Deprecated.
 LNArrayOperatorsMixin
     Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
-    from here to define @ operators.
-make_errobj:
-    create an error handler object for use as ``extobj`` gufunc parameter.
-return_shape_mat:
-    Shape of result of broadcasted matrix multiplication
+    from here to define @ operators. Deprecated.
 """
 import numpy as _np
 import numpy.lib.mixins as _mix

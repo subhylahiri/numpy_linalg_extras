@@ -377,8 +377,13 @@ the C modules.
 ## Running unit tests
 
 You can test the build process and installation by running the unit tests.
+Execute this command in the folder containing this file:
 ```
 > python -m unittest
+```
+or
+```
+> python -m unittest discover -s <folder/containing/README.md>
 ```
 You can expect occassional failures when using single precision floats.
 The failure messages would have `sctype='f'` or `sctype='F'` in the titles and 

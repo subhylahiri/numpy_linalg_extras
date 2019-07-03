@@ -7,8 +7,8 @@ Created on Sun Dec  3 21:37:24 2017
 Classes that provide nicer syntax for matrix division and tools for working
 with `numpy.linalg`'s broadcasting.
 
-Classes
--------
+Routine Listings
+----------------
 lnarray
     Subclass of `numpy.ndarray` with properties such as `inv` for matrix
     division, `t` for transposing stacks of matrices, `c`, `r` and `s` for
@@ -75,7 +75,7 @@ class lnarray(np.ndarray):
         The constructed array gets its data from `input_array`.
         Data is copied if necessary, as per `np.asarray`.
 
-    Properties
+    Attributes
     ----------
     pinv : pinvarray
         Lazy pseudoinverse. When matrix multiplying, performs matrix division.
@@ -109,9 +109,9 @@ class lnarray(np.ndarray):
 
     See also
     --------
-    `np.ndarray` : the super class.
-    `pinvarray` : class that provides an interface for matrix division.
-    `invarray` : class that provides an interface for matrix division.
+    np.ndarray : the super class.
+    pinvarray : class that provides an interface for matrix division.
+    invarray : class that provides an interface for matrix division.
     """
 
     def __new__(cls, input_array):
@@ -146,7 +146,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.expand_dims
+        expand_dims
         """
         return la.expand_dims(self, *axis)
 
@@ -163,7 +163,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.transpose
+        transpose
         """
         return la.transpose(self)
 
@@ -180,7 +180,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.dagger
+        dagger
         """
         return la.dagger(self)
 
@@ -196,7 +196,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.row
+        row
         """
         return la.row(self)
 
@@ -212,7 +212,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.col
+        col
         """
         return la.col(self)
 
@@ -228,7 +228,7 @@ class lnarray(np.ndarray):
 
         See Also
         --------
-        numpy_linalg.scalar
+        scalar
         """
         return la.scalar(self)
 
@@ -288,7 +288,7 @@ class lnarray(np.ndarray):
 
         See also
         --------
-        `pinvarray`
+        pinvarray
         """
         return pinvarray(self)
 
@@ -308,7 +308,7 @@ class lnarray(np.ndarray):
 
         See also
         --------
-        `invarray`
+        invarray
         """
         return invarray(self)
 
@@ -413,13 +413,21 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
 
     This object contains a reference to the original array, so in place
     modifications of a `pinvarray` object will affect the original `lnarray`
-    object.
+    object and vice versa.
 
-    Methods
+    Parameters
+    ----------
+    to_invert : lnarray
+        The array whose pseudoinverse is being taken.
+
+    Returns
     -------
-    self() -> lnarray
+    concrete : lnarray
         Returns the actual, concrete pseudoinverse, calculating it if it has
         not already been done.
+
+    Attributes
+    ----------
     pinv : lnarray
         Returns the original array that needed inverting.
 
@@ -448,13 +456,13 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
 
     Raises
     ------
-    LinAlgError
+    FloatingPointError
         If computation does not converge.
 
     See also
     --------
-    `lnarray` : the array class used.
-    `invarray` : class that provides an interface for matrix division.
+    lnarray : the array class used.
+    invarray : class that provides an interface for matrix division.
     """
     _to_invert: lnarray
     _inverted: Optional[lnarray]
@@ -556,12 +564,8 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         out = self._inverted
         self._inverted = None
         return out
-        # Notes
-        # -----
         # If self._to_invert has not been (pseudo)inverted, it will compute the
-        # (pseudo)inverse first.
-        # Otherwise, it will use the stored value.
-        # """
+        # (pseudo)inverse first. Otherwise, it will use the stored value.
         # if self._inverted is None:
         #     self._invert()
         # return self._inverted
@@ -633,28 +637,44 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
 
     @property
     def dtype(self) -> np.dtype:
-        """Data type
+        """Data type of array elements.
         """
         return self._to_invert.dtype
 
     @property
     def pinv(self) -> lnarray:
-        """Uninverted matrix
+        """Uninverted matrix.
         """
         return self._to_invert
 
     @property
     def t(self) -> pinvarray:
-        """A copy of object, but view of data"""
+        """Transpose over last two indices.
+
+        A copy of object, but view of data
+        """
         return type(self)(self._to_invert.t)
 
     @property
     def h(self) -> pinvarray:
-        """A copy of object, but view of data"""
+        """Hermitian conjugate over last two indices.
+
+        A copy of object, but view of data
+        """
         return type(self)(self._to_invert.h)
 
     def copy(self, order='C', **kwds) -> pinvarray:
-        """Copy data"""
+        """Copy data
+
+        Parameters
+        ----------
+        to_invert : lnarray, optional
+            Replacement for array whose pseudoinverse is being taken.
+            Default: a copy of the original array.
+        order : str, optional
+            Storage order for copy of the original array.
+            Default: 'C'.
+        """
         _to_invert = kwds.pop('_to_invert', None)
         if _to_invert is None:
             _to_invert = self._to_invert.copy(order=order)
@@ -677,14 +697,22 @@ class invarray(pinvarray):
     Use `invarray()` to get the actual inverse.
 
     This object contains a reference to the original array, so in place
-    modifications of a `pinvarray` object will affect the original `lnarray`
-    object.
+    modifications of a `invarray` object will affect the original `lnarray`
+    object and vice versa.
 
-    Methods
+    Parameters
+    ----------
+    to_invert : lnarray
+        The array whose inverse is being taken.
+
+    Returns
     -------
-    self() -> lnarray
+    concrete : lnarray
         Returns the actual, concrete inverse, calculating it if it has
         not already been done.
+
+    Attributes
+    ----------
     inv : lnarray
         Returns the original array that needed inverting.
 
@@ -713,15 +741,15 @@ class invarray(pinvarray):
 
     Raises
     ------
-    LinAlgError
+    FloatingPointError
         If original matrix is not full rank.
     ValueError
         if original matrix is not square.
 
     See also
     --------
-    `lnarray` : the array class used.
-    `pinvarray` : class that provides an interface for matrix pseudo-division.
+    lnarray : the array class used.
+    pinvarray : class that provides an interface for matrix pseudo-division.
     """
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?

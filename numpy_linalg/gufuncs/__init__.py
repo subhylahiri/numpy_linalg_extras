@@ -7,6 +7,15 @@
 """
 Generalized ufunc versions of `numpy.linalg` routines:
 
+They raise `FloatingPointError` or warnings instead of `LinAlgError`.
+
+`numpy.linalg` broadcasting rules apply.
+
+This module also contains utilities (for internal use) that help in defining
+functions and classes that use these gufuncs:
+
+Routine Listings
+----------------
 matmul
     An alias of `numpy.matmul`.
 rmatmul
@@ -62,17 +71,13 @@ lq_*
         raw: return `H` and `tau`, from which `Q` and `L` can be computed.
 rtrue_tivide
     Reversed division (only useful to implement binary operators).
-
-They raise `FloatingPointError` or warnings instead of `LinAlgError`.
-
-`numpy.linalg` broadcasting rules apply.
-
-This module also contains utilities (for internal use) that help in defining
-functions and classes that use these gufuncs:
-
-vec:
-    Module of functions for dealing with vector arguments. Deprecated.
-fam:
+unbroadcast_factors
+    Undo broadcasting in factors returned by gufuncs.
+make_errobj
+    create an error handler object for use as ``extobj`` gufunc parameter.
+return_shape_mat
+    Shape of result of broadcasted matrix multiplication
+fam
     Module with variables for determining the behaviour of 1D arrays,
     `pinvarrays` and `invarrays` in linear algebraic functions:
 MatmulOperatorsMixin
@@ -80,10 +85,8 @@ MatmulOperatorsMixin
 LNArrayOperatorsMixin
     Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
     from here to define @ operators. Deprecated.
-make_errobj:
-    create an error handler object for use as ``extobj`` gufunc parameter.
-return_shape_mat:
-    Shape of result of broadcasted matrix multiplication
+vec
+    Module of functions for dealing with vector arguments. Deprecated.
 """
 from . import _gufuncs_cloop
 from . import _gufuncs_blas

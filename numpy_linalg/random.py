@@ -55,7 +55,7 @@ __all__ = [
     'ranf',
     'random',
     'sample',
-          ]
+]
 
 beta = _wr.wrap_one(_pr.beta)
 binomial = _wr.wrap_one(_pr.binomial)

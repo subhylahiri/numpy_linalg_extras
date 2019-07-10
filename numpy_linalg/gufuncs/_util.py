@@ -73,6 +73,25 @@ def make_errobj(msg, kwdict=None):
 
 def unbroadcast_factors(original, *factors):
     """Undo broadcasting in factors returned by gufuncs.
+
+    Parameters
+    ----------
+    original : np.ndarray or Tuple[int]
+        Matrix whose factors we received, or its shape. Assumes that last two
+        axes are the core dimensions and any earlier axes are broadcast
+        dimensions (unless it is one-dimensional, in which case it has no
+        broadcast dimensions).
+    *factors : np.ndarray
+        Matrix factors returned by gufunc. Assumes that last two axes of
+        `factors[0]` are core dimensions (unless `original` is one-dimensional,
+        in which case only the last axis is assumed core) and any earlier axes
+        are broadcast dimensions. All subsequent factors are assumed to have
+        the same broadcast dimensions.
+    Returns
+    -------
+    *unbc_factors : np.ndarray
+        Matrix factors with spurious broadcast dimensions removed, so that they
+        broadcast with `original`.
     """
     if isinstance(original, _np.ndarray):
         original = original.shape

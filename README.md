@@ -111,6 +111,8 @@ reasons:
 (see [below](#building-the-cpython-modules))
 * BLAS/Lapack distribution that was present when the binaries were built
 
+Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability.
+
 ## Classes
 
 * `lnarray`:
@@ -140,7 +142,7 @@ reasons:
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.
+    Alias for `numpy.matmul`.[^1]
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.

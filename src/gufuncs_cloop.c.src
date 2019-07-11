@@ -41,7 +41,7 @@ Copyright/licence info for that file:
 
 #include "gufunc_common.h"
 
-static const char* gufuncs_cloop_version_string = "0.2.0";
+static const char* gufuncs_cloop_version = "0.2.0";
 
 /*
 *****************************************************************************
@@ -50,11 +50,11 @@ static const char* gufuncs_cloop_version_string = "0.2.0";
 */
 
 PyDoc_STRVAR(matmul__doc__,
-//"matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n"
+/* "matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n" */
 "Matrix-matrix product.\n\n"
 ".. deprecated:: 0.2.0\n"
 "    This `gufunc` is no longer needed as NumPy switched to a gufunc in v1.16.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "X: ndarray (...,M,N) or (N,)\n"
@@ -66,9 +66,9 @@ PyDoc_STRVAR(matmul__doc__,
 "    Result of matrix multiplication.");
 
 PyDoc_STRVAR(rmatmul__doc__,
-//"matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n"
+/* "matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n" */
 "Reversed matrix-matrix product.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "Y: ndarray (...,N,P) or (N,)\n"
@@ -80,7 +80,7 @@ PyDoc_STRVAR(rmatmul__doc__,
 "    Result of matrix multiplication.");
 
 PyDoc_STRVAR(norm__doc__,
-//"matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n"
+/* "matmul(X: ndarray, Y: ndarray) -> (Z: ndarray)\n\n" */
 "Euclidean norm of a vector.\n\n"
 "Unlike `numpy.linalg.norm`, it only computes the vector 2-norm.\n"
 "\nParameters\n-----------\n"
@@ -91,7 +91,7 @@ PyDoc_STRVAR(norm__doc__,
 "    Euclidean norm of X.");
 
 PyDoc_STRVAR(rtruedivide__doc__,
-//"matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n"
+/* "matmul(Y: ndarray, X: ndarray) -> (Z: ndarray)\n\n" */
 "Reversed division Z = X \\ Y.\n"
 "\nParameters\n-----------\n"
 "X: ndarray (...)\n"
@@ -116,7 +116,7 @@ PyDoc_STRVAR(rtruedivide__doc__,
     #TYPE=CFLOAT,CDOUBLE#
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
 */
-// z -> z + x * y, for complex numbers
+/* z -> z + x * y, for complex numbers */
 static void
 @TYPE@_add_product_scalar(const @typ@ *x_in, const @typ@ *y_in, @typ@ *z_out)
 {
@@ -134,7 +134,7 @@ static void
     #cmplx=0,0,0,1,1#
 */
 
-// matmul_signature = "(m,n),(n,p)->(m,p)";
+/* matmul_signature = "(m,n),(n,p)->(m,p)"; */
 
 static void
 @TYPE@_matmul(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -142,58 +142,71 @@ static void
 {
 INIT_OUTER_LOOP_3
 
-    npy_intp len_m = *dimensions++;  // dimensions of left
-    npy_intp len_n = *dimensions++;  // dimensions of inner
-    npy_intp len_p = *dimensions++;  // dimensions of right
-    npy_intp stride_x_m = *steps++;  // 1st arg, row
-    npy_intp stride_x_n = *steps++;  // 1st arg, col
-    npy_intp stride_y_n = *steps++;  // 2nd arg
+    npy_intp len_m = *dimensions++;  /* dimensions of left */
+    npy_intp len_n = *dimensions++;  /* dimensions of inner */
+    npy_intp len_p = *dimensions++;  /* dimensions of right */
+    npy_intp stride_x_m = *steps++;  /* 1st arg, row */
+    npy_intp stride_x_n = *steps++;  /* 1st arg, col */
+    npy_intp stride_y_n = *steps++;  /* 2nd arg */
     npy_intp stride_y_p = *steps++;
-    npy_intp stride_z_m = *steps++;  // output
+    npy_intp stride_z_m = *steps++;  /* output */
     npy_intp stride_z_p = *steps++;
     npy_intp m, n, p;
-    npy_intp iback_x_n = len_n * stride_x_n;  // step back at end of loop
+    npy_intp iback_x_n = len_n * stride_x_n;  /* step back at end of loop */
     npy_intp iback_y_n = len_n * stride_y_n;
-    npy_intp iback_y_p = len_p * stride_y_p;  // step back at end of loop
+    npy_intp iback_y_p = len_p * stride_y_p;  /* step back at end of loop */
     npy_intp iback_z_p = len_p * stride_z_p;
 
     BEGIN_OUTER_LOOP_3
 
-        const char *ip_x= args[0];  //  1st arg
-        const char *ip_y= args[1];  //  2nd arg
-        char *op_z = args[2];       //  output
+        /*  1st arg */
+        const char *ip_x= args[0];
+        /*  2nd arg */
+        const char *ip_y= args[1];
+        /*  output */
+        char *op_z = args[2];
         /* ip_x, etc are char*, pointer to 1st byte of element
         (@typ@ *)ip_x, etc cast to @typ@*, pointer to whole element
         *(@typ@ *)ip_x, etc is @typ@, the actual element */
 
-        for (m = 0; m < len_m; m++) {  // left index
-            for (p = 0; p < len_p; p++) {  // right index
-                *(@typ@ *)op_z = @zero@;  // initialise at zero
+        /* left index */
+        for (m = 0; m < len_m; m++) {
+            /* right index */
+            for (p = 0; p < len_p; p++) {
+                /* initialise at zero */
+                *(@typ@ *)op_z = @zero@;
 
-                for (n = 0; n < len_n; n++) {  // inner index
-                    // add x*y to z
+                /* inner index */
+                for (n = 0; n < len_n; n++) {
+                    /* add x*y to z */
 #if @cmplx@
-                        @TYPE@_add_product_scalar((@typ@ *)ip_x, (@typ@ *)ip_y, (@typ@ *)op_z);
+                    @TYPE@_add_product_scalar((@typ@ *)ip_x, (@typ@ *)ip_y,
+                                            (@typ@ *)op_z);
 #else
-                        *(@typ@ *)op_z += *(@typ@ *)ip_x * *(@typ@ *)ip_y;
+                    *(@typ@ *)op_z += *(@typ@ *)ip_x * *(@typ@ *)ip_y;
 #endif
 
-                    ip_x += stride_x_n;  // next element along inner dimension
+                    /* next element along inner dimension */
+                    ip_x += stride_x_n;
                     ip_y += stride_y_n;
                 }
-                ip_x -= iback_x_n;  // back to start of inner dimension
+                /* back to start of inner dimension */
+                ip_x -= iback_x_n;
                 ip_y -= iback_y_n;
 
-                ip_y += stride_y_p;  // next element along right dimension
+                /* next element along right dimension */
+                ip_y += stride_y_p;
                 op_z += stride_z_p;
             }
-            ip_y -= iback_y_p;  // back to start of right dimension
+            /* back to start of right dimension */
+            ip_y -= iback_y_p;
             op_z -= iback_z_p;
 
-            ip_x += stride_x_m;  // next element along left dimension
+            /* next element along left dimension */
+            ip_x += stride_x_m;
             op_z += stride_z_m;
         }
-        // don't need to go back to start of left dimension, get it from args[]
+        /* don't need to go back to start of left dim, get it from args[] */
 
     END_OUTER_LOOP_3
 }
@@ -202,33 +215,34 @@ INIT_OUTER_LOOP_3
 *           RMATMUL             *
 *********************************/
 
-// rmatmul_signature = "(n,p),(m,n)->(m,p)";
+/* rmatmul_signature = "(n,p),(m,n)->(m,p)"; */
 
 static void
 @TYPE@_rmatmul(char **args, npy_intp *dimensions, npy_intp *steps,
               void *NPY_UNUSED(func))
 {
     /*swap (X,Y) for (Y,X)
-    x,y here are not the same as X,Y  in docstring: x=Y, y=X */
-    // args = {y, x, z}
-    // rargs = {x, y, z}
+    x,y here are not the same as X,Y  in docstring: x=Y, y=X
+    args = {y, x, z}
+    rargs = {x, y, z} */
     char *rargs[] = {args[1], args[0], args[2]};
-    // dimensions = {N, len_n, len_p, len_m};
-    // rdimensions[] = {N, len_m, len_n, len_p};
-    npy_intp rdimensions[] = {dimensions[0], dimensions[3], dimensions[1], dimensions[2]};
-    // steps = {strides_y, strides_x, strides_z,
-    //     strides_y_r, strides_y_c,
-    //     strides_x_r, strides_x_c,
-    //     strides_z_r, strides_z_c, };
-    // rsteps = {strides_x, strides_y, strides_z,
-    //     strides_x_r, strides_x_c,
-    //     strides_y_r, strides_y_c,
-    //     strides_z_r, strides_z_c, };
+    /* dimensions = {N, len_n, len_p, len_m};
+       rdimensions[] = {N, len_m, len_n, len_p}; */
+    npy_intp rdimensions[] = {dimensions[0], dimensions[3], dimensions[1],
+                            dimensions[2]};
+    /* steps = {strides_y, strides_x, strides_z,
+         strides_y_r, strides_y_c,
+         strides_x_r, strides_x_c,
+         strides_z_r, strides_z_c, };
+       rsteps = {strides_x, strides_y, strides_z,
+         strides_x_r, strides_x_c,
+         strides_y_r, strides_y_c,
+         strides_z_r, strides_z_c, }; */
     npy_intp rsteps[] = {steps[1], steps[0], steps[2],
         steps[5], steps[6],
         steps[3], steps[4],
         steps[7], steps[8]};
-    //now that we've swapped a,b and transposed, proceed as if we're in matmul
+    /* now that we've swapped a,b and transposed, proceed as if in matmul */
     @TYPE@_matmul(rargs, rdimensions, rsteps, NULL);
 }
 
@@ -243,7 +257,7 @@ static void
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
     #rtyp=npy_float,npy_double#
 */
-// r -> r + |x|^2
+/* r -> r + |x|^2 */
 static void
 @TYPE@_add_abs_sq(const @typ@ *x_in, @rtyp@ *r_out)
 {
@@ -260,7 +274,7 @@ static void
     #cmplx=0,0,1,1#
 */
 
-// norm_signature = "(n)->()";
+/* norm_signature = "(n)->()"; */
 
 static void
 @TYPE@_norm(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -268,18 +282,23 @@ static void
 {
 INIT_OUTER_LOOP_2
 
-    npy_intp len_n = *dimensions++;  // dimensions of inner
+    /* dimensions of inner */
+    npy_intp len_n = *dimensions++;
     npy_intp stride_n = *steps++;
     npy_intp n;
     @rtyp@ normsq;
 
     BEGIN_OUTER_LOOP_2
 
-        const char *ip_x= args[0];  //  1st arg
-        char *op_r = args[1];       //  output
-        normsq = @zero@;            // initialise at zero
+        /*  1st arg */
+        const char *ip_x= args[0];
+        /*  output */
+        char *op_r = args[1];
+        /* initialise at zero */
+        normsq = @zero@;
 
-        for (n = 0; n < len_n; n++) {  // loop along vector dimension
+        /* loop along vector dimension */
+        for (n = 0; n < len_n; n++) {
             /* ip_x, etc are char*, pointer to 1st byte of element
             (@typ@ *)ip_x, etc cast to @typ@*, pointer to whole element
             *(@typ@ *)ip_x, etc is @typ@, the actual element */
@@ -289,7 +308,8 @@ INIT_OUTER_LOOP_2
             normsq += *(@typ@ *)ip_x * *(@typ@ *)ip_x;
 #endif
 
-            ip_x += stride_n;  // next element along vector dimension
+            /* next element along vector dimension */
+            ip_x += stride_n;
         }
         *(@rtyp@ *)op_r = @sqrt@(normsq);
 
@@ -306,7 +326,7 @@ INIT_OUTER_LOOP_2
     #typ=COMPLEX_t,DOUBLECOMPLEX_t#
     #rtyp=npy_float,npy_double#
 */
-// r -> x/y, complex numbers
+/* r -> x/y, complex numbers */
 static void
 @TYPE@_div(const @typ@ *x_in, const @typ@ *y_in, @typ@ *r_out)
 {
@@ -348,28 +368,28 @@ static void
 *****************************************************************************
 */
 
-// types argumrnt for creating 'norm' ufunc
-static char ufn_types_norm[] = { NPY_FLOAT, NPY_FLOAT,
+/* types argument for creating 'norm' ufunc */
+static char ufn_types_norm[] = {NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_FLOAT,
-                                NPY_CDOUBLE, NPY_DOUBLE };
+                                NPY_CDOUBLE, NPY_DOUBLE};
 
-// array of functions for each ufunc loop
+/* array of functions for each ufunc loop */
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(matmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX_INT(rmatmul);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(norm);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rtrue_divide);
 
-// info for creating ufunc object
+/* info for creating ufunc object */
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
-    { "matmul", "(m?,n),(n,p?)->(m?,p?)", matmul__doc__, 5, 2, 1,
-      FUNC_ARRAY_NAME(matmul), ufn_types_5_3 },
-    { "rmatmul", "(n,p?),(m?,n)->(m?,p?)", rmatmul__doc__, 5, 2, 1,
-      FUNC_ARRAY_NAME(rmatmul), ufn_types_5_3 },
-    { "norm", "(n)->()", norm__doc__, 4, 1, 1,
-      FUNC_ARRAY_NAME(norm), ufn_types_norm },
-    { "rtrue_divide", NULL, matmul__doc__, 4, 2, 1,
-      FUNC_ARRAY_NAME(rtrue_divide), ufn_types_4_3 }
+    {"matmul", "(m?,n),(n,p?)->(m?,p?)", matmul__doc__, 5, 2, 1,
+        FUNC_ARRAY_NAME(matmul), ufn_types_5_3},
+    {"rmatmul", "(n,p?),(m?,n)->(m?,p?)", rmatmul__doc__, 5, 2, 1,
+        FUNC_ARRAY_NAME(rmatmul), ufn_types_5_3},
+    {"norm", "(n)->()", norm__doc__, 4, 1, 1,
+        FUNC_ARRAY_NAME(norm), ufn_types_norm},
+    {"rtrue_divide", NULL, matmul__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(rtrue_divide), ufn_types_4_3}
 };
 
 /*
@@ -378,12 +398,13 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
 *****************************************************************************
 */
 
-// Methods to add to module (none, we add ufuncs after creating them)
+/* Methods to add to module (none, we add ufuncs after creating them) */
 static PyMethodDef GUfuncs_Cloop_Methods[] = {
-    {NULL, NULL, 0, NULL}        /* Sentinel */
+    /* Sentinel */
+    {NULL, NULL, 0, NULL}
 };
 
-// arguments for module creation
+/* arguments for module creation */
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
         "_gufuncs_cloop",
@@ -396,7 +417,7 @@ static struct PyModuleDef moduledef = {
         NULL
 };
 
-// create module
+/* create module */
 PyObject *PyInit__gufuncs_cloop(void)
 {
     PyObject *m;
@@ -411,7 +432,7 @@ PyObject *PyInit__gufuncs_cloop(void)
     import_ufunc();
 
     /* Load the ufunc operators into the module's namespace */
-    int failure = addUfuncs(m, gufunc_descriptors, 4, gufuncs_cloop_version_string);
+    int failure = addUfuncs(m, gufunc_descriptors, 4, gufuncs_cloop_version);
 
     if (PyErr_Occurred() || failure) {
         PyErr_SetString(PyExc_RuntimeError,

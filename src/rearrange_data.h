@@ -21,21 +21,21 @@ and modify the inputs, so data needs to be copied.
 Macros for declaring data rearrangement functions
 */
 
-// Copying from numpy to contiguous fortran
+/* Copying from numpy to contiguous fortran */
 #define DECLARE_FUNC_LINEARIZE(SHAPE)                                                               \
     void linearize_FLOAT_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data);  \
     void linearize_DOUBLE_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data); \
     void linearize_CFLOAT_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data); \
     void linearize_CDOUBLE_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data);
 
-// Copying from contiguous fortran to numpy
+/* Copying from contiguous fortran to numpy */
 #define DECLARE_FUNC_DELINEARIZE(SHAPE)                                                               \
     void delinearize_FLOAT_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data);  \
     void delinearize_DOUBLE_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data); \
     void delinearize_CFLOAT_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data); \
     void delinearize_CDOUBLE_## SHAPE(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data);
 
-// Fill a numpyy matrix with some value
+/* Fill a numpyy matrix with some value */
 #define DECLARE_FUNC_FILL(NAME, SHAPE)                                        \
     void NAME ##_FLOAT_## SHAPE(void *dst_in, const LINEARIZE_DATA_t* data);  \
     void NAME ##_DOUBLE_## SHAPE(void *dst_in, const LINEARIZE_DATA_t* data); \
@@ -60,13 +60,13 @@ DECLARE_FUNC_LINEARIZE(vec)
 DECLARE_FUNC_DELINEARIZE(vec)
 DECLARE_FUNC_FILL(nan, vec)
 
-// combination of delinearize_ and zero_, _triu and _tril
+/* combination of delinearize_ and zero_, _triu and _tril */
 void delinearize_FLOAT_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
 void delinearize_DOUBLE_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
 void delinearize_CFLOAT_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
 void delinearize_CDOUBLE_trilu(void *dst_in, const void *src_in, const LINEARIZE_DATA_t* data, int lower);
 
-// These functions convert floating point variables to integers
+/* These functions convert floating point variables to integers */
 fortran_int FLOAT_real_int(fortran_real val);
 fortran_int DOUBLE_real_int(fortran_doublereal val);
 fortran_int CFLOAT_real_int(fortran_complex val);
@@ -76,7 +76,7 @@ fortran_int CDOUBLE_real_int(fortran_doublecomplex val);
 **                          Integer versions                               **
 *****************************************************************************
 */
-// Copying from numpy to contiguous fortran
+/* Copying from numpy to contiguous fortran */
 static NPY_INLINE void
 linearize_INT_vec(void *dst_in,
                 const void *src_in,
@@ -97,7 +97,7 @@ linearize_INT_vec(void *dst_in,
     }
 }
 
-// Copying from contiguous fortran to numpy
+/* Copying from contiguous fortran to numpy */
 static NPY_INLINE void
 delinearize_INT_vec(void *dst_in,
                     const void *src_in,

@@ -113,21 +113,26 @@ SUBROUTINE ?TRCHK( N, A, LDA, INFO )
 *
 *  =====================================================================
 */
-void FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info) {
+void
+FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info) {
     @typ@ *diag_ptr = a;
-    if (*n < 0) {  // check if N is legal
+    if (*n < 0) {
+        /* check if N is legal */
         *info = -1;
         return;
     }
-    if (*lda < *n) {  // check if LDA is legal (LDA < 0 => LDA < N)
+    if (*lda < *n) {
+        /* check if LDA is legal (LDA < 0 => LDA < N) */
         *info = -3;
         return;
     }
     for (int i = 0; i < *n; i++, diag_ptr += *lda + 1) {
 #if @cmplx@
-        if (diag_ptr->r == 0 && diag_ptr->i == 0) {  // check if A(i,i) is legal
+        if (diag_ptr->r == 0 && diag_ptr->i == 0) {
+            /* check if A(i,i) is legal */
 #else
-        if (*diag_ptr == 0) {  // check if A(i,i) is legal
+        if (*diag_ptr == 0) {
+            /* check if A(i,i) is legal */
 #endif
             *info = i + 1;
             return;
@@ -237,9 +242,9 @@ linearize_@TYPE@_matrix(void *dst_in,
 
 /* Copying full matrix from contiguous fortran to numpy */
 void
-delinearize_@TYPE@_matrix(  void *dst_in,
-                            const void *src_in,
-                            const LINEARIZE_DATA_t* data)
+delinearize_@TYPE@_matrix(void *dst_in,
+                        const void *src_in,
+                        const LINEARIZE_DATA_t* data)
 {
     @typ@ *src = (@typ@ *) src_in;
     @typ@ *dst = (@typ@ *) dst_in;
@@ -678,12 +683,17 @@ delinearize_@TYPE@_trilu(void *dst_in,
                         int lower)
 {
     if (lower) {
-        zero_@TYPE@_triu(dst_in, data);                     // Zero out L
-        delinearize_@TYPE@_tril(dst_in, src_in, data);   // Copy triangular L from buffer
-        delinearize_@TYPE@_diag(dst_in, src_in, data);   // Copy diagonal of L from buffer
+        /* Zero out L */
+        zero_@TYPE@_triu(dst_in, data);
+        /* Copy triangular L from buffer */
+        delinearize_@TYPE@_tril(dst_in, src_in, data);
+        /* Copy diagonal of L from buffer */
+        delinearize_@TYPE@_diag(dst_in, src_in, data);
     } else {
-        zero_@TYPE@_tril(dst_in, data);                     // Zero out R
-        delinearize_@TYPE@_triu(dst_in, src_in, data);   // Copy triangular R from buffer
+        /* Zero out R */
+        zero_@TYPE@_tril(dst_in, data);
+        /* Copy triangular R from buffer */            
+        delinearize_@TYPE@_triu(dst_in, src_in, data);
     }
 }
 

@@ -51,7 +51,7 @@ Copyright/licence info for that file:
 #include "numpy/ufuncobject.h"
 #include "numpy/npy_math.h"
 #include "numpy/npy_3kcompat.h"
-// #include "npy_config.h"
+/* #include "npy_config.h" */
 
 /*
 *****************************************************************************
@@ -190,13 +190,15 @@ set_fp_invalid_or_clear(int error_occurred)
 */
 
 static NPY_INLINE npy_intp
-npy_int_min(npy_intp x, npy_intp y) {
- return x < y ? x : y;
+npy_int_min(npy_intp x, npy_intp y)
+{
+    return x < y ? x : y;
 }
 
 static NPY_INLINE npy_intp
-npy_int_max(npy_intp x, npy_intp y) {
- return x > y ? x : y;
+npy_int_max(npy_intp x, npy_intp y)
+{
+    return x > y ? x : y;
 }
 
 /* comples number types with choice of interface */
@@ -320,37 +322,40 @@ static void *null_data_array[] = {
 };
 
 /* For the 'types' argument for ufunc creation */
-static char ufn_types_2_2[] = { NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE };
-static char ufn_types_2_3[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE };
-static char ufn_types_2_4[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE };
-static char ufn_types_2_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE };
-static char ufn_types_2_6[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE };
+static char ufn_types_2_2[] = {NPY_FLOAT, NPY_FLOAT,
+                                NPY_DOUBLE, NPY_DOUBLE};
+static char ufn_types_2_3[] = {NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE};
+static char ufn_types_2_4[] = {NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+                            NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE};
+static char ufn_types_2_5[] = {
+                NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE};
+static char ufn_types_2_6[] = {
+        NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+        NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE};
 
 static char ufn_types_3_3[] = { NPY_LONG, NPY_LONG, NPY_LONG,
                                 NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE };
 
-static char ufn_types_4_2[] = { NPY_FLOAT, NPY_FLOAT,
+static char ufn_types_4_2[] = {NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_CFLOAT,
                                 NPY_CDOUBLE, NPY_CDOUBLE };
-static char ufn_types_4_3[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+static char ufn_types_4_3[] = {NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
                                 NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE };
-static char ufn_types_4_4[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-                                NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE };
-static char ufn_types_4_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-                                NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE };
+static char ufn_types_4_4[] = {NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+                            NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
+                            NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
+                            NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE};
+static char ufn_types_4_5[] = {
+            NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
+            NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
+            NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
+            NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE};
 
 static char ufn_types_5_3[] = { NPY_INT, NPY_INT, NPY_INT,
                                 NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
@@ -421,27 +426,28 @@ addUfuncs(PyObject *module, const GUFUNC_DESCRIPTOR_t guf_descriptors[],
     PyObject *dictionary;
     PyObject *version;
 
-    // module's dictionary (__dir__)
-    dictionary = PyModule_GetDict(module);  // borrowed reference
+    /* module's dictionary (__dir__), borrowed reference */
+    dictionary = PyModule_GetDict(module);
 
-    version = PyString_FromString(version_string);  // new reference
+    /* new reference */
+    version = PyString_FromString(version_string);
     PyDict_SetItemString(dictionary, "__version__", version);
     Py_DECREF(version);
 
     PyObject *f;
     int i;
-    // int gufunc_num = sizeof(*guf_descriptors) / sizeof(guf_descriptors[0]);
+    /* int gufunc_num = sizeof(*guf_descriptors) / sizeof(guf_descriptors[0]); */
     for (i = 0; i < gufunc_num; i++) {
-        // current gufunc descriptor
+        /* current gufunc descriptor */
         const GUFUNC_DESCRIPTOR_t* d = &guf_descriptors[i];
-        // create gufunc object (new reference)
-        f = PyUFunc_FromFuncAndDataAndSignature(d->funcs, null_data_array, d->types,
-                                                d->ntypes, d->nin, d->nout, PyUFunc_None,
-                                                d->name, d->doc, 0, d->signature);
+        /* create gufunc object (new reference) */
+        f = PyUFunc_FromFuncAndDataAndSignature(d->funcs, null_data_array,
+                            d->types, d->ntypes, d->nin, d->nout,
+                            PyUFunc_None, d->name, d->doc, 0, d->signature);
         if (f == NULL) {
             return -1;
         }
-        // add gufunc object to module's dictionary
+        /* add gufunc object to module's dictionary */
         PyDict_SetItemString(dictionary, d->name, f);
         Py_DECREF(f);
     }

@@ -9,6 +9,8 @@
 - Switched to numpy's version of `matmul`, as it is now a `gufunc` so my version is no longer needed.
 - Deprecated mixins in `gufuncs`, as they are no longer needed.
 - Simplified `__array_ufunc__` methods.
+- Combinations of `pinvarray` and `invarray` in linear algebra `gufuncs` make more sense.
+- C code closer to compliance with NumPy modified PEP-0007
 
 ### v0.1.0
 

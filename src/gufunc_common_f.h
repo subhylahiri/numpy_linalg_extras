@@ -69,7 +69,7 @@ typedef double            fortran_doublereal;
 typedef f2c_complex       fortran_complex;
 typedef f2c_doublecomplex fortran_doublecomplex;
 
-/* comples number types with choice of interface */
+/* complex number types with choice of interface */
 typedef union {
     fortran_complex f;
     npy_cfloat npy;
@@ -99,13 +99,15 @@ Needs to come after typedefs
 */
 
 static NPY_INLINE fortran_int
-fortran_int_min(fortran_int x, fortran_int y) {
- return x < y ? x : y;
+fortran_int_min(fortran_int x, fortran_int y)
+{
+    return x < y ? x : y;
 }
 
 static NPY_INLINE fortran_int
-fortran_int_max(fortran_int x, fortran_int y) {
- return x > y ? x : y;
+fortran_int_max(fortran_int x, fortran_int y)
+{
+    return x > y ? x : y;
 }
 
 #ifdef NO_APPEND_FORTRAN
@@ -114,10 +116,10 @@ fortran_int_max(fortran_int x, fortran_int y) {
 # define FNAME(x) x##_
 #endif
 
-#define BLAS(FUNC)                              \
+#define BLAS(FUNC)    \
     FNAME(FUNC)
 
-#define LAPACK(FUNC)                            \
+#define LAPACK(FUNC)  \
     FNAME(FUNC)
 
 /*
@@ -192,10 +194,10 @@ init_linearize_datac(LINEARIZE_DATA_t *lin_data,
                     npy_intp column_strides,
                     npy_intp conj)
 {
-    init_linearize_data_exc(lin_data, rows, columns, row_strides, column_strides,
-                            columns, conj);
+    init_linearize_data_exc(lin_data, rows, columns,
+                            row_strides, column_strides, columns, conj);
+}
 
-                        }
 /* Set all parameters
 assuming no conjugate needed
 assuming we use the whole buffer to store matrix on BLAS/Lapack side */

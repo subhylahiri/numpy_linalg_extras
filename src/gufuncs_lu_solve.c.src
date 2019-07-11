@@ -55,42 +55,42 @@ static const char* gufuncs_lu_solve_version_string = "0.2.0";
 ********************/
 
 PyDoc_STRVAR(lu__doc__,
-//"lu(A: ndarray) -> (L: ndarray, U: ndarray, IP: ndarray)\n\n"
+/* "lu(A: ndarray) -> (L: ndarray, U: ndarray, IP: ndarray)\n\n" */
 "LU decomposition.\n\n"
-"Write matrix ``A`` as ``A = PLU``, where  ``P`` is a permutation matrix, \n"
-"``L`` is lower triangular with ones on the diagonal and \n"
-"``U`` is upper triangular.\n"
+"Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,\n"
+"`L` is lower triangular with ones on the diagonal and \n"
+"`U` is upper triangular.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,M,N)\n"
 "    Matrix to be factored.\n"
 "\nReturns\n-------\n"
 "L: ndarray (...,M,K)\n"
-"    Lower diagonal matrix with unit diagonals. ``K=min(M,N)``.\n"
+"    Lower diagonal matrix with unit diagonals. `K=min(M,N)`.\n"
 "U: ndarray (...,K,N)\n"
 "    Upper triangular matrix.\n"
 "IP: ndarray (...,K)\n"
-"   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``."
+"   Vector of pivot indices, where swaps `A[...,i,:] <--> A[...,IP[i],:]`\n"
+"   are performed in order `i=1,...,K`."
 );
 
 PyDoc_STRVAR(lu_raw__doc__,
-//"lu_raw(A: ndarray) -> (AF: ndarray, IP: ndarray)\n\n"
+/* "lu_raw(A: ndarray) -> (AF: ndarray, IP: ndarray)\n\n" */
 "LU decomposition.\n\n"
-"Write matrix ``A`` as ``A = PLU``, where  ``P`` is a permutation matrix, \n"
-"``L`` is lower triangular with ones on the diagonal and \n"
-"``U`` is upper triangular.\n\n"
+"Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,\n"
+"`L` is lower triangular with ones on the diagonal and \n"
+"`U` is upper triangular.\n\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,M,N)\n"
 "    Matrix to be factored.\n"
 "\nReturns\n-------\n"
 "AF: ndarray (...,N,M)\n"
 "    Transposed matrix (Fortran order).\n"
-"   LU factors of ``A``, with the nonzero elements of ``U`` below and on \n"
-"   the diagonal, nonzero elements of ``L`` above the diagonal. \n"
-"   The diagonal elements of ``L``, which are all 1, are not stored."
+"   LU factors of `A`, with the nonzero elements of `U` below and on \n"
+"   the diagonal, nonzero elements of `L` above the diagonal. \n"
+"   The diagonal elements of `L`, which are all 1, are not stored."
 "IP: ndarray (...,K)\n"
-"   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``, ``K=min(M,N)``.\n"
+"   Vector of pivot indices, where swaps `A[...,i,:] <--> A[...,IP[i],:]`\n"
+"   are performed in order `i=1,...,K`, `K=min(M,N)`.\n"
 "\nNotes\n-----\n"
 "Nothing will fail if you make the wrong choice of `lu_rawm` or `lu_rawn`.\n"
 "You will merely waste memory from keeping unused elements of `IP`.\n"
@@ -101,11 +101,11 @@ PyDoc_STRVAR(lu_raw__doc__,
 ********************/
 
 PyDoc_STRVAR(pivot__doc__,
-//"pivot(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n"
+/* "pivot(A: ndarray, IPIV: ndarray) -> (AP: ndarray)\n\n" */
 "Perform row pivoting.\n\n"
-"Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
-"If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
-"in order of increasing ``I``.\n"
+"Permute the rows of `A` according to pivot indices, `IP`.\n"
+"If `IP[I] = J`, rows `I` and `J` will be swapped, \n"
+"in order of increasing `I`.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,M,N)\n"
 "    Matrix before pivoting.\n"
@@ -117,11 +117,11 @@ PyDoc_STRVAR(pivot__doc__,
 );
 
 PyDoc_STRVAR(rpivot__doc__,
-//"pivot(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n"
+/* "pivot(AP: ndarray, IPIV: ndarray) -> (A: ndarray)\n\n" */
 "Undo row pivoting.\n\n"
-"Permute the rows of ``A`` according to pivot indices, ``IP``. \n"
-"If ``IP[I] = J``, rows ``I`` and ``J`` will be swapped, \n"
-"in order of decreasing ``I``.\n"
+"Permute the rows of `A` according to pivot indices, `IP`.\n"
+"If `IP[I] = J`, rows `I` and `J` will be swapped, \n"
+"in order of decreasing `I`.\n"
 "\nParameters\n-----------\n"
 "AP: ndarray (...,M,N)\n"
 "    Pivoted matrix.\n"
@@ -138,10 +138,10 @@ PyDoc_STRVAR(rpivot__doc__,
 ********************/
 
 PyDoc_STRVAR(solve__doc__,
-//"solve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+/* "solve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n" */
 "Solve linear system.\n\n"
-"Solve the equation ``AX = B`` for ``X``.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Solve the equation `AX = B` for `X`.\n\n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,N,N)\n"
@@ -153,10 +153,10 @@ PyDoc_STRVAR(solve__doc__,
 "    Matrix of solution vectors.");
 
 PyDoc_STRVAR(rsolve__doc__,
-//"rsolve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n"
+/* "rsolve(A: ndarray, B: ndarray) -> (C: ndarray)\n\n" */
 "Solve reversed linear system.\n\n"
 "Solve the equation `A = XB` for `X`.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,NRHS,N) or (N,)\n"
@@ -173,11 +173,11 @@ PyDoc_STRVAR(rsolve__doc__,
 *********************/
 
 PyDoc_STRVAR(solve_lu__doc__,
-//"solve_lu(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IPIV: ndarray)\n\n"
+/*"solve_lu(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IP: ndarray)"*/
 "Solve linear system.\n\n"
-"Solve  equation ``AX = B`` for ``X``. \n"
+"Solve  equation `AX = B` for `X`. \n"
 "This version also returns the LU factors of `A` for future use.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,N,N)\n"
@@ -188,7 +188,7 @@ PyDoc_STRVAR(solve_lu__doc__,
 "X: ndarray (...,N,NRHS) or (N,)\n"
 "    Matrix of solution vectors.\n"
 "AF: ndarray (...,N,N)\n"
-"    LU factors of ``A``.\n"
+"    LU factors of `A`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
 "\nSee Also\n--------\n"
@@ -196,11 +196,11 @@ PyDoc_STRVAR(solve_lu__doc__,
 );
 
 PyDoc_STRVAR(rsolve_lu__doc__,
-//"rsolve_lu(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
+/*"rsolve_lu(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IP: ndarray)"*/
 "Solve reversed linear system.\n\n"
-"Solve the equation ``A = XB`` for ``X``. \n"
+"Solve the equation `A = XB` for `X`. \n"
 "This version also returns the LU factors of `B` for future use.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,NRHS,N) or (N,)\n"
@@ -211,7 +211,7 @@ PyDoc_STRVAR(rsolve_lu__doc__,
 "X: ndarray (...,NRHS,N) or (N,)\n"
 "    Matrix of solution vectors.\n"
 "BF: ndarray (...,N,N)\n"
-"    LU factors of ``B``.\n"
+"    LU factors of `B`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
 "\nSee Also\n--------\n"
@@ -224,15 +224,15 @@ PyDoc_STRVAR(rsolve_lu__doc__,
 *********************/
 
 PyDoc_STRVAR(lu_solve__doc__,
-//"lu_solve(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IPIV: ndarray)\n\n"
+/*"lu_solve(A: ndarray, B: ndarray) -> (C: ndarray, AF: ndarray, IV: ndarray)"*/
 "Solve linear system.\n\n"
-"Solve  equation ``AX = B`` for ``X``. \n"
-"This version uses the LU factors of ``A`` from previous use of ``(r)solve_lu``.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Solve  equation `AX = B` for `X`. \n"
+"This version uses the LU factors of `A` from earlier use of `(r)solve_lu`.\n\n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "AF: ndarray (...,N,N)\n"
-"    LU factors of ``A``.\n"
+"    LU factors of `A`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
 "B: ndarray (...,N,NRHS) or (N,)\n"
@@ -245,17 +245,17 @@ PyDoc_STRVAR(lu_solve__doc__,
 );
 
 PyDoc_STRVAR(rlu_solve__doc__,
-//"rlu_rsolve(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IPIV: ndarray)\n\n"
+/*"rlu_rsolve(A: ndarray, B: ndarray) -> (C: ndarray, BF: ndarray, IP: ndarray)"*/
 "Solve reversed linear system.\n\n"
-"Solve the equation ``A = XB`` for ``X``.\n"
-"This version uses the LU factors of ``B`` from previous use of ``(r)solve_lu``.\n\n"
-"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions, \n"
+"Solve the equation `A = XB` for `X`.\n"
+"This version uses the LU factors of `B` from earlier use of `(r)solve_lu`.\n\n"
+"Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,\n"
 "with vector versions used *only* when one-dimensional.\n"
 "\nParameters\n-----------\n"
 "A: ndarray (...,NRHS,N) or (N,)\n"
 "    Matrix of result vectors.\n"
 "BF: ndarray (...,N,N)\n"
-"    LU factors of ``B``.\n"
+"    LU factors of `B`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
 "\nReturns\n-------\n"
@@ -270,7 +270,7 @@ PyDoc_STRVAR(rlu_solve__doc__,
 **************************/
 
 PyDoc_STRVAR(inv__doc__,
-//"inv(A: ndarray) -> (AI: ndarray)\n\n"
+/* "inv(A: ndarray) -> (AI: ndarray)\n\n" */
 "Matrix inverse.\n\n"
 "Find the matrix multiplicative inverse of `A`. \n"
 "\nParameters\n-----------\n"
@@ -282,7 +282,7 @@ PyDoc_STRVAR(inv__doc__,
 );
 
 PyDoc_STRVAR(inv_lu__doc__,
-//"inv_lu(A: ndarray) -> (AI: ndarray, AF: ndarray, IP: ndarray)\n\n"
+/* "inv_lu(A: ndarray) -> (AI: ndarray, AF: ndarray, IP: ndarray)\n\n" */
 "Matrix inverse.\n\n"
 "Find the matrix multiplicative inverse of `A`. \n"
 "This version returns the LU factors of `A` for future use.\n"
@@ -293,30 +293,30 @@ PyDoc_STRVAR(inv_lu__doc__,
 "AI: ndarray (...,N,M)\n"
 "    Inverse of `A`.\n"
 "AF: ndarray (...,M,N)\n"
-"   LU factors of ``A``, with the nonzero elements of ``U`` above and on \n"
-"   the diagonal, nonzero elements of ``L`` below the diagonal. \n"
-"   The diagonal elements of ``L``, which are all 1, are not stored."
+"   LU factors of `A`, with the nonzero elements of `U` above and on \n"
+"   the diagonal, nonzero elements of `L` below the diagonal. \n"
+"   The diagonal elements of `L`, which are all 1, are not stored."
 "IP: ndarray (...,K)\n"
-"   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``, ``K=min(M,N)``.\n"
+"   Vector of pivot indices, where swaps `A[...,i,:] <--> A[...,IP[i],:]` \n"
+"   are performed in order `i=1,...,K`, `K=min(M,N)`.\n"
 "\nSee Also\n--------\n"
 "lu in 'raw' mode."
 );
 
 PyDoc_STRVAR(lu_inv__doc__,
-//"lstsq_qr(AF: ndarray, IP: ndarray) -> (AI: ndarray)\n\n"
+/* "lstsq_qr(AF: ndarray, IP: ndarray) -> (AI: ndarray)\n\n" */
 "Matrix inverse.\n\n"
 "Find the matrix multiplicative inverse of `A`. \n"
 "This version uses the LU factors of `A` from previous use of `inv_lu` \n"
 "or `(r)solve_lu`.\n"
 "\nParameters\n-----------\n"
 "AF: ndarray (...,M,N)\n"
-"   LU factors of ``A``, with the nonzero elements of ``U`` above and on \n"
-"   the diagonal, nonzero elements of ``L`` below the diagonal. \n"
-"   The diagonal elements of ``L``, which are all 1, are not stored."
+"   LU factors of `A`, with the nonzero elements of `U` above and on \n"
+"   the diagonal, nonzero elements of `L` below the diagonal. \n"
+"   The diagonal elements of `L`, which are all 1, are not stored."
 "IP: ndarray (...,K)\n"
-"   Vector of pivot indices, where swaps ``A[...,i,:] <--> A[...,IP[i],:]`` \n"
-"   are performed in order ``i=1,...,K``, ``K=min(M,N)``.\n"
+"   Vector of pivot indices, where swaps `A[...,i,:] <--> A[...,IP[i],:]` \n"
+"   are performed in order `i=1,...,K`, `K=min(M,N)`.\n"
 "\nReturns\n-------\n"
 "AI: ndarray (...,N,M)\n"
 "    Inverse of `A`.\n"
@@ -343,7 +343,8 @@ PyDoc_STRVAR(lu_inv__doc__,
 
 /* pivot rows of a */
 extern void
-FNAME(@laswp@)(int *n, @typ@ *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
+FNAME(@laswp@)(int *n, @typ@ *a, int *lda,
+            int *k1, int *k2, int *ipiv, int *incx);
 
 /* solve a x = b for x */
 extern void
@@ -366,10 +367,6 @@ extern void
 FNAME(@getri@)(int *n, @typ@ *a, int *lda, int * ipiv,
             @typ@ *work, int *lwork, int *info);
 
-// /* not extern: singularity check */
-// void
-// FNAME(@trchk@)(int *n, @typ@ *a, int *lda, int *info);
-//
 /**end repeat**/
 
 /*
@@ -377,7 +374,7 @@ FNAME(@getri@)(int *n, @typ@ *a, int *lda, int * ipiv,
 **                                 LU                                       **
 ******************************************************************************
 */
-// to hold arguments for Lapack _gesv, _getrf, _getrs
+/* to hold arguments for Lapack _gesv, _getrf, _getrs */
 typedef struct gesv_params_struct
 {
     void *A; /* A is (M,N) of base type */
@@ -405,8 +402,8 @@ typedef struct gesv_params_struct
     #trchk = strchk, dtrchk, ctrchk, ztrchk#
 */
 
-// lu_signature = "(m,n)->(m,k),(k,n),(k)"
-// lu_raw_signature = "(m,n)->(n,m),(k)"
+/* lu_signature = "(m,n)->(m,k),(k,n),(k)" */
+/* lu_raw_signature = "(m,n)->(n,m),(k)" */
 
 /**************************************************
 * Calling BLAS/Lapack function _getrf             *
@@ -415,7 +412,7 @@ typedef struct gesv_params_struct
 static NPY_INLINE void
 call_@getrf@(GESV_PARAMS_t *params)
 {
-    // A is modified by ?GETRF to carry LU info
+    /* A is modified by ?GETRF to carry LU info */
     LAPACK(@getrf@)(&params->M, &params->N, params->A, &params->LDA,
                     params->IPIV, &params->INFO);
 }
@@ -424,9 +421,9 @@ call_@getrf@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _getrf          *
 * Handles buffer allocation
 ****************************************************************************/
-// M: number of rows
-// N: number of columns
-// K: min(M,N)
+/* M: number of rows
+   N: number of columns
+   K: min(M,N) */
 static NPY_INLINE int
 init_@getrf@(GESV_PARAMS_t *params, npy_intp M_in, npy_intp N_in)
 {
@@ -443,22 +440,22 @@ init_@getrf@(GESV_PARAMS_t *params, npy_intp M_in, npy_intp N_in)
     safe_N = N_in;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  // for A
-                    + safe_K * sizeof(fortran_int));    // for IPIV
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  /* for A */
+                    + safe_K * sizeof(fortran_int));    /* for IPIV */
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;                              // store A at start of buffer
-    b = a + safe_M * safe_N * sizeof(@ftyp@);  // store IPIV after space for A
+    a = mem_buff;                              /* store A at start of buffer */
+    b = a + safe_M * safe_N * sizeof(@ftyp@);  /* IPIV after space for A */
 
     params->A = a;
-    params->B = NULL;               // no RHS for _getrf
+    params->B = NULL;               /* no RHS for _getrf */
     params->IPIV = (fortran_int*)b;
     params->M = M;
     params->N = N;
-    params->NRHS = N;               // not used in _getrf
+    params->NRHS = N;               /* not used in _getrf */
     params->LDA = lda;
-    params->LDB = 1;                // not used in _getrf
+    params->LDB = 1;                /* not used in _getrf */
     params->INFO = 0;
     params->TRANS = 'N';
 
@@ -467,7 +464,7 @@ init_@getrf@(GESV_PARAMS_t *params, npy_intp M_in, npy_intp N_in)
   error:
     free(mem_buff);
     memset(params, 0, sizeof(*params));
-    // PyErr_NoMemory();
+    /* PyErr_NoMemory(); */
 
     return 0;
 }
@@ -488,29 +485,30 @@ release_@getrf@(GESV_PARAMS_t *params)
 * Inner GUfunc loop     *
 *************************/
 
-// lu_signature = "(m,n)->(m,k),(k,n),(k)"
+/* lu_signature = "(m,n)->(m,k),(k,n),(k)" */
 
 static void
 @TYPE@_lu(char **args, npy_intp *dimensions, npy_intp *steps,
             void *NPY_UNUSED(func))
 {
     INIT_OUTER_LOOP_4
-    npy_intp len_m = *dimensions++;  // rows
-    npy_intp len_n = *dimensions++;  // columns
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_m = *dimensions++;  /* rows */
+    npy_intp len_n = *dimensions++;  /* columns */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_l_r = *steps++;  // rows
+    npy_intp stride_l_r = *steps++;  /* rows */
     npy_intp stride_l_c = *steps++;
-    npy_intp stride_u_r = *steps++;  // rows
+    npy_intp stride_u_r = *steps++;  /* rows */
     npy_intp stride_u_c = *steps++;
-    npy_intp stride_ip = *steps++;  // elements
+    npy_intp stride_ip = *steps++;  /* elements */
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, l_out, u_out, ipiv_out;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
-    if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@getrf@(&params, len_m, len_n)) {
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_data(&l_out, len_k, len_m, stride_l_c, stride_l_r);
         init_linearize_data_ex(&u_out, len_n, len_k, stride_u_c, stride_u_r, len_m);
@@ -518,15 +516,18 @@ static void
 
         BEGIN_OUTER_LOOP_4
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
-            call_@getrf@(&params);  // call Lapack
+            /* copy input */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            /* call Lapack */
+            call_@getrf@(&params);
             not_ok = params.INFO;
             if (not_ok < 0) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &l_out);
                 nan_@TYPE@_matrix(args[2], &u_out);
             } else {
-                zero_@TYPE@_triu(args[1], &l_out);  // copy outputs
+                /* copy outputs */
+                zero_@TYPE@_triu(args[1], &l_out);
                 eye_@TYPE@_matrix(args[1], &l_out);
                 delinearize_@TYPE@_tril(args[1], params.A, &l_out);
 
@@ -536,7 +537,8 @@ static void
                 delinearize_INT_vec(args[3], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_4
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -545,41 +547,44 @@ static void
 *         LU RAW        *
 *************************/
 
-// lu_raw_signature = "(m,n)->(n,m),(k)"
+/* lu_raw_signature = "(m,n)->(n,m),(k)" */
 
 static void
 @TYPE@_lu_raw(char **args, npy_intp *dimensions, npy_intp *steps,
             void *NPY_UNUSED(func))
 {
     INIT_OUTER_LOOP_3
-    npy_intp len_m = *dimensions++;  // rows
-    npy_intp len_n = *dimensions++;  // columns
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_m = *dimensions++;  /* rows */
+    npy_intp len_n = *dimensions++;  /* columns */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_f_r = *steps++;  // rows
+    npy_intp stride_f_r = *steps++;  /* rows */
     npy_intp stride_f_c = *steps++;
-    npy_intp stride_ip = *steps++;  // elements
+    npy_intp stride_ip = *steps++;  /* elements */
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, f_out, ipiv_out;
     npy_intp len_k = npy_int_min(len_m, len_n);
 
-    if(init_@getrf@(&params, len_m, len_n)) {  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@getrf@(&params, len_m, len_n)) {
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_data(&f_out, len_n, len_m, stride_f_r, stride_f_c);
         init_linearize_vdata(&ipiv_out, len_k, stride_ip);
 
         BEGIN_OUTER_LOOP_3
             int not_ok;
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
+            /* copy input */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             call_@getrf@(&params);
             not_ok = params.INFO;
             if (not_ok < 0) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &f_out);
             } else {
-                delinearize_@TYPE@_matrix(args[1], params.A, &f_out);  // copy outputs
+                /* copy outputs */
+                delinearize_@TYPE@_matrix(args[1], params.A, &f_out);
                 delinearize_INT_vec(args[2], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_3
@@ -594,8 +599,8 @@ static void
 ******************************************************************************
 */
 
-// pivot_signature = "(m,n),(k)->(m,n)";
-// rsolve_signature = "(m,n),(k)->(m,n)"
+/* pivot_signature = "(m,n),(k)->(m,n)"; */
+/* rsolve_signature = "(m,n),(k)->(m,n)" */
 
 /**************************************************
 * Calling BLAS/Lapack function _laswp             *
@@ -605,7 +610,7 @@ static NPY_INLINE void
 call_@laswp@(GESV_PARAMS_t *params)
 {
     fortran_int zero = 1;
-    // A is modified by ?GETRF to carry LU info
+    /* A is modified by ?GETRF to carry LU info */
     LAPACK(@laswp@)(&params->N, params->A, &params->LDA, &zero, &params->M,
                     params->IPIV, &params->INFO);
 }
@@ -614,10 +619,10 @@ call_@laswp@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _laswp          *
 * Handles buffer allocation
 ****************************************************************************/
-// M: number of rows
-// N: number of columns
-// K: min(M,N)
-// direction: +/- 1, perform pivots in forward/reverse order
+/* M: number of rows
+   N: number of columns
+   K: min(M,N)
+   direction: +/- 1, perform pivots in forward/reverse order */
 static NPY_INLINE int
 init_@laswp@(GESV_PARAMS_t *params,
             npy_intp M_in, npy_intp N_in, npy_intp K_in, npy_intp direction)
@@ -635,31 +640,30 @@ init_@laswp@(GESV_PARAMS_t *params,
     safe_N = N_in;
     safe_K = K;
 
-    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  // for A
-                    + safe_K * sizeof(fortran_int));    // for IPIV
+    mem_buff = malloc(safe_M * safe_N * sizeof(@ftyp@)  /* for A */
+                    + safe_K * sizeof(fortran_int));    /* for IPIV */
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;                              // store A at start of buffer
-    b = a + safe_M * safe_N * sizeof(@ftyp@);  // store IPIV after space for A
+    a = mem_buff;                              /* store A at start of buffer */
+    b = a + safe_M * safe_N * sizeof(@ftyp@);  /* IPIV after space for A */
 
     params->A = a;
     params->IPIV = (fortran_int*)b;
     params->M = K;
     params->N = N;
     params->LDA = lda;
-    params->INFO = (fortran_int)direction;  // using INFO to store direction
-    params->B = NULL;               // not used in _laswp
-    params->NRHS = N;                // not used in _laswp
-    params->LDB = 1;                 // not used in _laswp
-    params->TRANS = 'N';             // not used in _laswp
+    params->B = NULL;               /* not used in _laswp */
+    params->NRHS = N;                /* not used in _laswp */
+    params->LDB = 1;                 /* not used in _laswp */
+    params->TRANS = 'N';             /* not used in _laswp */
 
     return 1;
 
   error:
     free(mem_buff);
     memset(params, 0, sizeof(*params));
-    // PyErr_NoMemory();
+    /* PyErr_NoMemory(); */
 
     return 0;
 }
@@ -673,31 +677,36 @@ do_@TYPE@_pivot(char **args, npy_intp *dimensions, npy_intp *steps,
                 npy_intp direction)
 {
     INIT_OUTER_LOOP_3
-    npy_intp len_m = *dimensions++;  // rows
-    npy_intp len_n = *dimensions++;  // columns
-    npy_intp len_k = *dimensions++;  // columns
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_m = *dimensions++;  /* rows */
+    npy_intp len_n = *dimensions++;  /* columns */
+    npy_intp len_k = *dimensions++;  /* columns */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_ip = *steps++;  // elements
-    npy_intp stride_p_r = *steps++;  // rows
+    npy_intp stride_ip = *steps++;  /* elements */
+    npy_intp stride_p_r = *steps++;  /* rows */
     npy_intp stride_p_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, ipiv_in, p_out;
 
-    if(init_@laswp@(&params, len_m, len_n, len_k, direction)) {  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@laswp@(&params, len_m, len_n, len_k, direction)) {
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_m, stride_a_c, stride_a_r);
         init_linearize_vdata(&ipiv_in, len_k, stride_ip);
         init_linearize_data(&p_out, len_n, len_m, stride_p_c, stride_p_r);
 
         BEGIN_OUTER_LOOP_3
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
+            /* copy inputs */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             linearize_INT_vec(params.IPIV, args[1], &ipiv_in);
-            call_@laswp@(&params);  // call Lapack
-            delinearize_@TYPE@_matrix(args[2], params.A, &p_out);  // copy output
+            /* call Lapack */
+            call_@laswp@(&params);
+            /* copy output */
+            delinearize_@TYPE@_matrix(args[2], params.A, &p_out);
         END_OUTER_LOOP_3
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -705,9 +714,9 @@ do_@TYPE@_pivot(char **args, npy_intp *dimensions, npy_intp *steps,
 /************************
 * Outer GUfunc loop     *
 *************************/
-// functions for different choice of direction
+/* functions for different choice of direction */
 
-// pivot_signature = "(m,n),(k)->(m,n)";
+/* pivot_signature = "(m,n),(k)->(m,n)"; */
 
 static void
 @TYPE@_pivot(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -716,7 +725,7 @@ static void
     do_@TYPE@_pivot(args, dimensions, steps, 1);
 }
 
-// rpivot_signature = "(m,n),(k)->(m,n)"
+/* rpivot_signature = "(m,n),(k)->(m,n)" */
 
 static void
 @TYPE@_rpivot(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -731,28 +740,28 @@ static void
 ******************************************************************************
 */
 
-// solve_signature = "(n,n),(n,nrhs)->(n,nrhs)";
-// rsolve_signature = (nrhs,n),(n,n)->(nrhs,n)"
+/* solve_signature = "(n,n),(n,nrhs)->(n,nrhs)"; */
+/* rsolve_signature = (nrhs,n),(n,n)->(nrhs,n)" */
 
 /******************************************
 *   Calling BLAS/Lapack functions _gesv   *
 *******************************************/
 
-//singularity check
+/* singularity check */
 static NPY_INLINE void
 call_@trchk@(GESV_PARAMS_t *params)
 {
-    // diag of A checked for zeros
+    /* diag of A checked for zeros */
     LAPACK(@trchk@)(&params->N, params->A, &params->LDA, &params->INFO);
 }
 
 static NPY_INLINE void
 call_@gesv@(GESV_PARAMS_t *params)
 {
-    // A,B are modified by ?GESV to carry LU info & X
+    /* A,B are modified by ?GESV to carry LU info & X */
     LAPACK(@gesv@)(&params->N, &params->NRHS, params->A, &params->LDA,
                    params->IPIV, params->B, &params->LDB, &params->INFO);
-    // check for singularity
+    /* check for singularity */
     call_@trchk@(params);
 }
 
@@ -760,9 +769,9 @@ call_@gesv@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _gesv           *
 * Handles buffer allocation
 ****************************************************************************/
-// N: size of A (square), rows of B
-// NRHS: columns of B
-// trans: 'N/T', use transpose of A? (can't transpose manually w/ lu due to pivot)
+/* N: size of A (square), rows of B
+   NRHS: columns of B
+   trans: 'N/T', use A^T? (can't transpose manually w/ lu due to pivot) */
 static NPY_INLINE int
 init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
 {
@@ -778,15 +787,15 @@ init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
     safe_N = N_in;
     safe_NRHS = NRHS_in;
 
-    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      // for A
-                    + safe_N * safe_NRHS * sizeof(@ftyp@)   // for B
-                    + safe_N * sizeof(fortran_int));        // for IPIV
+    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      /* for A */
+                    + safe_N * safe_NRHS * sizeof(@ftyp@)   /* for B */
+                    + safe_N * sizeof(fortran_int));        /* for IPIV */
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;                                   // store A at start of buffer
-    b = a + safe_N * safe_N * sizeof(@ftyp@);       // store B after space for A
-    c = b + safe_N * safe_NRHS * sizeof(@ftyp@);    // store IPIV after space for B
+    a = mem_buff;                                /* A at start of buffer */
+    b = a + safe_N * safe_N * sizeof(@ftyp@);    /* B after space for A */
+    c = b + safe_N * safe_NRHS * sizeof(@ftyp@); /* IPIV after space for B */
 
     params->A = a;
     params->B = b;
@@ -804,7 +813,7 @@ init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
   error:
     free(mem_buff);
     memset(params, 0, sizeof(*params));
-    // PyErr_NoMemory();
+    /* PyErr_NoMemory(); */
 
     return 0;
 }
@@ -813,43 +822,48 @@ init_@gesv@(GESV_PARAMS_t *params, npy_intp N_in, npy_intp NRHS_in, char trans)
 * Inner GUfunc loop     *
 *************************/
 
-// solve_signature = "(n,n),(n,nrhs)->(n,nrhs)";
+/* solve_signature = "(n,n),(n,nrhs)->(n,nrhs)"; */
 
 static void
 @TYPE@_solve(char **args, npy_intp *dimensions, npy_intp *steps,
             void *NPY_UNUSED(func))
 {
     INIT_OUTER_LOOP_3
-    npy_intp len_n = *dimensions++;  // rows
-    npy_intp len_nrhs = *dimensions++;  // columns
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_n = *dimensions++;  /* rows */
+    npy_intp len_nrhs = *dimensions++;  /* columns */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_b_r = *steps++;  // rows
+    npy_intp stride_b_r = *steps++;  /* rows */
     npy_intp stride_b_c = *steps++;
-    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_r = *steps++;  /* rows */
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, 'N')){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@gesv@(&params, len_n, len_nrhs, 'N')){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
 
         BEGIN_OUTER_LOOP
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
+            /* copy inputs */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            call_@gesv@(&params);                               // call Lapack
+            /* call Lapack */
+            call_@gesv@(&params);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);  // copy output
+                /* copy output */
+                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);
             }
         END_OUTER_LOOP_3
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -858,33 +872,33 @@ static void
 * RSOLVE     *
 **************/
 
-// rsolve_signature = (nrhs,n),(n,n)->(nrhs,n)"
+/* rsolve_signature = (nrhs,n),(n,n)->(nrhs,n)" */
 
 static void
 @TYPE@_rsolve(char **args, npy_intp *dimensions, npy_intp *steps,
             void *NPY_UNUSED(func))
 {
     /*swap (A,B) for (B^T,A^T)
-    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T */
-    // args = {b, a, x}
-    // rargs = {a, b, x}
+    a,b here are not the same as A,B  in docstring: a=B^T, b=A^T
+    args = {b, a, x}
+    rargs = {a, b, x} */
     char *rargs[] = {args[1], args[0], args[2]};
-    // dimensions = {N, len_nrhs, len_n};
-    // rdimensions[] = {N, len_n, len_nrhs};
+    /* dimensions = {N, len_nrhs, len_n};
+       rdimensions[] = {N, len_n, len_nrhs}; */
     npy_intp rdimensions[] = {dimensions[0], dimensions[2], dimensions[1]};
-    // steps = {strides_b, strides_a, strides_x,
-    //     strides_b_c, strides_b_r,
-    //     strides_a_c, strides_a_r,
-    //     strides_x_c, strides_x_r, };
-    // rsteps = {strides_a, strides_b, strides_x,
-    //     strides_a_r, strides_a_c,
-    //     strides_b_r, strides_b_c,
-    //     strides_x_r, strides_x_c, };
+    /* steps = {strides_b, strides_a, strides_x,
+         strides_b_c, strides_b_r,
+         strides_a_c, strides_a_r,
+         strides_x_c, strides_x_r, };
+       rsteps = {strides_a, strides_b, strides_x,
+         strides_a_r, strides_a_c,
+         strides_b_r, strides_b_c,
+         strides_x_r, strides_x_c, }; */
     npy_intp rsteps[] = {steps[1], steps[0], steps[2],
             steps[6], steps[5],
             steps[4], steps[3],
             steps[8], steps[7]};
-    //now that we've swapped a,b and transposed, proceed as if we're in solve
+    /* now that we've swapped a,b and transposed, proceed as if in solve */
     @TYPE@_solve(rargs, rdimensions, rsteps, NULL);
 }
 
@@ -892,10 +906,10 @@ static void
 **                       SOLVE with LU                    **
 ************************************************************/
 
-// solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)";
-// rsolvelu_signature = "(nrhs,n),(n,n)->(nrhs,n),(n,n),(n)";
-// lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)";
-// rlusolve_signature = "(nrhs,n),(n,n),(n)->(nrhs,n)";
+/* solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)"; */
+/* rsolvelu_signature = "(nrhs,n),(n,n)->(nrhs,n),(n,n),(n)"; */
+/* lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)"; */
+/* rlusolve_signature = "(nrhs,n),(n,n),(n)->(nrhs,n)"; */
 
 /*******************************************
 *   Calling BLAS/Lapack functions _getrs   *
@@ -904,12 +918,12 @@ static void
 static NPY_INLINE void
 call_@getrs@(GESV_PARAMS_t *params)
 {
-    // check for singularity
+    /* check for singularity */
     call_@trchk@(params);
     if (params->INFO) {
         return;
     }
-    // B is modified by ?GETRS to carry X
+    /* B is modified by ?GETRS to carry X */
     LAPACK(@getrs@)(&params->TRANS, &params->N, &params->NRHS,
                     params->A, &params->LDA, params->IPIV,
                     params->B, &params->LDB, &params->INFO);
@@ -920,29 +934,30 @@ call_@getrs@(GESV_PARAMS_t *params)
 * Inner GUfunc loop     *
 *************************/
 
-// solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)";
+/* solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)"; */
 
 static void
 @TYPE@_solvelu_loop(char **args, npy_intp *dimensions, npy_intp *steps, char trans)
 {
     INIT_OUTER_LOOP_5
-    npy_intp len_n = *dimensions++;  // rows
-    npy_intp len_nrhs = *dimensions++;  // columns
-    npy_intp stride_a_r = *steps++;  // rows, a
+    npy_intp len_n = *dimensions++;  /* rows */
+    npy_intp len_nrhs = *dimensions++;  /* columns */
+    npy_intp stride_a_r = *steps++;  /* rows, a */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_b_r = *steps++;  // rows, b
+    npy_intp stride_b_r = *steps++;  /* rows, b */
     npy_intp stride_b_c = *steps++;
-    npy_intp stride_x_r = *steps++;  // rows, x = a\b
+    npy_intp stride_x_r = *steps++;  /* rows, x = a\b */
     npy_intp stride_x_c = *steps++;
-    npy_intp stride_af_r = *steps++;  // rows, LU factors of a
+    npy_intp stride_af_r = *steps++;  /* rows, LU factors of a */
     npy_intp stride_af_c = *steps++;
-    npy_intp stride_ip = *steps++;  // vec, permutations, a = PLU
+    npy_intp stride_ip = *steps++;  /* vec, permutations, a = PLU */
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out, af_out, ipiv_out;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@gesv@(&params, len_n, len_nrhs, trans)){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
@@ -950,26 +965,30 @@ static void
         init_linearize_vdata(&ipiv_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_5
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
+            /* copy inputs */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             linearize_@TYPE@_matrix(params.B, args[1], &b_in);
-            call_@getrf@(&params);  // call Lapack, can't use _gesv with trans
+            /* call Lapack, can't use _gesv with trans */
+            call_@getrf@(&params);
             call_@getrs@(&params);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);
                 nan_@TYPE@_matrix(args[3], &af_out);
             } else {
-                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);  // copy outputs
+                /* copy outputs */
+                delinearize_@TYPE@_matrix(args[2], params.B, &x_out);
                 delinearize_@TYPE@_matrix(args[3], params.A, &af_out);
                 delinearize_INT_vec(args[4], params.IPIV, &ipiv_out);
             }
         END_OUTER_LOOP_5
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
 
-// solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)";
+/* solvelu_signature = "(n,n),(n,nrhs)->(n,nrhs),(n,n),(n)"; */
 
 static void
 @TYPE@_solve_lu(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -982,7 +1001,7 @@ static void
 * RSOLVELU   *
 **************/
 
-// rsolvelu_signature = "(nrhs,n),(n,n)->(nrhs,n),(n,n),(n)";
+/* rsolvelu_signature = "(nrhs,n),(n,n)->(nrhs,n),(n,n),(n)"; */
 
 static void
 @TYPE@_rsolve_lu(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -990,29 +1009,29 @@ static void
 {
     /*swap (A,B,X,Af,P) for (B^T,A,X^T,Af,P)
     a,b here are not the same as A,B  in docstring: a=B^T, b=A^T
-    can't transpose A manually because of pivot */
-    // args = {b, a, x, lu, ipiv}
-    // rargs = {a, b, x, lu, ipiv}
+    can't transpose A manually because of pivot
+    args = {b, a, x, lu, ipiv}
+    rargs = {a, b, x, lu, ipiv} */
     char *rargs[] = {args[1], args[0], args[2], args[3], args[4]};
-    // dimensions = {N, len_nrhs, len_n};
-    // rdimensions[] = {N, len_n, len_nrhs};
+    /* dimensions = {N, len_nrhs, len_n};
+       rdimensions[] = {N, len_n, len_nrhs}; */
     npy_intp rdimensions[] = {dimensions[0], dimensions[2], dimensions[1]};
-    // steps = {strides_b, strides_a, strides_x, strides_af, strides_p,    0-4
-    //     strides_b_c, strides_b_r,                5-6
-    //     strides_a_r, strides_a_c,                7-8
-    //     strides_x_c, strides_x_r,                9-10
-    //     strides_af_r, strides_af_c, strides_ip}; 11-13
-    // rsteps = {strides_a, strides_b, strides_x,
-    //     strides_a_r, strides_a_c,
-    //     strides_b_r, strides_b_c,
-    //     strides_x_r, strides_x_c,
-    //     strides_af_r, strides_af_c, strides_ip};
+    /* steps = {strides_b, strides_a, strides_x, strides_af, strides_p,    0-4
+         strides_b_c, strides_b_r,                5-6
+         strides_a_r, strides_a_c,                7-8
+         strides_x_c, strides_x_r,                9-10
+         strides_af_r, strides_af_c, strides_ip}; 11-13
+       rsteps = {strides_a, strides_b, strides_x,
+         strides_a_r, strides_a_c,
+         strides_b_r, strides_b_c,
+         strides_x_r, strides_x_c,
+         strides_af_r, strides_af_c, strides_ip}; */
     npy_intp rsteps[] = {steps[1], steps[0], steps[2], steps[3], steps[4],
             steps[7], steps[8],
             steps[6], steps[5],
             steps[10], steps[9],
             steps[11], steps[12], steps[13]};
-    //now that we've swapped a,b and transposed, proceed as if we're in solve
+    /* now that we've swapped a,b and transposed, proceed as if in solve */
     @TYPE@_solvelu_loop(rargs, rdimensions, rsteps, 'T');
 }
 
@@ -1020,50 +1039,55 @@ static void
 * LUSOLVE    *
 **************/
 
-// lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)";
+/* lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)"; */
 
 static void
 @TYPE@_lusolve_loop(char **args, npy_intp *dimensions, npy_intp *steps, char trans)
 {
     INIT_OUTER_LOOP_4
-    npy_intp len_n = *dimensions++;  // rows
-    npy_intp len_nrhs = *dimensions++;  // columns
-    npy_intp stride_af_r = *steps++;  // rows, LU factors of a
+    npy_intp len_n = *dimensions++;  /* rows */
+    npy_intp len_nrhs = *dimensions++;  /* columns */
+    npy_intp stride_af_r = *steps++;  /* rows, LU factors of a */
     npy_intp stride_af_c = *steps++;
-    npy_intp stride_ip = *steps++;  // vec, permutations, a = PLU
-    npy_intp stride_b_r = *steps++;  // rows, b
+    npy_intp stride_ip = *steps++;  /* vec, permutations, a = PLU */
+    npy_intp stride_b_r = *steps++;  /* rows, b */
     npy_intp stride_b_c = *steps++;
-    npy_intp stride_x_r = *steps++;  // rows, x = a\b
+    npy_intp stride_x_r = *steps++;  /* rows, x = a\b */
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, b_in, x_out, ipiv_in;
 
-    if(init_@gesv@(&params, len_n, len_nrhs, trans)){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@gesv@(&params, len_n, len_nrhs, trans)){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_af_r, stride_af_c);
         init_linearize_vdata(&ipiv_in, len_n, stride_ip);
         init_linearize_data(&b_in, len_nrhs, len_n, stride_b_c, stride_b_r);
         init_linearize_data(&x_out, len_nrhs, len_n, stride_x_c, stride_x_r);
 
         BEGIN_OUTER_LOOP_4
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy inputs
+            /* copy inputs */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             linearize_INT_vec(params.IPIV, args[1], &ipiv_in);
             linearize_@TYPE@_matrix(params.B, args[2], &b_in);
-            call_@getrs@(&params);  // call Lapack
+            /* call Lapack */
+            call_@getrs@(&params);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[3], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[3], params.B, &x_out);  // copy output
+                /* copy output */
+                delinearize_@TYPE@_matrix(args[3], params.B, &x_out);
             }
         END_OUTER_LOOP_4
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
 
-// lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)";
+/* lusolve_signature = "(n,n),(n),(n,nrhs)->(n,nrhs)"; */
 
 static void
 @TYPE@_lu_solve(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -1076,7 +1100,7 @@ static void
 * RLUSOLVE   *
 **************/
 
-// rlusolve_signature = "(nrhs,n),(n,n),(n)->(nrhs,n)";
+/* rlusolve_signature = "(nrhs,n),(n,n),(n)->(nrhs,n)"; */
 
 static void
 @TYPE@_rlu_solve(char **args, npy_intp *dimensions, npy_intp *steps,
@@ -1084,26 +1108,26 @@ static void
 {
     /*swap (A,P,B,X) for (B^T,A,P,X^T)
     a,b here are not the same as A,B  in docstring: a=B^T, b=A^T
-    can't transpose A manually because of pivot */
-    // args = {b, x, lu, ipiv, x}
-    // rargs = {lu, ipiv, b, x}
+    can't transpose A manually because of pivot
+    args = {b, x, lu, ipiv, x}
+    rargs = {lu, ipiv, b, x} */
     char *rargs[] = {args[1], args[2], args[0], args[3]};
-    // dimensions = {N, len_nrhs, len_n};
-    // rdimensions[] = {N, len_n, len_nrhs};
+    /* dimensions = {N, len_nrhs, len_n};
+       rdimensions[] = {N, len_n, len_nrhs}; */
     npy_intp rdimensions[] = {dimensions[0], dimensions[2], dimensions[1]};
-    // steps = {strides_b, strides_a, strides_p, strides_x, 0-3
-    //     strides_b_c, strides_b_r,                        4-5
-    //     strides_a_r, strides_a_c, strides_ip             6-8
-    //     strides_x_c, strides_x_r};                       9-10
-    // rsteps = {strides_a, strides_p, strides_b, strides_x,
-    //     strides_a_r, strides_a_c, strides_ip
-    //     strides_b_r, strides_b_c,
-    //     strides_x_r, strides_x_c};
+    /* steps = {strides_b, strides_a, strides_p, strides_x, 0-3
+         strides_b_c, strides_b_r,                        4-5
+         strides_a_r, strides_a_c, strides_ip             6-8
+         strides_x_c, strides_x_r};                       9-10
+       rsteps = {strides_a, strides_p, strides_b, strides_x,
+         strides_a_r, strides_a_c, strides_ip
+         strides_b_r, strides_b_c,
+         strides_x_r, strides_x_c}; */
     npy_intp rsteps[] = {steps[1], steps[2], steps[0], steps[3],
             steps[6], steps[7], steps[8],
             steps[5], steps[4],
             steps[10], steps[9]};
-    //now that we've swapped a,b and transposed, proceed as if we're in solve
+    /* now that we've swapped a,b and transposed, proceed as if in solve */
     @TYPE@_lusolve_loop(rargs, rdimensions, rsteps, 'T');
 }
 
@@ -1113,9 +1137,9 @@ static void
 ******************************************************************************
 */
 
-// inv_signature = "(n,n)->(n,n)";
-// invlu_signature = (n,n)->(n,n),(n,n),(n)"
-// luinv_signature = "(n,n)(n)->(n,n)";
+/* inv_signature = "(n,n)->(n,n)"; */
+/* invlu_signature = (n,n)->(n,n),(n,n),(n)" */
+/* luinv_signature = "(n,n)(n)->(n,n)"; */
 
 /******************************************
 *   Calling BLAS/Lapack functions _getri  *
@@ -1124,7 +1148,7 @@ static void
 static NPY_INLINE void
 call_@getri@(GESV_PARAMS_t *params)
 {
-    // A is modified by ?GETRI to carry inverse of X, B used as workspace
+    /* A is modified by ?GETRI to carry inverse of X, B used as workspace */
     LAPACK(@getri@)(&params->N, params->A, &params->LDA, params->IPIV,
                     params->B, &params->LDB, &params->INFO);
 }
@@ -1133,8 +1157,8 @@ call_@getri@(GESV_PARAMS_t *params)
 * Initialize the parameters to use in the lapack functions _getri           *
 * Handles buffer allocation
 ****************************************************************************/
-// N: size of A (square)
-// we use B for workspace
+/* N: size of A (square)
+   we use B for workspace */
 static NPY_INLINE int
 init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
 {
@@ -1152,30 +1176,32 @@ init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
     params->N = N;
     params->NRHS = N;
     params->LDA = lda;
-    params->LDB = -1;  // we use B for workspace
+    params->LDB = -1;  /* we use B for workspace */
     params->B = &work_size;
     params->INFO = 0;
     params->TRANS = char_N;
-    params->A = NULL;  // not using for workspace query
+    params->A = NULL;  /* not using for workspace query */
     params->IPIV = NULL;
 
-    call_@getri@(params);  // workspace query
-    LW = @TYPE@_real_int(work_size);  // enough workspace for _getri
+    /* workspace query */
+    call_@getri@(params);
+    /* enough workspace for _getri */
+    LW = @TYPE@_real_int(work_size);
     safe_LW = LW;
 
-    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      // for A
-                    + safe_LW * sizeof(@ftyp@)              // for B (W)
-                    + safe_N * sizeof(fortran_int));        // for IPIV
+    mem_buff = malloc(safe_N * safe_N * sizeof(@ftyp@)      /* for A */
+                    + safe_LW * sizeof(@ftyp@)              /* for B (W) */
+                    + safe_N * sizeof(fortran_int));        /* for IPIV */
     if (!mem_buff) {
         goto error;
     }
-    a = mem_buff;                                   // store A at start of buffer
-    b = a + safe_N * safe_N * sizeof(@ftyp@);       // store W after space for A
-    c = b + safe_LW * sizeof(@ftyp@);    // store IPIV after space for A,W
+    a = mem_buff;                              /* store A at start of buffer */
+    b = a + safe_N * safe_N * sizeof(@ftyp@);  /* store W after space for A */
+    c = b + safe_LW * sizeof(@ftyp@);     /* store IPIV after space for A,W */
 
-    params->LDB = LW;  // we use B for workspace
+    params->LDB = LW;  /* we use B for workspace */
     params->A = a;
-    params->B = b;  // we use B for workspace
+    params->B = b;  /* we use B for workspace */
     params->IPIV = (fortran_int *)c;
 
     return 1;
@@ -1183,7 +1209,7 @@ init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
   error:
     free(mem_buff);
     memset(params, 0, sizeof(*params));
-    // PyErr_NoMemory();
+    /* PyErr_NoMemory(); */
 
     return 0;
 }
@@ -1192,39 +1218,44 @@ init_@getri@(GESV_PARAMS_t *params, npy_intp N_in)
 * Inner GUfunc loop     *
 *************************/
 
-// inv_signature = "(n,n)->(n,n)";
+/* inv_signature = "(n,n)->(n,n)"; */
 
 static void
 @TYPE@_inv(char **args, npy_intp *dimensions, npy_intp *steps,
                 void *NPY_UNUSED(func))
 {
 INIT_OUTER_LOOP_2
-    npy_intp len_n = *dimensions++;  // rows, columns of a,x
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_n = *dimensions++;  /* rows, columns of a,x */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_r = *steps++;  /* rows */
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, x_out;
 
-    if(init_@getri@(&params, len_n)){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@getri@(&params, len_n)){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
 
         BEGIN_OUTER_LOOP_2
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
-            call_@getrf@(&params);  // call Lapack
+            /* copy input */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            /* call Lapack */
+            call_@getrf@(&params);
             call_@getri@(&params);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);  // copy output
+                /* copy output */
+                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);
             }
         END_OUTER_LOOP_2
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -1233,35 +1264,38 @@ INIT_OUTER_LOOP_2
 *       INVLU           *
 *************************/
 
-// invlu_signature = (n,n)->(n,n),(n,n),(n)"
+/* invlu_signature = (n,n)->(n,n),(n,n),(n)" */
 
 static void
 @TYPE@_inv_lu(char **args, npy_intp *dimensions, npy_intp *steps,
                 void *NPY_UNUSED(func))
 {
 INIT_OUTER_LOOP_4
-    npy_intp len_n = *dimensions++;  // rows, columns of a,x
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_n = *dimensions++;  /* rows, columns of a,x */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_x_r = *steps++;  /* rows */
     npy_intp stride_x_c = *steps++;
-    npy_intp stride_f_r = *steps++;  // rows
+    npy_intp stride_f_r = *steps++;  /* rows */
     npy_intp stride_f_c = *steps++;
-    npy_intp stride_ip = *steps++;  // rows
+    npy_intp stride_ip = *steps++;  /* rows */
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, x_out, f_out, ip_out;
 
-    if(init_@getri@(&params, len_n)){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@getri@(&params, len_n)){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_a_c, stride_a_r);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
         init_linearize_data(&f_out, len_n, len_n, stride_f_r, stride_f_c);
         init_linearize_vdata(&ip_out, len_n, stride_ip);
 
         BEGIN_OUTER_LOOP_4
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
-            call_@getrf@(&params);  // call Lapack
+            /* copy input */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
+            /* call Lapack */
+            call_@getrf@(&params);
             delinearize_@TYPE@_matrix(args[2], params.A, &f_out);
             delinearize_INT_vec(args[3], params.IPIV, &ip_out);
             call_@getri@(&params);
@@ -1269,10 +1303,12 @@ INIT_OUTER_LOOP_4
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[1], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);  // copy output
+                /* copy output */
+                delinearize_@TYPE@_matrix(args[1], params.A, &x_out);
             }
         END_OUTER_LOOP_4
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -1281,41 +1317,45 @@ INIT_OUTER_LOOP_4
 *       LUINV           *
 *************************/
 
-// luinv_signature = "(n,n)(n)->(n,n)";
+/* luinv_signature = "(n,n)(n)->(n,n)"; */
 
 static void
 @TYPE@_lu_inv(char **args, npy_intp *dimensions, npy_intp *steps,
                 void *NPY_UNUSED(func))
 {
 INIT_OUTER_LOOP_3
-    npy_intp len_n = *dimensions++;  // rows, columns of a,x
-    npy_intp stride_a_r = *steps++;  // rows
+    npy_intp len_n = *dimensions++;  /* rows, columns of a,x */
+    npy_intp stride_a_r = *steps++;  /* rows */
     npy_intp stride_a_c = *steps++;
-    npy_intp stride_ip = *steps++;  // rows
-    npy_intp stride_x_r = *steps++;  // rows
+    npy_intp stride_ip = *steps++;  /* rows */
+    npy_intp stride_x_r = *steps++;  /* rows */
     npy_intp stride_x_c = *steps++;
     int error_occurred = get_fp_invalid_and_clear();
     GESV_PARAMS_t params;
     LINEARIZE_DATA_t a_in, ip_in, x_out;
 
-    if(init_@getri@(&params, len_n)){  // allocate buffer
-        // initialise shape data
+    /* allocate buffer */
+    if(init_@getri@(&params, len_n)){
+        /* initialise shape data */
         init_linearize_data(&a_in, len_n, len_n, stride_a_r, stride_a_c);
         init_linearize_vdata(&ip_in, len_n, stride_ip);
         init_linearize_data(&x_out, len_n, len_n, stride_x_c, stride_x_r);
 
         BEGIN_OUTER_LOOP_3
-            linearize_@TYPE@_matrix(params.A, args[0], &a_in);  // copy input
+            /* copy input */
+            linearize_@TYPE@_matrix(params.A, args[0], &a_in);
             linearize_INT_vec(params.IPIV, args[1], &ip_in);
             call_@getri@(&params);
             if (params.INFO) {
                 error_occurred = 1;
                 nan_@TYPE@_matrix(args[2], &x_out);
             } else {
-                delinearize_@TYPE@_matrix(args[2], params.A, &x_out);  // copy output
+                /* copy output */
+                delinearize_@TYPE@_matrix(args[2], params.A, &x_out);
             }
         END_OUTER_LOOP_3
-        release_@getrf@(&params);  // deallocate buffer
+        /* deallocate buffer */
+        release_@getrf@(&params);
     }
     set_fp_invalid_or_clear(error_occurred);
 }
@@ -1329,7 +1369,7 @@ INIT_OUTER_LOOP_3
 */
 
 
-// array of functions for each ufunc loop
+/* array of functions for each ufunc loop */
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(solve);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(rsolve);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(solve_lu);
@@ -1344,64 +1384,65 @@ GUFUNC_FUNC_ARRAY_REAL_COMPLEX(inv);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(inv_lu);
 GUFUNC_FUNC_ARRAY_REAL_COMPLEX(lu_inv);
 
-// types argumrnt for creating 'lu' ufuncs
-static char ufn_types_pivot_3[] = { NPY_FLOAT, NPY_INT, NPY_FLOAT,
+/* types argument for creating 'lu' ufuncs */
+static char ufn_types_pivot_3[] = {NPY_FLOAT, NPY_INT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_INT, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_INT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE };
-static char ufn_types_solve_4[] = { NPY_FLOAT, NPY_INT, NPY_FLOAT, NPY_FLOAT,
+                                NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE};
+static char ufn_types_solve_4[] = {NPY_FLOAT, NPY_INT, NPY_FLOAT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_INT, NPY_DOUBLE, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_INT, NPY_CFLOAT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE, NPY_CDOUBLE };
-static char ufn_types_rsolve_4[] = { NPY_FLOAT, NPY_FLOAT, NPY_INT, NPY_FLOAT,
+                                NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE, NPY_CDOUBLE};
+static char ufn_types_rsolve_4[] = {NPY_FLOAT, NPY_FLOAT, NPY_INT, NPY_FLOAT,
                                 NPY_DOUBLE, NPY_DOUBLE, NPY_INT, NPY_DOUBLE,
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_INT, NPY_CFLOAT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE };
-static char ufn_types_lu_3[] = { NPY_FLOAT, NPY_FLOAT, NPY_INT,
+                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT, NPY_CDOUBLE};
+static char ufn_types_lu_3[] = {NPY_FLOAT, NPY_FLOAT, NPY_INT,
                                 NPY_DOUBLE, NPY_DOUBLE, NPY_INT,
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT };
-static char ufn_types_lu_4[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_INT,
+                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT};
+static char ufn_types_lu_4[] = {NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_INT,
                                 NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_INT,
                                 NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT };
-static char ufn_types_lu_5[] = { NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_INT,
-                                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_INT,
-                                NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
-                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT };
+                                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT};
+static char ufn_types_lu_5[] = {
+                NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_INT,
+                NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_INT,
+                NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_INT,
+                NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_INT};
 
-// info for creating ufunc object
+/* info for creating ufunc object */
 GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
-    { "solve", "(n,n),(n,nrhs?)->(n,nrhs?)", solve__doc__, 4, 2, 1,
-        FUNC_ARRAY_NAME(solve), ufn_types_4_3 },
-    { "rsolve", "(nrhs?,n),(n,n)->(nrhs?,n)", rsolve__doc__, 4, 2, 1,
-        FUNC_ARRAY_NAME(rsolve), ufn_types_4_3 },
-    { "solve_lu", "(n,n),(n,nrhs?)->(n,nrhs?),(n,n),(n)", solve_lu__doc__, 4, 2, 3,
-        FUNC_ARRAY_NAME(solve_lu), ufn_types_lu_5 },
-    { "rsolve_lu", "(nrhs?,n),(n,n)->(nrhs?,n),(n,n),(n)", rsolve_lu__doc__, 4, 2, 3,
-        FUNC_ARRAY_NAME(rsolve_lu), ufn_types_lu_5 },
-    { "lu_solve", "(n,n),(n),(n,nrhs?)->(n,nrhs?)", lu_solve__doc__, 4, 3, 1,
-        FUNC_ARRAY_NAME(lu_solve), ufn_types_solve_4 },
-    { "rlu_solve", "(nrhs?,n),(n,n),(n)->(nrhs?,n)", rlu_solve__doc__, 4, 3, 1,
-        FUNC_ARRAY_NAME(rlu_solve), ufn_types_rsolve_4 },
-    { "lu_m", "(m,n)->(m,m),(m,n),(m)", lu__doc__, 4, 1, 3,
-        FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
-    { "lu_n", "(m,n)->(m,n),(n,n),(n)", lu__doc__, 4, 1, 3,
-        FUNC_ARRAY_NAME(lu), ufn_types_lu_4 },
-    { "lu_rawm", "(m,n)->(n,m),(m)", lu_raw__doc__, 4, 1, 2,
-        FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
-    { "lu_rawn", "(m,n)->(n,m),(n)", lu_raw__doc__, 4, 1, 2,
-        FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3 },
-    { "pivot", "(m,n),(k)->(m,n)", pivot__doc__, 4, 2, 1,
-        FUNC_ARRAY_NAME(pivot), ufn_types_pivot_3 },
-    { "rpivot", "(m,n),(k)->(m,n)", rpivot__doc__, 4, 2, 1,
-        FUNC_ARRAY_NAME(rpivot), ufn_types_pivot_3 },
-    { "inv", "(n,n)->(n,n)", inv__doc__, 4, 1, 1,
-        FUNC_ARRAY_NAME(inv), ufn_types_4_2 },
-    { "inv_lu", "(n,n)->(n,n),(n,n),(n)", inv_lu__doc__, 4, 1, 3,
-        FUNC_ARRAY_NAME(inv_lu), ufn_types_lu_4 },
-    { "lu_inv", "(n,n),(n)->(n,n)", lu_inv__doc__, 4, 2, 1,
-        FUNC_ARRAY_NAME(lu_inv), ufn_types_pivot_3 },
+    {"solve", "(n,n),(n,nrhs?)->(n,nrhs?)", solve__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(solve), ufn_types_4_3},
+    {"rsolve", "(nrhs?,n),(n,n)->(nrhs?,n)", rsolve__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(rsolve), ufn_types_4_3},
+    {"solve_lu", "(n,n),(n,nrhs?)->(n,nrhs?),(n,n),(n)", solve_lu__doc__,
+        4, 2, 3, FUNC_ARRAY_NAME(solve_lu), ufn_types_lu_5},
+    {"rsolve_lu", "(nrhs?,n),(n,n)->(nrhs?,n),(n,n),(n)", rsolve_lu__doc__,
+        4, 2, 3, FUNC_ARRAY_NAME(rsolve_lu), ufn_types_lu_5},
+    {"lu_solve", "(n,n),(n),(n,nrhs?)->(n,nrhs?)", lu_solve__doc__, 4, 3, 1,
+        FUNC_ARRAY_NAME(lu_solve), ufn_types_solve_4},
+    {"rlu_solve", "(nrhs?,n),(n,n),(n)->(nrhs?,n)", rlu_solve__doc__, 4, 3, 1,
+        FUNC_ARRAY_NAME(rlu_solve), ufn_types_rsolve_4},
+    {"lu_m", "(m,n)->(m,m),(m,n),(m)", lu__doc__, 4, 1, 3,
+        FUNC_ARRAY_NAME(lu), ufn_types_lu_4},
+    {"lu_n", "(m,n)->(m,n),(n,n),(n)", lu__doc__, 4, 1, 3,
+        FUNC_ARRAY_NAME(lu), ufn_types_lu_4},
+    {"lu_rawm", "(m,n)->(n,m),(m)", lu_raw__doc__, 4, 1, 2,
+        FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3},
+    {"lu_rawn", "(m,n)->(n,m),(n)", lu_raw__doc__, 4, 1, 2,
+        FUNC_ARRAY_NAME(lu_raw), ufn_types_lu_3},
+    {"pivot", "(m,n),(k)->(m,n)", pivot__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(pivot), ufn_types_pivot_3},
+    {"rpivot", "(m,n),(k)->(m,n)", rpivot__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(rpivot), ufn_types_pivot_3},
+    {"inv", "(n,n)->(n,n)", inv__doc__, 4, 1, 1,
+        FUNC_ARRAY_NAME(inv), ufn_types_4_2},
+    {"inv_lu", "(n,n)->(n,n),(n,n),(n)", inv_lu__doc__, 4, 1, 3,
+        FUNC_ARRAY_NAME(inv_lu), ufn_types_lu_4},
+    {"lu_inv", "(n,n),(n)->(n,n)", lu_inv__doc__, 4, 2, 1,
+        FUNC_ARRAY_NAME(lu_inv), ufn_types_pivot_3},
 };
 
 /*
@@ -1410,12 +1451,13 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors[] = {
 *****************************************************************************
 */
 
-// Methods to add to module (none, we add ufuncs after creating them)
+/* Methods to add to module (none, we add ufuncs after creating them) */
 static PyMethodDef GUfuncs_LUSOLVE_Methods[] = {
-    {NULL, NULL, 0, NULL}        /* Sentinel */
+    /* Sentinel */
+    {NULL, NULL, 0, NULL}
 };
 
-// arguments for module creation
+/* arguments for module creation */
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     "_gufuncs_lu_solve",
@@ -1428,7 +1470,7 @@ static struct PyModuleDef moduledef = {
     NULL
 };
 
-// create module
+/* create module */
 PyObject *PyInit__gufuncs_lu_solve(void)
 {
     PyObject *m;

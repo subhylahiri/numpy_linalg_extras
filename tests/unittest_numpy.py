@@ -394,7 +394,9 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
     shape = np.broadcast(x, y).shape
     thresh = atol + rtol * np.abs(np.broadcast_to(y, shape))
     mismatch = np.abs(x - y)
-    mis_frac = (np.log(mismatch) - np.log(thresh)) / np.log(10)
+    mask = mismatch > thresh
+    mis_frac = np.full_like(mismatch, np.NINF)
+    mis_frac[mask] = (np.log(mismatch[mask]) - np.log(thresh[mask]))/np.log(10)
 
     if equal_nan:
         argmax = np.nanargmax

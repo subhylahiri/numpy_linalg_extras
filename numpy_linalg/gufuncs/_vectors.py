@@ -18,7 +18,9 @@ vec_wrap:
 """
 import functools as _ft
 import numpy as _np
-from ._families import inverse_arguments, same_family, solve, lstsq
+from ._families import inverse_arguments, same_family
+from . import _gufuncs_lu_solve as _gls
+from . import _gufuncs_qr_lstsq as _gql
 from ._util import make_errobj
 
 
@@ -137,12 +139,12 @@ def vec_wrap(gufunc, case=()):
                                               "(...,M,NRHS) or (M,)")
     wrapper.__doc__ = wrapper.__doc__.replace("(...,NRHS,M)",
                                               "(...,NRHS,M) or (M,)")
-    if same_family(gufunc, solve):
+    if same_family(gufunc, _gls.solve):
         wrapper.__doc__ = wrapper.__doc__.replace("(...,N,NRHS)",
                                                   "(...,N,NRHS) or (N,)")
         wrapper.__doc__ = wrapper.__doc__.replace("(...,NRHS,N)",
                                                   "(...,NRHS,N) or (N,)")
-    elif same_family(gufunc, lstsq):
+    elif same_family(gufunc, _gql.lstsq):
         wrapper.__doc__ = wrapper.__doc__.replace(
                     "(...,N,NRHS)", "(...,N,NRHS), (...,N), (...,NRHS) or ()")
         wrapper.__doc__ = wrapper.__doc__.replace(

@@ -38,10 +38,9 @@ import numpy as _np
 from ._gufuncs_cloop import rtrue_divide, norm  # , matmul, rmatmul
 from ._gufuncs_blas import rmatmul  # matmul, norm
 from numpy import matmul
-from ._gufuncs_lu_solve import (solve, rsolve, solve_lu, rsolve_lu, lu_solve,
-                                rlu_solve)
-from ._gufuncs_qr_lstsq import (lstsq, rlstsq, lstsq_qrm, lstsq_qrn,
-                                rlstsq_qrm, rlstsq_qrn, qr_lstsq, rqr_lstsq)
+from . import _gufuncs_lu_solve as _gls
+from . import _gufuncs_qr_lstsq as _gql
+
 assert norm
 # =============================================================================
 # Categories of binary operators
@@ -50,13 +49,13 @@ assert norm
 # maps Tuple[bool] (left, right) -> gufunc
 # if left, 1st argument of gufunc is 'inverted'
 # if right, 2nd argument of gufunc is 'inverted'
-solve_family = ((matmul, rsolve), (solve, rmatmul))
-solve_lu_family = ((matmul, rsolve_lu), (solve_lu, rmatmul))
-lu_solve_family = ((matmul, rlu_solve), (lu_solve, rmatmul))
-lstsq_family = ((matmul, rlstsq), (lstsq, None))
-lstsq_qrm_family = ((matmul, rlstsq_qrm), (lstsq_qrm, None))
-lstsq_qrn_family = ((matmul, rlstsq_qrn), (lstsq_qrn, None))
-qr_lstsq_family = ((matmul, rqr_lstsq), (qr_lstsq, None))
+solve_family = ((matmul, _gls.rsolve), (_gls.solve, rmatmul))
+solve_lu_family = ((matmul, _gls.rsolve_lu), (_gls.solve_lu, rmatmul))
+lu_solve_family = ((matmul, _gls.rlu_solve), (_gls.lu_solve, rmatmul))
+lstsq_family = ((matmul, _gql.rlstsq), (_gql.lstsq, None))
+lstsq_qrm_family = ((matmul, _gql.rlstsq_qrm), (_gql.lstsq_qrm, None))
+lstsq_qrn_family = ((matmul, _gql.rlstsq_qrn), (_gql.lstsq_qrn, None))
+qr_lstsq_family = ((matmul, _gql.rqr_lstsq), (_gql.qr_lstsq, None))
 
 _solve_families = [
         solve_family,
@@ -69,35 +68,72 @@ _lstsq_families = [
         lstsq_qrn_family,
         qr_lstsq_family,
 ]
-_solve_funcs = set([z for x in _solve_families for y in x for z in y])
-_lstsq_funcs = set([z for x in _lstsq_families for y in x for z in y])
 
-_families = _solve_families + _lstsq_families
 # maps gufunc -> (left, right) Tuple[bool]
 # if left, 1st argument of gufunc is 'inverted'
 # if right, 2nd argument of gufunc is 'inverted'
 inverse_arguments = {}
-_bools = (False, True)
-for _family, _left_arg, _right_arg in _it.product(_families, _bools, _bools):
-    _func = _family[_left_arg][_right_arg]
-    if _func is not None and _func not in inverse_arguments.keys():
-        inverse_arguments[_func] = (_left_arg, _right_arg)
-# NOTE: rmatmul doesn't fit the pattern, needs special handling
+super_families = {}
 
 # backwards maps Tuple[bool] (left, right) -> ufunc
 # if left, *2nd* argument of ufunc is a *numerator*
 # if right, *1st* argument of ufunc is a *numerator*
 truediv_family = ((None, _np.true_divide), (rtrue_divide, _np.multiply))
-inverse_scalar_arguments = {}
 # backwards maps ufunc -> (left, right) Tuple[bool]
-for _left_arg, _right_arg in _it.product(_bools, _bools):
-    _func = truediv_family[_left_arg][_right_arg]
-    if _func is not None and _func not in inverse_scalar_arguments.keys():
-        inverse_scalar_arguments[_func] = (_left_arg, _right_arg)
+inverse_scalar_arguments = {}
+
+
+def _add_family(inv_arg_dict, family):
+    """Add a new family to inverse-argument dict
+    """
+    bools = (False, True)
+    for left_arg, right_arg in _it.product(bools, bools):
+        func = family[left_arg][right_arg]
+        if func is not None and func not in inv_arg_dict.keys():
+            inv_arg_dict[func] = (left_arg, right_arg)
+    # NOTE: rmatmul doesn't fit the pattern, needs special handling
+
+
+def _add_family_set(inv_arg_dict, func_set, *families):
+    """create a set of families
+    """
+    for family in families:
+        _add_family(inv_arg_dict, family)
+        func_set.update(y for x in family for y in x)
+
+
+def add_to_super_family(name, *families):
+    """Add a gufunc family to a super-family
+
+    For special handling by (p)invarrays
+    """
+    _add_family_set(inverse_arguments, super_families[name], *families)
+
+
+def add_new_super_family(name, *families):
+    """Create a new super-family of gufunc families
+    """
+    super_families[name] = set()
+    add_to_super_family(name, *families)
 
 
 def same_family(ufunc_in, ufunc_out) -> bool:
-    """Are the two ufuncs from the same family?
+    """Are the two ufuncs from the same super-family?
     """
-    return any([(ufunc_in in x) and (ufunc_out in x)
-                for x in [_solve_funcs, _lstsq_funcs]])
+    return any({ufunc_in, ufunc_out} <= x for x in super_families.values())
+
+
+def add_scalar_family(*families):
+    """Add a scalar ufunc family
+
+    For special handling by (p)invarrays
+    """
+    for family in families:
+        _add_family(inverse_scalar_arguments, family)
+
+
+# make maps gufunc -> (left, right) Tuple[bool]
+add_new_super_family('solve', *_solve_families)
+add_new_super_family('lstsq', *_lstsq_families)
+# make backwards maps ufunc -> (left, right) Tuple[bool]
+add_scalar_family(truediv_family)

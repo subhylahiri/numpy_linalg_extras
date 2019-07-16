@@ -10,9 +10,10 @@ import numpy as np
 __all__ = [
         'TestCaseNumpy',
         'NosortTestLoader',
-        'nosortTestLoader',
+        'TestCaseNosort',
         'TestResultStopTB',
         'TestRunnerStopTB',
+        'nosortTestLoader',
         'main',
         'loop_test',
         'miss_str',
@@ -77,6 +78,8 @@ class NosortTestLoader(_ut.TestLoader):
 
         If module has an `__all__` attribute but no `load_tests` function,
         `TesCase`s will be loaded in the order they appear there.
+
+        Extends `unittest.TestLoader.loadTestsFromModule`.
         """
         tests = super().loadTestsFromModule(self, module, *args, pattern=None,
                                             **kws)
@@ -96,6 +99,41 @@ class NosortTestLoader(_ut.TestLoader):
 
 
 nosortTestLoader = NosortTestLoader()
+
+
+class TestCaseNosort(_ut.TestCase):
+    """Test case with a method for making unsorted method lists.
+
+    Extends `unittest.TestCase`. Subclass this for your own unit test suites.
+
+
+    It will run the tests in the order defined, rather than alphabetical if
+    used in combination with `TestLoaderNosort`, and if the module has an
+    `__all__` attribute containing the `TestCase` classes.
+
+    Methods
+    -------
+    get_names
+        Returns an unsorted list of attribute names.
+
+    See Also
+    --------
+    `TestLoaderNosort` : test loader that uses `TestCase.get_names` by default.
+    `nosortTestLoader` : instance of `TestLoaderNosort`.
+    `unittest.TestCase` : parent class.
+    """
+
+    @classmethod
+    def get_names(cls):
+        """Returns an unsorted list of attribute names."""
+        my_attr = []
+        for base in cls.__bases__:
+            try:
+                my_attr += base.get_names()
+            except AttributeError:
+                my_attr += dir(base)
+        my_attr.extend(cls.__dict__)
+        return unique_unsorted(my_attr)
 
 
 class TestResultStopTB(_ut.TextTestResult):
@@ -188,7 +226,7 @@ def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
 # =============================================================================
 
 
-class TestCaseNumpy(_ut.TestCase):
+class TestCaseNumpy(TestCaseNosort):
     """Test case with methods for comparing numpy arrays.
 
     Subclass this class to make your own unit test suite.
@@ -319,17 +357,6 @@ class TestCaseNumpy(_ut.TestCase):
         # __unittest = True
         for array, shape in zip(arrays, shapes):
             self.assertEqual(array.shape, shape, msg)
-
-    @classmethod
-    def get_names(cls):
-        my_attr = []
-        for base in cls.__bases__:
-            try:
-                my_attr += base.get_names()
-            except AttributeError:
-                my_attr += dir(base)
-        my_attr.extend(cls.__dict__)
-        return unique_unsorted(my_attr)
 
 
 # =============================================================================

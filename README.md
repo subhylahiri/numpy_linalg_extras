@@ -4,7 +4,7 @@ This package contains classes and functions that make the syntax for linear
 algebra in `numpy` cleaner, particularly with respect to broadcasting and
 matrix division. 
 
-[Instructions for building the C modules below](#building-the-cpython-modules)
+[Instructions for building the C modules below](#building-the-c-modules)
 
 <!-- MDTOC maxdepth:6 firsth1:1 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -31,7 +31,7 @@ conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
 scalars in a way that fits with `numpy.linalg` broadcasting rules (`t,h` only
 transpose the last two indices, `r,c,s` add singleton axes so that linear
 algebra routines treat them as arrays of vectors/scalars rather than matrices,
-and `ur,uc,us` undo the effects of `r,c,s`).[^1]
+and `ur,uc,us` undo the effects of `r,c,s`).<sup>[1]</sup>
 
 The `lnarray` class also has properties for delayed matrix division:
 ```python
@@ -49,8 +49,8 @@ To get the actual inverse matrices you can explicitly call the objects:
 >>> x = y.pinv()
 ```
 
-[^1]: It used to use a custom `gufunc` for `matmul`, but as of v1.16 `NumPy`
-    does this so we use that instead.
+[1]: <> "There used to be a custom `gufunc` for `matmul`, but 
+    `NumPy` v1.16 uses a `matmul` `gufunc` so we use that instead."
 
 
 ## Rationale
@@ -75,6 +75,7 @@ Things do get better in Python 3.5 and Numpy 1.10:
 A = np.linalg.solve(Zi.T, xi).T @ Q @ np.linalg.solve(Zi, w)
 ```
 If I want it to broadcast I'd also have to replace `T` with `swapaxes(-2, -1)`.
+
 Using this package, I can write it as
 ```python
 A = xi @ Zi.inv @ Q @ (Zi.inv @ w)
@@ -90,9 +91,9 @@ mathematical expression above.
 To do this, I reimplemented several `numpy` functions, some of them in `C`.
 In each case, this wheel reinvention was done for one of the following reasons:
 1. The `numpy` version doesn't broadcast (e.g. `lstsq`, `qr`).
-1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
+1. The `numpy` version doesn't work well with subclasses (e.g. `norm`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
-rely on it.
+rely on it (e.g. `solve`).
 1. I needed a `gufunc` version of `lstsq` neither requires an `rcond` input
 nor returns any diagnostic information.
 1. Completeness (e.g. `inv`).
@@ -125,7 +126,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
     Does not actually invert the matrix unless it is explicitly called.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of an `invarray`
-    object will affect the original `lnarray` object.
+    object will affect the original `lnarray` object and vice-versa.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
 * `pinvarray`:
@@ -134,7 +135,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
     Does not actually pseudoinvert the matrix unless it is explicitly called.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of a `pinvarray`
-    object will affect the original `lnarray` object.
+    object will affect the original `lnarray` object and vice-versa.
     I think it is best not to store these objects in variables, and call on
     `lnarray.pinv` on the rhs instead.
 
@@ -142,7 +143,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.[^1]
+    Alias for `numpy.matmul`.<sup>[1]</sup>
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.

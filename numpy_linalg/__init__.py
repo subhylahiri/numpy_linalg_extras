@@ -103,19 +103,19 @@ from . import version
 __version__ = version.max_version(
     "0.2.0", gufuncs, wrappers, random, _lnarray, _linalg)
 
-assert all((gufuncs, wrappers, random, norm))
-assert all((lnarray, pinvarray, invarray))
-assert all((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
+assert any((gufuncs, wrappers, random, norm))
+assert any((lnarray, pinvarray, invarray))
+assert any((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
             matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
-assert all((
+assert any((
     empty, empty_like, eye, identity, ones, ones_like, zeros, zeros_like, full,
     full_like, array, asarray, asanyarray, ascontiguousarray, copy, frombuffer,
     fromfile, fromfunction, fromiter, fromstring, loadtxt, arange, linspace,
     logspace, geomspace, meshgrid, diag, diagflat, tri, tril, triu, vander))
-assert all((
-   reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
-   broadcast_to, broadcast_arrays, expand_dims, squeeze, asfarray, flattish,
-   asfortranarray, asarray_chkfinite, require, concatenate, stack,
-   column_stack, dstack, hstack, vstack, block, split, array_split, dsplit,
-   hsplit, vsplit, tile, repeat, delete, insert, append, resize, trim_zeros,
-   unique, flip, fliplr, flipud, reshape, roll, rot90))
+assert any((
+    reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
+    broadcast_to, broadcast_arrays, expand_dims, squeeze, asfarray, flattish,
+    asfortranarray, asarray_chkfinite, require, concatenate, stack,
+    column_stack, dstack, hstack, vstack, block, split, array_split, dsplit,
+    hsplit, vsplit, tile, repeat, delete, insert, append, resize, trim_zeros,
+    unique, flip, fliplr, flipud, reshape, roll, rot90))

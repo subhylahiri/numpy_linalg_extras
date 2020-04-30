@@ -610,7 +610,7 @@ static NPY_INLINE void
 call_@laswp@(GESV_PARAMS_t *params)
 {
     fortran_int zero = 1;
-    /* A is modified by ?GETRF to carry LU info */
+    /* A is pivoted by ?LASWP */
     LAPACK(@laswp@)(&params->N, params->A, &params->LDA, &zero, &params->M,
                     params->IPIV, &params->INFO);
 }
@@ -657,6 +657,7 @@ init_@laswp@(GESV_PARAMS_t *params,
     params->NRHS = N;                /* not used in _laswp */
     params->LDB = 1;                 /* not used in _laswp */
     params->TRANS = 'N';             /* not used in _laswp */
+    params->INFO = (fortran_int)direction;
 
     return 1;
 

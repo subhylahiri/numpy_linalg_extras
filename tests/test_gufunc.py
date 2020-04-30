@@ -5,16 +5,17 @@ import numpy as np
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 if __name__.find('tests.') < 0:
+    # pylint: disable=import-error
     import unittest_numpy as utn
 else:
     from . import unittest_numpy as utn
-# gfb = gfc
-# gfc = gfb
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestMatsVecs', 'TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
-# %% Test BLAS ufuncs
+# Test BLAS ufuncs
 # =============================================================================
 
 
@@ -192,7 +193,7 @@ class TestBlasVectors(TestMatsVecs):
 
 
 # =============================================================================
-# %% Test cloop ufuncs
+# Test cloop ufuncs
 # =============================================================================
 
 

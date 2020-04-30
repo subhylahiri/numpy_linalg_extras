@@ -13,12 +13,14 @@ if __name__.find('tests.') < 0:
 else:
     from . import unittest_numpy as utn
     from .test_gufunc import TestMatsVecs
-
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
+# pylint: disable=invalid-sequence-index
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestShape', 'TestValue']
 # =============================================================================
-# %% Test python funcs
+# Test python funcs
 # =============================================================================
 
 
@@ -214,10 +216,10 @@ class TestValue(TestMatsVecs):
         q, r = la.qr(self.m_sb, 'complete')
         self.assertArrayAllClose(q @ r, self.m_sb)
         r = la.qr(self.a_bs, 'r')
-        h, tau = la.qr(self.a_bs, 'raw')
+        h, _ = la.qr(self.a_bs, 'raw')
         self.assertArrayAllClose(r, np.triu(la.transpose(h))[:, :3])
         r = la.qr(self.m_sb, 'r')
-        h, tau = la.qr(self.m_sb, 'raw')
+        h, _ = la.qr(self.m_sb, 'raw')
         self.assertArrayAllClose(r, np.triu(la.transpose(h)))
 
     @utn.loop_test()
@@ -232,10 +234,10 @@ class TestValue(TestMatsVecs):
         lo, q = la.lq(self.m_sb, 'complete')
         self.assertArrayAllClose(lo @ q, self.m_sb)
         lo = la.lq(self.a_bs, 'l')
-        h, tau = la.lq(self.a_bs, 'raw')
+        h, _ = la.lq(self.a_bs, 'raw')
         self.assertArrayAllClose(lo, np.tril(la.transpose(h)))
         lo = la.lq(self.m_sb, 'l')
-        h, tau = la.lq(self.m_sb, 'raw')
+        h, _ = la.lq(self.m_sb, 'raw')
         self.assertArrayAllClose(lo, np.tril(la.transpose(h))[..., :3])
 
     @utn.loop_test()
@@ -250,10 +252,10 @@ class TestValue(TestMatsVecs):
         lo, q = la.lqr(self.m_sb, 'complete')
         self.assertArrayAllClose(lo @ q, self.m_sb)
         r = la.lqr(self.a_bs, 'r')
-        h, tau = la.lqr(self.a_bs, 'raw')
+        h, _ = la.lqr(self.a_bs, 'raw')
         self.assertArrayAllClose(r, np.triu(la.transpose(h))[:, :3])
         lo = la.lqr(self.m_sb, 'r')
-        h, tau = la.lqr(self.m_sb, 'raw')
+        h, _ = la.lqr(self.m_sb, 'raw')
         self.assertArrayAllClose(lo, np.tril(la.transpose(h))[..., :3])
 
     @utn.loop_test()
@@ -282,7 +284,7 @@ class TestValue(TestMatsVecs):
         self.pick_var_type(sctype)
         q, r = la.qr(self.ones_ss)
         self.assertArrayAllClose(q @ r, self.ones_ss)
-        low, up, piv = la.lu(self.ones_ss)
+        low, up, _ = la.lu(self.ones_ss)
         self.assertArrayAllClose(low @ up, self.ones_ss)
         with self.assertRaisesRegex(*utn.invalid_err):
             la.solve(self.ones_ss, self.m_sb)

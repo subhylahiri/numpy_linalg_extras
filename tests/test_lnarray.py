@@ -6,16 +6,18 @@ import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
 if __name__.find('tests.') < 0:
+    # pylint: disable=import-error
     import unittest_numpy as utn
     from test_gufunc import TestMatsVecs
 else:
     from . import unittest_numpy as utn
     from .test_gufunc import TestMatsVecs
-
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================
-# %% Test python classes
+# Test python classes
 # =============================================================================
 
 
@@ -143,9 +145,9 @@ class TestPinvarray(TestNewClasses):
         self.assertIsInstance(pout, la.pinvarray)
         self.assertIsInstance(pout.pinv, la.lnarray)
         with self.assertRaises(AttributeError):
-            pn_bs.inv
+            pn_bs.inv  # pylint: disable=no-member,pointless-statement
         with self.assertRaises(TypeError):
-            m_ss.inv.pinv
+            m_ss.inv.pinv  # pylint: disable=pointless-statement
 
     def test_pinvarray_shape_methods(self):
         self.pick_var_type('d')
@@ -155,7 +157,7 @@ class TestPinvarray(TestNewClasses):
         self.assertEqual(a_bs_p.size, 42)
         self.assertArrayShape(a_bs_p(), (2, 3, 7))
         with self.assertRaises(ValueError):
-            self.la_bs.inv
+            self.la_bs.inv  # pylint: disable=pointless-statement
         a_bs_p = self.la_bs.c.pinv
         self.assertArrayShape(a_bs_p.swapaxes(0, 1), (7, 2, 1, 3))
         self.assertArrayShape(a_bs_p.swapaxes(0, 2), (1, 7, 2, 3))
@@ -282,21 +284,21 @@ class TestPinvarray(TestNewClasses):
         self.assertArrayAllClose(a_bs.pinv() @ m_bs, gf.lstsq(a_bs, m_bs))
         self.assertArrayAllClose(m_sb @ a_bs.pinv.t, gf.rlstsq(m_sb, a_bs.t))
         with self.assertRaises(TypeError):
-            a_bs.pinv @ m_sb.pinv
+            a_bs.pinv @ m_sb.pinv  # pylint: disable=pointless-statement
         self.assertArrayAllClose((a_bs.pinv * 3.5).pinv, a_bs / 3.5)
         self.assertArrayAllClose((2.4 * a_bs.pinv).pinv, a_bs / 2.4)
         self.assertArrayAllClose((a_bs.pinv / 3.564).pinv, a_bs * 3.564)
         with self.assertRaises(TypeError):
-            65 / a_bs.pinv
+            65 / a_bs.pinv  # pylint: disable=pointless-statement
         self.assertArrayAllClose((a_bs.pinv * vs).pinv, a_bs / vs)
         self.assertArrayAllClose((vs * a_bs.pinv).pinv, a_bs / vs)
         self.assertArrayAllClose((a_bs.pinv / vs).pinv, a_bs * vs)
         with self.assertRaises(TypeError):
-            vs / a_bs.pinv
+            vs / a_bs.pinv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            vs.pinv * a_bs.pinv
+            vs.pinv * a_bs.pinv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            a_bs.pinv + self.lm_sb
+            a_bs.pinv + self.lm_sb  # pylint: disable=pointless-statement
         xold = 1. * a_bs
         xp = a_bs.pinv
         xp *= 2
@@ -316,16 +318,16 @@ class TestPinvarray(TestNewClasses):
         self.assertArrayAllClose((2.4 * m_ss.inv).inv, m_ss / 2.4)
         self.assertArrayAllClose((m_ss.inv / 3.564).inv, m_ss * 3.564)
         with self.assertRaises(TypeError):
-            45.564 / m_ss.inv
+            45.564 / m_ss.inv  # pylint: disable=pointless-statement
         self.assertArrayAllClose((xw.inv * vs).inv, xw / vs)
         self.assertArrayAllClose((vs * xw.inv).inv, xw / vs)
         self.assertArrayAllClose((xw.inv / vs).inv, xw * vs)
         with self.assertRaises(TypeError):
-            vs / xw.inv
+            vs / xw.inv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            vs.inv * xw.inv
+            vs.inv * xw.inv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            m_ss + xw.inv
+            m_ss + xw.inv  # pylint: disable=pointless-statement
         xwold = 1. * xw
         xwi = xw.inv
         xwi @= m_ss.inv

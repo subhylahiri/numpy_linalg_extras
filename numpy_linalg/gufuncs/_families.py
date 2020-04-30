@@ -35,9 +35,9 @@ __all__ = [
 ]
 import itertools as _it
 import numpy as _np
+from numpy import matmul
 from ._gufuncs_cloop import rtrue_divide, norm  # , matmul, rmatmul
 from ._gufuncs_blas import rmatmul  # matmul, norm
-from numpy import matmul
 from . import _gufuncs_lu_solve as _gls
 from . import _gufuncs_qr_lstsq as _gql
 

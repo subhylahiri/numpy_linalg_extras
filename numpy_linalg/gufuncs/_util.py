@@ -26,14 +26,14 @@ LNArrayOperatorsMixin
 """
 import numpy as _np
 import numpy.lib.mixins as _mix
+from numpy.lib.mixins import _numeric_methods
 from ._families import matmul
-
 
 # =============================================================================
 # Error handling
 # =============================================================================
 with _np.errstate(invalid='call'):
-    _errobj = _np.geterrobj()[:2]
+    _ERROBJ = _np.geterrobj()[:2]
 
 
 def make_errobj(msg, kwdict=None):
@@ -54,7 +54,7 @@ def make_errobj(msg, kwdict=None):
         Error mask corresponds to ``invalid='raise'``.
         Error handler raises ``LinAlgError`` with message ``msg``.
     """
-    extobj = list(_errobj)  # make a copy
+    extobj = list(_ERROBJ)  # make a copy
 
     def callback(err, flag):
         """Raise LinAlgError"""
@@ -67,7 +67,7 @@ def make_errobj(msg, kwdict=None):
 
 
 # =============================================================================
-# %%* Undo overbroadcast factors
+# Undo overbroadcast factors
 # =============================================================================
 
 
@@ -119,8 +119,7 @@ class MatmulOperatorsMixin():
           replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
           latter now uses the `matmul` gufunc rendering this mixin obsolete.
     """
-    __matmul__, __rmatmul__, __imatmul__ = _mix._numeric_methods(matmul,
-                                                                 'matmul')
+    __matmul__, __rmatmul__, __imatmul__ = _numeric_methods(matmul, 'matmul')
 
 
 class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin):
@@ -135,7 +134,6 @@ class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin):
     --------
     `numpy.lib.mixins.NDArrayOperatorsMixin` : base class.
     """
-    pass
 
 
 # =============================================================================
@@ -143,16 +141,16 @@ class LNArrayOperatorsMixin(_mix.NDArrayOperatorsMixin):
 # =============================================================================
 
 
-def return_shape_mat(x, y):
+def return_shape_mat(left, right):
     """Shape of result of broadcasted matrix multiplication
     """
-    if x.ndim == 0 or y.ndim == 0:
+    if left.ndim == 0 or right.ndim == 0:
         raise ValueError('Scalar operations not supported. Use mul.')
-    if y.ndim == 1:
-        return x.shape[:-1]
-    if x.ndim == 1:
-        return y.shape[:-2] + y.shape[-1:]
-    if x.shape[-1] != y.shape[-2]:
+    if right.ndim == 1:
+        return left.shape[:-1]
+    if left.ndim == 1:
+        return right.shape[:-2] + right.shape[-1:]
+    if left.shape[-1] != right.shape[-2]:
         raise ValueError('Inner matrix dimensions mismatch: '
-                         f'{x.shape} and {y.shape}.')
-    return _np.broadcast(x[..., :1], y[..., :1, :]).shape
+                         f'{left.shape} and {right.shape}.')
+    return _np.broadcast(left[..., :1], right[..., :1, :]).shape

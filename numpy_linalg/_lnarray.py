@@ -39,12 +39,12 @@ Examples
 from __future__ import annotations
 from typing import Optional, Tuple, Sequence
 import numpy as np
-import numpy.lib.mixins as _mix
+from numpy.lib.mixins import _inplace_binary_method
+from numpy.lib.mixins import NDArrayOperatorsMixin
 from . import _linalg as la
 from . import gufuncs as gf
 from . import convert_loop as cv
-
-
+# pylint: disable=invalid-name
 # =============================================================================
 # Export functions
 # =============================================================================
@@ -125,7 +125,7 @@ class lnarray(np.ndarray):
 #        # We are not adding any attributes
 #        pass
     # Last thing not implemented by ndarray:
-    __imatmul__ = _mix._inplace_binary_method(gf.matmul, 'matmul')
+    __imatmul__ = _inplace_binary_method(gf.matmul, 'matmul')
 
     def flattish(self, start: int, stop: int) -> lnarray:
         """Partial flattening.
@@ -379,7 +379,7 @@ def _disallow_solve_pinv(ufunc, is_pinv):
     return any(x and y for x, y in zip(denom, is_pinv))
 
 
-def _who_chooses(obj, ufunc, inputs, pinv_in):
+def _who_chooses(obj, ufunc, inputs, pinv_in) -> pinvarray:
     """Which input's gufunc_map should we use"""
     if ufunc not in gf.fam.inverse_arguments.keys():
         return obj
@@ -393,6 +393,7 @@ def _who_chooses(obj, ufunc, inputs, pinv_in):
     if all(choosers) and any(is_pinv):
         return None
     if any(choosers):
+        # only change the chooser if it is a denominator and a (p)invarray
         return inputs[choosers[1]]
     return obj
 
@@ -432,7 +433,7 @@ def _implicit_getattr(obj, attr):
 # =============================================================================
 
 
-class pinvarray(_mix.NDArrayOperatorsMixin):
+class pinvarray(NDArrayOperatorsMixin):
     """Lazy matrix pseudoinverse of `lnarray`.
 
     Does not actually perform the matrix pseudoinversion.
@@ -534,7 +535,7 @@ class pinvarray(_mix.NDArrayOperatorsMixin):
         if ufunc is None:
             return NotImplemented
         outputs, pinv_out = cv.conv_loop_in_attr(
-                                    '_to_invert', pinvarray, kwds, pinv_out)
+            '_to_invert', pinvarray, kwds, pinv_out)
         results = self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
         return cv.conv_loop_out_init(self, results, outputs, pinv_out)
 

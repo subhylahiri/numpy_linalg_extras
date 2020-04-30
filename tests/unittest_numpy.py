@@ -6,7 +6,7 @@ import contextlib as _cx
 import functools as _ft
 from fnmatch import fnmatchcase
 import numpy as np
-
+# pylint: disable=invalid-name
 __all__ = [
         'TestCaseNumpy',
         'NosortTestLoader',
@@ -29,7 +29,7 @@ __all__ = [
         'invalid_err',
         ]
 # =============================================================================
-# %% Error specs for assertRaisesRegex
+# Error specs for assertRaisesRegex
 # =============================================================================
 broadcast_err = (ValueError, 'operands could not be broadcast')
 core_dim_err = (ValueError, 'mismatch in its core dimension')
@@ -37,7 +37,7 @@ num_dim_err = (ValueError, 'does not have enough dimensions')
 invalid_err = (FloatingPointError, 'invalid value encountered')
 
 # =============================================================================
-# %% Customise test & traceback display
+# Customise test & traceback display
 # =============================================================================
 __unittest = True
 
@@ -52,26 +52,26 @@ class NosortTestLoader(_ut.TestLoader):
     def getTestCaseNames(self, testCaseClass):
         """Return an unsorted sequence of method names found in testCaseClass
         """
-        def shouldIncludeMethod(attrname):
+        def should_include_method(attrname):
             if not attrname.startswith(self.testMethodPrefix):
                 return False
-            testFunc = getattr(testCaseClass, attrname)
-            if not callable(testFunc):
+            test_func = getattr(testCaseClass, attrname)
+            if not callable(test_func):
                 return False
             if self.testNamePatterns is None:
                 return True
-            fullName = f'{testCaseClass.__module__}.{testFunc.__qualname__}'
-            return any(fnmatchcase(fullName, pattern)
+            full_name = f'{testCaseClass.__module__}.{test_func.__qualname__}'
+            return any(fnmatchcase(full_name, pattern)
                        for pattern in self.testNamePatterns)
         try:
-            testFnNames = testCaseClass.get_names()
+            test_fn_names = testCaseClass.get_names()
         except AttributeError:
-            testFnNames = dir(testCaseClass)
-        testFnNames = list(filter(shouldIncludeMethod, testFnNames))
+            test_fn_names = dir(testCaseClass)
+        test_fn_names = list(filter(should_include_method, test_fn_names))
         if self.sortTestMethodsUsing:
             key_fn = _ft.cmp_to_key(self.sortTestMethodsUsing)
-            testFnNames.sort(key=key_fn)
-        return testFnNames
+            test_fn_names.sort(key=key_fn)
+        return test_fn_names
 
     def loadTestsFromModule(self, module, *args, pattern=None, **kws):
         """Return a suite of all test cases contained in the given module
@@ -81,8 +81,8 @@ class NosortTestLoader(_ut.TestLoader):
 
         Extends `unittest.TestLoader.loadTestsFromModule`.
         """
-        tests = super().loadTestsFromModule(self, module, *args, pattern=None,
-                                            **kws)
+        tests = super().loadTestsFromModule(self, module, *args,
+                                            pattern=pattern, **kws)
         all_names = getattr(module, '__all__', None)
         if all_names is not None and not hasattr(module, 'load_tests'):
             tests = []
@@ -93,7 +93,7 @@ class NosortTestLoader(_ut.TestLoader):
             tests = self.suiteClass(tests)
         return tests
 
-    def copy_from(self, other):
+    def copy_from(self, other: _ut.TestLoader):
         """Copy instance attributes from other loader"""
         self._loading_packages = other._loading_packages
 
@@ -200,7 +200,7 @@ class TestRunnerStopTB(_ut.TextTestRunner):
         super().__init__(resultclass=resultclass, **kwargs)
 
 
-def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
+def main(test_loader=nosortTestLoader, test_runner=None, **kwds):
     """Run tests in order without printing certain frames in tracebacks.
 
     Use in place of `unittest.main`. It uses `nosortTestLoader` and
@@ -216,13 +216,13 @@ def main(testLoader=nosortTestLoader, testRunner=None, **kwds):
     the first criterion is tested for the second, with locals appearing after
     globals and otherwise appearing in the order they were added to the dicts.
     """
-    if testRunner is None:
-        testRunner = TestRunnerStopTB
-    _ut.main(testLoader=testLoader, testRunner=testRunner, **kwds)
+    if test_runner is None:
+        test_runner = TestRunnerStopTB
+    _ut.main(testLoader=test_loader, testRunner=test_runner, **kwds)
 
 
 # =============================================================================
-# %% TestCaseNumpy base class
+# TestCaseNumpy base class
 # =============================================================================
 
 
@@ -360,7 +360,7 @@ class TestCaseNumpy(TestCaseNosort):
 
 
 # =============================================================================
-# %% Helpers for TestCaseNumpy methods
+# Helpers for TestCaseNumpy methods
 # =============================================================================
 
 
@@ -394,19 +394,20 @@ def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
             else:
                 the_attr = [getattr(self, nam)[attr_inds] for nam in attr_name]
                 for vals in zip(*the_attr):
-                    opts = {name: val for name, val in zip(attr_name, vals)}
+                    # opts = {name: val for name, val in zip(attr_name, vals)}
+                    opts = dict(zip(attr_name, vals))
                     with self.subTest(msg=msg, **opts):
                         func(self, *args, **opts, **kwds)
         return loop_func
     return loop_dec
 
 
-def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
-    """Returns a string describing the maximum deviation of x and y
+def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
+    """Returns a string describing the maximum deviation of left and right
 
     Parameters
     ----------
-    x,y: ndarray[float]
+    left,right: ndarray[float]
         actual/desired value, must broadcast.
     atol, rtol, equal_nan
         arguments of ``np.allclose``.
@@ -418,9 +419,9 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
         'Should be zero: <maximum devation>
         or: <relative-max dev> = <tolerance> * <max dev relative to tolerance>'
     """
-    shape = np.broadcast(x, y).shape
-    thresh = atol + rtol * np.abs(np.broadcast_to(y, shape))
-    mismatch = np.abs(x - y)
+    shape = np.broadcast(left, right).shape
+    thresh = atol + rtol * np.abs(np.broadcast_to(right, shape))
+    mismatch = np.abs(left - right)
     mask = mismatch > thresh
     mis_frac = np.full_like(mismatch, np.NINF)
     mis_frac[mask] = (np.log(mismatch[mask]) - np.log(thresh[mask]))/np.log(10)
@@ -439,22 +440,22 @@ def miss_str(x, y, atol=1e-8, rtol=1e-5, equal_nan=True):
     or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {r_ind}."""
 
 
-cmplx = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,
+CMPLX = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,
          'f': 0, 'd': 0, 'g': 0, 'F': 1j, 'D': 1j, 'G': 1j}
 
 
-def asa(x, y, sctype):
-    """Convert x + iy to sctype
+def asa(left, right, sctype):
+    """Convert left + iy to sctype
 
     Parameters
     ----------
-    x,y: ndarray[float]
+    left,right: ndarray[float]
         real & imaginary parts, must broadcast
     sctype
         a numpy scalar type code, e.g. 'f,d,g,F,D,G'
     """
-    imag = cmplx.get(sctype, 0)
-    return (x + imag * y).astype(sctype)
+    imag = CMPLX.get(sctype, 0)
+    return (left + imag * right).astype(sctype)
 
 
 def randn_asa(shape, sctype):

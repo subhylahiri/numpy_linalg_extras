@@ -7,18 +7,22 @@ import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 if __name__.find('tests.') < 0:
+    # pylint: disable=import-error
     import unittest_numpy as utn
     from test_gufunc import TestMatsVecs
 else:
     from . import unittest_numpy as utn
     from .test_gufunc import TestMatsVecs
-
+# pylint: disable=invalid-name
+# pylint: disable=missing-function-docstring
+# pylint: disable=unsupported-assignment-operation
+# pylint: disable=invalid-sequence-index
 errstate = utn.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv',
            'TestLstsqShape', 'TestLstsqVectors', 'TestLstsqVal']
 # =============================================================================
-# %% Test qr
+# Test qr
 # =============================================================================
 
 
@@ -78,10 +82,10 @@ class TestQRPinvShape(TestMatsVecs):
             self.assertArrayShape(gfl.pinv(self.a_bs), (2, 3, 7))
         with self.subTest(msg='wide,+qr'):
             self.assertArrayShapesAre(gfl.pinv_qrm(self.a_sb), (
-                                        (4, 1, 7, 3), (4, 1, 7, 3), (4, 1, 3)))
+                (4, 1, 7, 3), (4, 1, 7, 3), (4, 1, 3)))
         with self.subTest(msg='tall,+qr'):
             self.assertArrayShapesAre(gfl.pinv_qrn(self.a_bs), (
-                                                (2, 3, 7), (2, 3, 7), (2, 3)))
+                (2, 3, 7), (2, 3, 7), (2, 3)))
         with self.subTest(msg='wide,-qr'):
             _, wide_f, wide_tau = gfl.pinv_qrm(self.a_sb)
             self.assertArrayShape(gfl.qr_pinv(wide_f, wide_tau), (4, 1, 7, 3))
@@ -152,7 +156,7 @@ class TestQR(TestMatsVecs):
         n = rr.shape[-2]
         ht, tau = gfl.qr_rawm(self.a_sb)
         h = transpose(ht)
-        v = np.tril(h, -1)
+        v: np.ndarray = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
         vn = gfb.norm(row(tau) * v[..., :n], axis=-2)**2
         r = np.triu(h)
@@ -172,7 +176,7 @@ class TestQR(TestMatsVecs):
         n = rr.shape[-1]
         ht, tau = gfl.qr_rawn(self.a_bs)
         h = transpose(ht)
-        v = np.tril(h, -1)
+        v: np.ndarray = np.tril(h, -1)
         v[(...,) + np.diag_indices(n)] = 1
         vn = gfb.norm(row(tau) * v, axis=-2)**2
         r = np.triu(h)
@@ -248,7 +252,7 @@ class TestLQ(TestMatsVecs):
         n = llo.shape[-2]
         ht, tau = gfl.lq_rawm(self.a_sb)
         h = transpose(ht)
-        v = np.triu(h, 1)
+        v: np.ndarray = np.triu(h, 1)
         v[(...,) + np.diag_indices(n)] = 1
         vn = gfb.norm(col(tau) * v, axis=-1)**2
         lo = np.tril(h)
@@ -269,7 +273,7 @@ class TestLQ(TestMatsVecs):
         n = llo.shape[-1]
         ht, tau = gfl.lq_rawn(self.a_bs)
         h = transpose(ht)
-        v = np.triu(h, 1)
+        v: np.ndarray = np.triu(h, 1)
         v[(...,) + np.diag_indices(n)] = 1
         vn = gfb.norm(col(tau) * v[..., :n, :], axis=-1)**2
         lo = np.tril(h)
@@ -319,7 +323,7 @@ class TestPinv(TestMatsVecs):
 
 
 # =============================================================================
-# %% Test lstsq
+# Test lstsq
 # =============================================================================
 
 
@@ -424,9 +428,9 @@ class TestLstsqShape(TestLstsq):
         self.assertArrayShapesAre(func(self.m_sb, self.m_ss),
                                   ((7, 3), (7, 3), tau))
         self.assertArrayShapesAre(func(self.a_sb, self.m_ss), (
-                                (4, 1, 7, 3), (4, 1, 7, 3), (4, 1) + tau))
+            (4, 1, 7, 3), (4, 1, 7, 3), (4, 1) + tau))
         self.assertArrayShapesAre(func(self.m_sb, self.a_ss), (
-                                (5, 1, 7, 3), (5, 1, 7, 3), (5, 1) + tau))
+            (5, 1, 7, 3), (5, 1, 7, 3), (5, 1) + tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(self.m_sb, self.m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
@@ -460,7 +464,7 @@ class TestLstsqShape(TestLstsq):
         self.assertArrayShapesAre(func(self.m_ss, self.a_bs),
                                   ((2, 3, 7), (2, 3, 7), (2,) + tau))
         self.assertArrayShapesAre(func(self.a_ss, self.m_bs), (
-                                (5, 1, 3, 7), (5, 1, 3, 7), (5, 1) + tau))
+            (5, 1, 3, 7), (5, 1, 3, 7), (5, 1) + tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(self.m_sb, self.m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
@@ -506,10 +510,10 @@ class TestLstsqShape(TestLstsq):
         _, xf, tau = func(self.m_bb, self.m_sb)
         self.assertArrayShape(gfl.qr_lstsq(xf, tau, self.m_ss), (7, 3))
         self.assertArrayShape(
-                            gfl.qr_lstsq(xf, tau, self.a_ss), (5, 1, 7, 3))
+            gfl.qr_lstsq(xf, tau, self.a_ss), (5, 1, 7, 3))
         self.assertArrayShape(gfl.rqr_lstsq(self.m_bb, xf, tau), (7, 3))
         self.assertArrayShape(
-                            gfl.rqr_lstsq(self.a_bb, xf, tau), (3, 7, 3))
+            gfl.rqr_lstsq(self.a_bb, xf, tau), (3, 7, 3))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.qr_lstsq(xf, tau, self.m_bs)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -634,7 +638,7 @@ class TestLstsqVectors(TestLstsq):
             tau = tau_len['bs']
             # If interpreted as Mv, this would be: (5,1)(3,3)/(7)(3)->(5,7)(3)
             self.assertArrayShapesAre(func(self.a_ss, self.m_bs), (
-                                    (5, 1, 3, 7), (5, 1, 3, 7), (5, 1) + tau))
+                (5, 1, 3, 7), (5, 1, 3, 7), (5, 1) + tau))
         with self.subTest('Vector-Matrix'):
             tau = tau_len['sb']
             self.assertArrayShapesAre(func(self.v_b, self.m_sb),
@@ -651,7 +655,7 @@ class TestLstsqVectors(TestLstsq):
             tau = tau_len['sb']
             # If interpreted as vM, this would be: (3)(7)/(4,1)(3,7)->(4,3)(3)
             self.assertArrayShapesAre(func(self.m_sb, self.a_sb), (
-                                    (4, 1, 3, 3), (4, 1, 7, 3), (4, 1) + tau))
+                (4, 1, 3, 3), (4, 1, 7, 3), (4, 1) + tau))
         with self.subTest('Vector-Vector'):
             tau = tau_len['vs']
             self.assertArrayShapesAre(func(self.v_s, self.v_s),
@@ -871,13 +875,14 @@ class TestLstsqVal(TestLstsq):
         with self.subTest('qr_rlstsq(under,' + suffix):
             self.assertArrayAllClose(a_bst @ self.a_bs @ b, a_bst @ self.m_bb)
 
-    @unittest.expectedFailure
+    # @unittest.expectedFailure
+    @unittest.skip("expected failure")
     @errstate
     @utn.loop_test(msg='rank')
     def test_lstsq_qr_raises_with_low_rank(self, sctype):
         self.pick_var_type(sctype)
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.lstsq_qr(self.ones_bs, self.a_bs)
+            gfl.lstsq_qrn(self.ones_bs, self.a_bs)
 
 
 # =============================================================================

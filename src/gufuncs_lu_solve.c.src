@@ -657,6 +657,7 @@ init_@laswp@(GESV_PARAMS_t *params,
     params->NRHS = N;                /* not used in _laswp */
     params->LDB = 1;                 /* not used in _laswp */
     params->TRANS = 'N';             /* not used in _laswp */
+    params->INFO = (fortran_int)direction;
 
     return 1;
 

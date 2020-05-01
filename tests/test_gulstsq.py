@@ -875,8 +875,7 @@ class TestLstsqVal(TestLstsq):
         with self.subTest('qr_rlstsq(under,' + suffix):
             self.assertArrayAllClose(a_bst @ self.a_bs @ b, a_bst @ self.m_bb)
 
-    # @unittest.expectedFailure
-    @unittest.skip("expected failure")
+    @unittest.expectedFailure
     @errstate
     @utn.loop_test(msg='rank')
     def test_lstsq_qr_raises_with_low_rank(self, sctype):

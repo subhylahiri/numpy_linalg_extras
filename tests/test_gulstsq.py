@@ -17,7 +17,7 @@ else:
 # pylint: disable=missing-function-docstring
 # pylint: disable=unsupported-assignment-operation
 # pylint: disable=invalid-sequence-index
-errstate = utn.errstate(invalid='raise')
+errstate = np.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv',
            'TestLstsqShape', 'TestLstsqVectors', 'TestLstsqVal']

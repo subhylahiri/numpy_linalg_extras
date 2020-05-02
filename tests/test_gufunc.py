@@ -11,7 +11,7 @@ else:
     from . import unittest_numpy as utn
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
-errstate = utn.errstate(invalid='raise')
+errstate = np.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestMatsVecs', 'TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================

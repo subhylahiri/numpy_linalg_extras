@@ -2,7 +2,6 @@
 """Customised unittest for numpy
 """
 import unittest as _ut
-import contextlib as _cx
 import functools as _ft
 from fnmatch import fnmatchcase
 import numpy as np
@@ -13,9 +12,8 @@ import numpy_linalg as la
 __all__ = [
         'TestCaseNumpy',
         'NosortTestLoader',
-        'TestCaseNosort',
         'TestResultStopTB',
-        'TestRunnerStopTB',
+        'TestProgramNoSort',
         'nosortTestLoader',
         'main',
         'loop_test',
@@ -24,8 +22,6 @@ __all__ = [
         'randn_asa',
         'zeros_asa',
         'ones_asa',
-        'errstate',
-        'unique_unsorted',
         'broadcast_err',
         'core_dim_err',
         'num_dim_err',
@@ -43,6 +39,21 @@ invalid_err = (FloatingPointError, 'invalid value encountered')
 # Customise test & traceback display
 # =============================================================================
 __unittest = True
+
+
+def _dir_dict(cls):
+    my_dir = {}
+    for base in cls.__bases__:
+        my_dir.update(_dir_dict(base))
+    # could use cls.__dir__() or dir(cls)
+    my_dir.update((k, True) for k in cls.__dict__)
+    return my_dir
+
+
+def dir_nosort(cls: type):
+    """Get the unsorted directory of a class (like dir())
+    """
+    return list(_dir_dict(cls))
 
 
 class NosortTestLoader(_ut.TestLoader):
@@ -66,10 +77,7 @@ class NosortTestLoader(_ut.TestLoader):
             full_name = f'{testCaseClass.__module__}.{test_func.__qualname__}'
             return any(fnmatchcase(full_name, pattern)
                        for pattern in self.testNamePatterns)
-        try:
-            test_fn_names = testCaseClass.get_names()
-        except AttributeError:
-            test_fn_names = dir(testCaseClass)
+        test_fn_names = dir_nosort(testCaseClass)
         test_fn_names = list(filter(should_include_method, test_fn_names))
         if self.sortTestMethodsUsing:
             key_fn = _ft.cmp_to_key(self.sortTestMethodsUsing)
@@ -98,45 +106,11 @@ class NosortTestLoader(_ut.TestLoader):
 
     def copy_from(self, other: _ut.TestLoader):
         """Copy instance attributes from other loader"""
+        # Ugh
         self._loading_packages = other._loading_packages
 
 
 nosortTestLoader = NosortTestLoader()
-
-
-class TestCaseNosort(_ut.TestCase):
-    """Test case with a method for making unsorted method lists.
-
-    Extends `unittest.TestCase`. Subclass this for your own unit test suites.
-
-
-    It will run the tests in the order defined, rather than alphabetical if
-    used in combination with `TestLoaderNosort`, and if the module has an
-    `__all__` attribute containing the `TestCase` classes.
-
-    Methods
-    -------
-    get_names
-        Returns an unsorted list of attribute names.
-
-    See Also
-    --------
-    `TestLoaderNosort` : test loader that uses `TestCase.get_names` by default.
-    `nosortTestLoader` : instance of `TestLoaderNosort`.
-    `unittest.TestCase` : parent class.
-    """
-
-    @classmethod
-    def get_names(cls):
-        """Returns an unsorted list of attribute names."""
-        my_attr = []
-        for base in cls.__bases__:
-            try:
-                my_attr += base.get_names()
-            except AttributeError:
-                my_attr += dir(base)
-        my_attr.extend(cls.__dict__)
-        return unique_unsorted(my_attr)
 
 
 class TestResultStopTB(_ut.TextTestResult):
@@ -163,11 +137,14 @@ class TestResultStopTB(_ut.TextTestResult):
         super().addSubTest(test, subtest, err)
         if err is not None:
             if issubclass(err[0], test.failureException):
-                super().addFailure(test, err)
-                del self.failures[-1]
+                msg = "FAIL"
             else:
-                super().addError(test, err)
-                del self.errors[-1]
+                msg = "ERROR"
+            if self.showAll:
+                self.stream.writeln(msg)
+            elif self.dots:
+                self.stream.write(msg[0])
+                self.stream.flush()
 
     def _is_relevant_tb_level(self, tb):
         f_vars = tb.tb_frame.f_globals.copy()
@@ -180,34 +157,13 @@ class TestResultStopTB(_ut.TextTestResult):
         # return '__unittest' in f_vars and f_vars['__unittest']
 
 
-class TestRunnerStopTB(_ut.TextTestRunner):
-    """TestRunner that does not print certain frames in tracebacks
-
-    Use in place of `unittest.TextTestRunner`. It uses `TestResultStopTB` by
-    default.
-
-    You can stop traceback display at any particular point by writing
-    ``__unittest = True``. This can be done at the function level or at the
-    module level. If ``__unittest = True`` appears at the module level, it can
-    be overridden in specific functions by writing ``__unittest = False``.
-
-    Checks if there is a variable name ending with `__unittest` in the frame
-    and if that variable evaluates as True. Only the last variable satisfying
-    the first criterion is tested for the second, with locals appearing after
-    globals and otherwise appearing in the order they were added to the dicts.
-    """
-
-    def __init__(self, resultclass=None, **kwargs):
-        if resultclass is None:
-            resultclass = TestResultStopTB
-        super().__init__(resultclass=resultclass, **kwargs)
-
-
-def main(test_loader=nosortTestLoader, test_runner=None, **kwds):
+class TestProgramNoSort(_ut.TestProgram):
     """Run tests in order without printing certain frames in tracebacks.
 
     Use in place of `unittest.main`. It uses `nosortTestLoader` and
-    `TestRunnerStopTB` by default.
+    `TextTestRunner` by default. It allows you to choose the `TestResult class
+    by passing it as an argument, rather than subclassing `TextTestRunner`.
+    The default is `TestResultStopTB`.
 
     You can stop traceback display at any particular point by writing
     ``__unittest = True``. This can be done at the function level or at the
@@ -219,17 +175,22 @@ def main(test_loader=nosortTestLoader, test_runner=None, **kwds):
     the first criterion is tested for the second, with locals appearing after
     globals and otherwise appearing in the order they were added to the dicts.
     """
-    if test_runner is None:
-        test_runner = TestRunnerStopTB
-    _ut.main(testLoader=test_loader, testRunner=test_runner, **kwds)
+    def __init__(self, *args, resultclass=TestResultStopTB, **kwds):
+        kwds.setdefault('testLoader', nosortTestLoader)
+        kwds.setdefault('testRunner', _ut.TextTestRunner)
+        super().__init__(*args, **kwds)
+        if resultclass is not None:
+            self.testRunner.resultclass = resultclass
 
+
+main = TestProgramNoSort
 
 # =============================================================================
 # TestCaseNumpy base class
 # =============================================================================
 
 
-class TestCaseNumpy(TestCaseNosort):
+class TestCaseNumpy(_ut.TestCase):
     """Test case with methods for comparing numpy arrays.
 
     Subclass this class to make your own unit test suite.
@@ -363,7 +324,7 @@ class TestCaseNumpy(TestCaseNosort):
 
 
 # =============================================================================
-# Helpers for TestCaseNumpy methods
+# Strategies for Hypothesis generated test examples
 # =============================================================================
 
 
@@ -384,10 +345,17 @@ def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
 def numeric_dtypes(choice) -> st.SearchStrategy[np.dtype]:
     """Strategy to generate dtypes codes
 
+    Parameters
+    ----------
+    choice : None, str, Sequence[str], SearchStrategy, optional
+        Strategy for dtype code of numbers: a choice, or a list to choose from,
+        or `None` to choose from {'f','d','F','D'} or a custom strategy.
+        By default: `None`.
+
     Returns
     -------
     dtype_strategy : st.SearchStrategy[np.dtype]
-        Strategy for dtypes that are recognised by BLAS/LAPACK
+        Strategy for dtypes that are recognised by BLAS/LAPACK.
     """
     if choice is None:
         choice = ['f', 'd', 'F', 'D']
@@ -405,17 +373,17 @@ def broadcastable(draw, signature: str,
 
     Parameters
     ----------
-    draw : function
-        Given by hypotheses.strategies.composite to generate examples
     signature : str
         Signature of array core dimension, without the return
     dtype_st : None, str, Sequence[str], SearchStrategy, optional
-        Type of numbers, one of {'f','d','F','D'}. By default: sampled.
+        Strategy for dtype code of numbers: a choice, or a list to choose from,
+        or `None` to choose from {'f','d','F','D'} or a custom strategy.
+        By default: `None`.
 
     Returns
     -------
     strategy : st.SearchStrategy
-        strategy to prroduce a tuple of arrays that broadcast with the given
+        strategy to produce a tuple of arrays that broadcast with the given
         core dimension signature.
     """
     dtypes = {'f': (st.floats, 32), 'F': (complex_numbers, 64),
@@ -432,6 +400,11 @@ def broadcastable(draw, signature: str,
     for shape in shapes:
         strategies.append(hyn.arrays(dtype, shape, **kwds))
     return tuple(draw(strat) for strat in strategies)
+
+
+# =============================================================================
+# Helpers for TestCaseNumpy methods
+# =============================================================================
 
 
 def non_singular(matrix: np.ndarray) -> np.ndarray:
@@ -620,28 +593,3 @@ def ones_asa(shape, sctype):
         a numpy scalar type code, e.g. 'f,d,g,F,D,G'
     """
     return asa(np.ones(shape), np.zeros(shape), sctype)
-
-
-@_cx.contextmanager
-def errstate(*args, **kwds):
-    """Context manager like np.errstate that can also be used as a decorator
-    """
-    call = kwds.pop('call', None)
-    old_errstate = np.geterr()
-    try:
-        old_errstate = np.seterr(*args, **kwds)
-        if call is not None:
-            old_call = np.seterrcall(call)
-        yield np.geterr()
-    finally:
-        np.seterr(**old_errstate)
-        if call is not None:
-            np.seterrcall(old_call)
-
-
-def unique_unsorted(sequence):
-    """remove repetitions without changing the order"""
-    sequence = np.asarray(sequence)
-    _, inds = np.unique(sequence, return_index=True)
-    inds.sort()
-    return sequence[inds].tolist()

@@ -16,7 +16,7 @@ else:
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
-errstate = utn.errstate(invalid='raise')
+errstate = np.errstate(invalid='raise')
 # =============================================================================
 __all__ = ['TestShape', 'TestValue']
 # =============================================================================

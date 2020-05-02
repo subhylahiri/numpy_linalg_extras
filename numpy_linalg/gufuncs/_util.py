@@ -142,19 +142,37 @@ class LNArrayOperatorsMixin(mix.NDArrayOperatorsMixin):
 # =============================================================================
 
 
-def return_shape_mat(left: np.ndarray, right: np.ndarray,
-                     *sigs: Tuple[str, ...]) -> Tuple[int, ...]:
+def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
+    """Convert text signature into tuples of axes size names
+
+    Parameters
+    ----------
+    signature : str
+        Text signature of matrix operation, without optional axes or spaces,
+
+    Returns
+    -------
+    axes_sizes : Tuple[Tuple[str, ...], ...]
+        Tuples of core axes sizes as string variablr names,
+        e.g. `(('a','b'),('b','c'),('a','c'))`
+    """
+    signature = signature.lstrip('(').rstrip(')').replace('->', ',')
+    arrays = []
+    for array in signature.split('),('):
+        arrays.append(tuple(array.split(',')))
+    return tuple(arrays)
+
+
+def return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
     """Shape of result of broadcasted matrix operation
 
     Parameters
     ----------
-    left : np.ndarray
-        First argument of matrix operation.
-    right : np.ndarray
-        Second argument of matrix operation.
-    sigs : Tuple[str]
-        Entries in the signature of the operation, without optional dimensions,
-        each a tuple of core axis names, last one being the output.
+    signature : Tuple[str]
+        Signature of the operation, without optional axes or spaces,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    arrays : np.ndarray
+        Arguments of matrix operation.
 
     Returns
     -------
@@ -164,11 +182,10 @@ def return_shape_mat(left: np.ndarray, right: np.ndarray,
     Raises
     ------
     ValueError
-        If `left.shape` and `right.shape` do not match signatures.
+        If `arrays.shape`s do not match signatures.
     """
-    msg = (f'Shape: {left.shape} & {right.shape}. '
-           f'Signature: {sigs[0]},{sigs[1]}->{sigs[2]}.')
-    arrays = (left, right)
+    msg = (f'Shape:{[array.shape for array in arrays]}. Signature:{signature}.')
+    sigs = _split_signature(signature)
     dims = [len(sig) for sig in sigs]
     broads, cores, sizes = [], [], {}
     if any(array.ndim < dim for array, dim in zip(arrays, dims)):

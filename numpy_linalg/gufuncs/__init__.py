@@ -103,7 +103,7 @@ from ._gufuncs_qr_lstsq import (
     rlstsq_qrn, qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv)
 
 from . import _families as fam
-from ._util import make_errobj, unbroadcast_factors
+from ._util import make_errobj, unbroadcast_factors, return_shape
 from ._util import MatmulOperatorsMixin, LNArrayOperatorsMixin
 from . import _vectors as vec
 

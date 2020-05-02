@@ -6,6 +6,9 @@ import contextlib as _cx
 import functools as _ft
 from fnmatch import fnmatchcase
 import numpy as np
+import hypothesis.strategies as st
+import hypothesis.extra.numpy as hyn
+import numpy_linalg as la
 # pylint: disable=invalid-name
 __all__ = [
         'TestCaseNumpy',
@@ -362,6 +365,127 @@ class TestCaseNumpy(TestCaseNosort):
 # =============================================================================
 # Helpers for TestCaseNumpy methods
 # =============================================================================
+
+
+def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
+    """Strategy to generate complex numbers of specified width
+
+    Returns
+    -------
+    complex_strategy : st.SearchStrategy[complex]
+        Strategy for complex numbers that applies float options to real and
+        imaginary parts.
+    """
+    if 'width' in kwds:
+        kwds['width'] //= 2
+    return st.builds(complex, st.floats(**kwds), st.floats(**kwds))
+
+
+def numeric_dtypes(choice) -> st.SearchStrategy[np.dtype]:
+    """Strategy to generate dtypes codes
+
+    Returns
+    -------
+    dtype_strategy : st.SearchStrategy[np.dtype]
+        Strategy for dtypes that are recognised by BLAS/LAPACK
+    """
+    if choice is None:
+        choice = ['f', 'd', 'F', 'D']
+    if isinstance(choice, str):
+        return st.just(choice)
+    if isinstance(choice, (list, tuple)):
+        return st.sampled_from(choice)
+    return choice
+
+
+@st.composite
+def broadcastable(draw, signature: str,
+                  dtype_st=None) -> st.SearchStrategy:
+    """Create a hypothesis strategy for a tuple of arrays with the signature
+
+    Parameters
+    ----------
+    draw : function
+        Given by hypotheses.strategies.composite to generate examples
+    signature : str
+        Signature of array core dimension, without the return
+    dtype_st : None, str, Sequence[str], SearchStrategy, optional
+        Type of numbers, one of {'f','d','F','D'}. By default: sampled.
+
+    Returns
+    -------
+    strategy : st.SearchStrategy
+        strategy to prroduce a tuple of arrays that broadcast with the given
+        core dimension signature.
+    """
+    dtypes = {'f': (st.floats, 32), 'F': (complex_numbers, 64),
+              'd': (st.floats, 64), 'D': (complex_numbers, 128)}
+    dtype_st = numeric_dtypes(dtype_st)
+    dtype = draw(dtype_st)
+    element_st, width = dtypes[dtype]
+    shape_st = hyn.mutually_broadcastable_shapes(signature=signature + '->()')
+    shapes = draw(shape_st).input_shapes
+    element_kws = {'width': width, 'allow_infinity': False, 'allow_nan': False,
+                   'min_value': -1e10, 'max_value': 1e10}
+    kwds = {'fill': st.nothing(), 'elements': element_st(**element_kws)}
+    strategies = []
+    for shape in shapes:
+        strategies.append(hyn.arrays(dtype, shape, **kwds))
+    return tuple(draw(strat) for strat in strategies)
+
+
+def non_singular(matrix: np.ndarray) -> np.ndarray:
+    """Check that matrix/matrices are non-singular
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        square matrix/array of square matrices whose determinant to check.
+
+    Returns
+    -------
+    is_not_singular : np.ndarray
+        bool/array of bools that are True if the matrix is non-singular.
+    """
+    return np.abs(np.linalg.slogdet(matrix)[1]) < 500
+
+
+def core_only(*arrays: np.ndarray, dims: int = 2) -> np.ndarray:
+    """Strip all non-core dimensions from arrays
+
+    Parameters
+    ----------
+    arrays : np.ndarray
+        Arrays to remove dimensions from.
+    dims : int, optional
+        Number of core dimensions to leave, by default 2.
+
+    Returns
+    -------
+    stripped : np.ndarray
+        Arrays with only core dimensions left.
+    """
+    result = tuple(arr[(0,) * (arr.ndim - dims)] for arr in arrays)
+    return result[0] if len(result) == 1 else result
+
+
+def view_as(*arrays: np.ndarray, kind: type = la.lnarray) -> la.lnarray:
+    """Convert array types
+
+    Parameters
+    ----------
+    arrays : np.ndarray
+        Arrays to convert.
+    kind : type, optional
+        Number of core dimensions to leave, by default `la.lnarray`.
+
+    Returns
+    -------
+    views : la.lnarray
+        Converted arrays.
+    """
+    result = tuple(arr.view(kind) for arr in arrays)
+    return result[0] if len(result) == 1 else result
 
 
 def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):

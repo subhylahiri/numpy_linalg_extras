@@ -7,15 +7,41 @@ import numpy as np
 import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
-from numpy_linalg.gufuncs import return_shape
+from numpy_linalg.gufuncs import array_return_shape as return_shape
 if __name__.find('tests.') < 0:
     # pylint: disable=import-error
     import unittest_numpy as utn
+    from test_linalg import trnsp, insert
 else:
     from . import unittest_numpy as utn
+    from .test_linalg import trnsp, insert
 # pylint: disable=missing-function-docstring
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
+# =============================================================================
+# new class helper
+# =============================================================================
+
+
+def view_as(*arrays: np.ndarray, kind: type = la.lnarray) -> la.lnarray:
+    """Convert array types
+
+    Parameters
+    ----------
+    arrays : np.ndarray
+        Arrays to convert.
+    kind : type, optional
+        Number of core dimensions to leave, by default `la.lnarray`.
+
+    Returns
+    -------
+    views : la.lnarray
+        Converted arrays.
+    """
+    result = tuple(arr.view(kind) for arr in arrays)
+    return result[0] if len(result) == 1 else result
+
+
 # =============================================================================
 # Test python classes
 # =============================================================================
@@ -31,7 +57,7 @@ class TestArray(utn.TestCaseNumpy):
     @hy.given(utn.broadcastable('(a,b),(b,a),(a,a),(b,b)', 'd'))
     def test_return_array_types(self, arrays):
         wide_n, tall_n = arrays[:2]
-        wide, tall, smol, big = utn.view_as(*arrays)
+        wide, tall, smol, big = view_as(*arrays)
         tall_m, small_m, big_m = utn.core_only(tall, smol, big)
         hy.assume(np.all(utn.non_singular(smol)))
         hy.assume(np.all(utn.non_singular(big)))
@@ -61,25 +87,26 @@ class TestArray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,b),(b,b)', 'D'))
     def test_lnarray_shape_methods(self, arrays):
-        tall, square = utn.view_as(*arrays)
+        tall, square = view_as(*arrays)
         tall_sh, square_sh = tall.shape, square.shape
         hy.assume(tall_sh[-2] > tall_sh[-1])
         hy.assume(np.max(np.abs(tall.imag)) > .01)
         hy.assume(np.max(np.abs(tall.real)) / np.max(np.abs(tall.imag)) < 1e3)
 
-        expect = tall_sh[:-2] + tall_sh[:-3:-1]
+        expect = trnsp(tall_sh)
         self.assertArrayShape(tall.t, expect)
         self.assertArrayShape(tall.h, expect)
         self.assertArrayNotAllClose(tall.t, tall.h)
         self.assertArrayShape(square.c, square_sh + (1,))
         self.assertArrayShape(tall.c.uc, tall_sh)
-        expect = square_sh[:-1] + (1,) + square_sh[-1:]
+        expect = insert(square_sh)
         self.assertArrayShape(square.r, expect)
         self.assertArrayShape(tall.r.ur, tall_sh)
         self.assertArrayShape(square.s, square_sh + (1, 1))
         self.assertArrayShape(tall.s.us, tall_sh)
 
-        expect = square_sh[:1] + (1,) + square_sh[1:2] + (1,) + square_sh[2:]
+        # expect = square_sh[:1] + (1,) + square_sh[1:2] + (1,) + square_sh[2:]
+        expect = insert(insert(square_sh, 2), 1)
         self.assertArrayShape(square.expand_dims(1, 3), expect)
         expect = tall_sh[:1] + (np.prod(tall_sh[1:4]),) + tall_sh[4:]
         self.assertArrayShape(tall.flattish(1, 4), expect)
@@ -91,7 +118,7 @@ class TestArray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,b),(b,b),(b)', None))
     def test_lnarray_operations_return_expected_values(self, arrays):
-        tall, smol, vec = utn.view_as(*arrays)
+        tall, smol, vec = view_as(*arrays)
         tall_m = utn.core_only(tall)
         vec = utn.core_only(vec, dims=1)
         hy.assume(tall.shape[-2] > tall.shape[-1])
@@ -119,7 +146,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a)', ['d', 'D']))
     def test_pinvarray_attribute_types(self, arrays):
-        smol, tall = utn.view_as(*arrays)
+        smol, tall = view_as(*arrays)
         hy.assume(tall.shape[-2] > tall.shape[-1])
         self.assertIsInstance(smol.pinv, la.pinvarray)
         self.assertIsInstance(smol.inv, la.invarray)
@@ -148,7 +175,7 @@ class TestPinvarray(utn.TestCaseNumpy):
         tall = array.view(la.lnarray)
         hy.assume(tall.shape[-2] > tall.shape[-1])
         tall_p = tall.pinv
-        expect = tall.shape[:-2] + tall.shape[:-3:-1]
+        expect = trnsp(tall.shape)
         self.assertEqual(tall_p.ndim, len(expect))
         self.assertEqual(tall_p.shape, expect)
         self.assertEqual(tall_p.size, np.prod(expect))
@@ -156,17 +183,17 @@ class TestPinvarray(utn.TestCaseNumpy):
         with self.assertRaises(ValueError):
             tall.inv  # pylint: disable=pointless-statement
         tall_p = tall.c.pinv
-        expect = tall.shape[:-1] + (1,) + tall.shape[-1:]
-        now_expect = expect[1::-1] +expect[2:]
+        expect = insert(tall.shape)
+        now_expect = expect[1::-1] + expect[2:]
         self.assertArrayShape(tall_p.swapaxes(0, 1), now_expect)
-        now_expect = expect[2::-1] +expect[3:]
+        now_expect = expect[2::-1] + expect[3:]
         self.assertArrayShape(tall_p.swapaxes(0, 2), now_expect)
-        now_expect = expect[:-2] +expect[:-3:-1]
+        now_expect = trnsp(expect)
         self.assertArrayShape(tall_p.swapaxes(-1, -2), now_expect)
 
     @hy.given(utn.broadcastable('(a,b),(b,a),(b,a)', None))
     def test_pinvarray_in_functions(self, arrays):
-        wide, high, tall = utn.view_as(*arrays)
+        wide, high, tall = view_as(*arrays)
         hy.assume(tall.shape[-2] > tall.shape[-1])
 
         self.assertArrayAllClose(gf.matmul(tall.pinv, high),
@@ -196,7 +223,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_invarray_in_functions(self, arrays):
-        smol, tall, wide = utn.view_as(*arrays)
+        smol, tall, wide = view_as(*arrays)
         mini = tall[..., :smol.shape[-1], :]
         hy.assume(tall.shape[-2] > tall.shape[-1])
         hy.assume(np.all(utn.non_singular(smol)))
@@ -226,7 +253,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_bad_p_invarray_combos_in_functions(self, arrays):
-        smol, tall, wide = utn.view_as(*arrays)
+        smol, tall, wide = view_as(*arrays)
         mini = tall[..., :smol.shape[-1], :]
         hy.assume(tall.shape[-2] > tall.shape[-1])
 
@@ -253,7 +280,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_good_p_invarray_combos_in_lstsq(self, arrays):
-        smol, tall, wide = utn.view_as(*arrays)
+        smol, tall, wide = view_as(*arrays)
         mini = tall[..., :smol.shape[-1], :]
         hy.assume(tall.shape[-2] > tall.shape[-1])
         hy.assume(np.all(utn.non_singular(smol)))
@@ -278,7 +305,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_good_p_invarray_combos_in_solve(self, arrays):
-        smol, tall, wide = utn.view_as(*arrays)
+        smol, tall, wide = view_as(*arrays)
         mini = tall[..., :smol.shape[-1], :]
         hy.assume(tall.shape[-2] > tall.shape[-1])
         hy.assume(np.all(utn.non_singular(smol)))
@@ -291,7 +318,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,b),(b,a),(b,a),()', None))
     def test_pinvarray_operators(self, arrays):
-        wide, high, tall, scal = utn.view_as(*arrays)
+        wide, high, tall, scal = view_as(*arrays)
         scal = scal.s
         hy.assume(tall.shape[-2] > tall.shape[-1])
 
@@ -321,7 +348,7 @@ class TestPinvarray(utn.TestCaseNumpy):
 
     @hy.given(utn.broadcastable('(a,a),(b,a),(a,b),()', None))
     def test_invarray_operators(self, arrays):
-        smol, tall, wide, scal = utn.view_as(*arrays)
+        smol, tall, wide, scal = view_as(*arrays)
         scal = scal.s
         mini = tall[..., :smol.shape[-1], :]
         hy.assume(tall.shape[-2] > tall.shape[-1])

@@ -7,7 +7,6 @@ from fnmatch import fnmatchcase
 import numpy as np
 import hypothesis.strategies as st
 import hypothesis.extra.numpy as hyn
-import numpy_linalg as la
 # pylint: disable=invalid-name
 __all__ = [
         'TestCaseNumpy',
@@ -245,9 +244,13 @@ class TestCaseNumpy(_ut.TestCase):
         unittest.TestCase method.
         """
         # __unittest = True
-        if not np.allclose(actual, desired, **self.all_close_opts):
+        opts = self.all_close_opts.copy()
+        # epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
+        # opts['rtol'] *= epsratio
+        # opts['atol'] *= epsratio
+        if not np.allclose(actual, desired, **opts):
             if msg is None:
-                msg = miss_str(actual, desired, **self.all_close_opts)
+                msg = miss_str(actual, desired, **opts)
             self.fail(msg)
 
     def assertArrayEqual(self, actual, desired, msg=None):
@@ -324,179 +327,8 @@ class TestCaseNumpy(_ut.TestCase):
 
 
 # =============================================================================
-# Strategies for Hypothesis generated test examples
-# =============================================================================
-
-
-def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
-    """Strategy to generate complex numbers of specified width
-
-    Returns
-    -------
-    complex_strategy : st.SearchStrategy[complex]
-        Strategy for complex numbers that applies float options to real and
-        imaginary parts.
-    """
-    if 'width' in kwds:
-        kwds['width'] //= 2
-    return st.builds(complex, st.floats(**kwds), st.floats(**kwds))
-
-
-def numeric_dtypes(choice) -> st.SearchStrategy[np.dtype]:
-    """Strategy to generate dtypes codes
-
-    Parameters
-    ----------
-    choice : None, str, Sequence[str], SearchStrategy, optional
-        Strategy for dtype code of numbers: a choice, or a list to choose from,
-        or `None` to choose from {'f','d','F','D'} or a custom strategy.
-        By default: `None`.
-
-    Returns
-    -------
-    dtype_strategy : st.SearchStrategy[np.dtype]
-        Strategy for dtypes that are recognised by BLAS/LAPACK.
-    """
-    if choice is None:
-        choice = ['f', 'd', 'F', 'D']
-    if isinstance(choice, str):
-        return st.just(choice)
-    if isinstance(choice, (list, tuple)):
-        return st.sampled_from(choice)
-    return choice
-
-
-@st.composite
-def broadcastable(draw, signature: str,
-                  dtype_st=None) -> st.SearchStrategy:
-    """Create a hypothesis strategy for a tuple of arrays with the signature
-
-    Parameters
-    ----------
-    signature : str
-        Signature of array core dimension, without the return
-    dtype_st : None, str, Sequence[str], SearchStrategy, optional
-        Strategy for dtype code of numbers: a choice, or a list to choose from,
-        or `None` to choose from {'f','d','F','D'} or a custom strategy.
-        By default: `None`.
-
-    Returns
-    -------
-    strategy : st.SearchStrategy
-        strategy to produce a tuple of arrays that broadcast with the given
-        core dimension signature.
-    """
-    dtypes = {'f': (st.floats, 32), 'F': (complex_numbers, 64),
-              'd': (st.floats, 64), 'D': (complex_numbers, 128)}
-    dtype_st = numeric_dtypes(dtype_st)
-    dtype = draw(dtype_st)
-    element_st, width = dtypes[dtype]
-    shape_st = hyn.mutually_broadcastable_shapes(signature=signature + '->()')
-    shapes = draw(shape_st).input_shapes
-    element_kws = {'width': width, 'allow_infinity': False, 'allow_nan': False,
-                   'min_value': -1e10, 'max_value': 1e10}
-    kwds = {'fill': st.nothing(), 'elements': element_st(**element_kws)}
-    strategies = []
-    for shape in shapes:
-        strategies.append(hyn.arrays(dtype, shape, **kwds))
-    return tuple(draw(strat) for strat in strategies)
-
-
-# =============================================================================
 # Helpers for TestCaseNumpy methods
 # =============================================================================
-
-
-def non_singular(matrix: np.ndarray) -> np.ndarray:
-    """Check that matrix/matrices are non-singular
-
-    Parameters
-    ----------
-    matrix : np.ndarray
-        square matrix/array of square matrices whose determinant to check.
-
-    Returns
-    -------
-    is_not_singular : np.ndarray
-        bool/array of bools that are True if the matrix is non-singular.
-    """
-    return np.abs(np.linalg.slogdet(matrix)[1]) < 500
-
-
-def core_only(*arrays: np.ndarray, dims: int = 2) -> np.ndarray:
-    """Strip all non-core dimensions from arrays
-
-    Parameters
-    ----------
-    arrays : np.ndarray
-        Arrays to remove dimensions from.
-    dims : int, optional
-        Number of core dimensions to leave, by default 2.
-
-    Returns
-    -------
-    stripped : np.ndarray
-        Arrays with only core dimensions left.
-    """
-    result = tuple(arr[(0,) * (arr.ndim - dims)] for arr in arrays)
-    return result[0] if len(result) == 1 else result
-
-
-def view_as(*arrays: np.ndarray, kind: type = la.lnarray) -> la.lnarray:
-    """Convert array types
-
-    Parameters
-    ----------
-    arrays : np.ndarray
-        Arrays to convert.
-    kind : type, optional
-        Number of core dimensions to leave, by default `la.lnarray`.
-
-    Returns
-    -------
-    views : la.lnarray
-        Converted arrays.
-    """
-    result = tuple(arr.view(kind) for arr in arrays)
-    return result[0] if len(result) == 1 else result
-
-
-def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
-    """Return decorator to loop a test over a sequence attribute of a TestCase.
-
-    Decorated function must take ``attr_name`` as a keyword argument.
-
-    Note: This is not a decorator - it is a function that returns a decorator.
-    Even when there are no arguments, you must call it as ``@loop_test()``.
-
-    Parameters
-    ----------
-    msg: str, optional
-        message to pass to ``TestCase.subTest``.
-    attr_name: str, default:'sctype'
-        name of iterable, indexable attribute of ``TestCase`` to loop over.
-    attr_inds: int, slice, default:slice(None)
-        which elements of ``TestCase.attr_name`` to loop over.
-    """
-    def loop_dec(func):
-        @_ft.wraps(func)
-        def loop_func(self, *args, **kwds):
-            if isinstance(attr_name, str):
-                the_attr = getattr(self, attr_name)
-    #                __unittest = False
-                for val in the_attr[attr_inds]:
-                    opts = {attr_name: val}
-                    with self.subTest(msg=msg, **opts):
-                        func(self, *args, **opts, **kwds)
-            else:
-                the_attr = [getattr(self, nam)[attr_inds] for nam in attr_name]
-                for vals in zip(*the_attr):
-                    # opts = {name: val for name, val in zip(attr_name, vals)}
-                    opts = dict(zip(attr_name, vals))
-                    with self.subTest(msg=msg, **opts):
-                        func(self, *args, **opts, **kwds)
-        return loop_func
-    return loop_dec
 
 
 def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
@@ -535,6 +367,221 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
 
     return f"""Should be zero: {a_worst:.2g} at {a_ind},
     or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {r_ind}."""
+
+
+# =============================================================================
+# Strategies for Hypothesis generated test examples
+# =============================================================================
+
+
+def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
+    """Strategy to generate complex numbers of specified width
+
+    Returns
+    -------
+    complex_strategy : st.SearchStrategy[complex]
+        Strategy for complex numbers that applies float options to real and
+        imaginary parts.
+    """
+    if 'width' in kwds:
+        kwds['width'] //= 2
+    return st.builds(complex, st.floats(**kwds), st.floats(**kwds))
+
+
+_DTYPES = {
+    'f': (np.float32, st.floats),
+    'd': (np.float64, st.floats),
+    'F': (np.complex64, complex_numbers),
+    'D': (np.complex128, complex_numbers),
+}
+
+
+@st.composite
+def numeric_dtypes(draw, choice=None, **kwds) -> st.SearchStrategy[np.dtype]:
+    """Strategy to generate dtypes codes
+
+    Parameters
+    ----------
+    choice : None, str, Sequence[str], SearchStrategy, optional
+        Strategy for dtype code of numbers: a choice, or a list to choose from,
+        or `None` to choose from {'f','d','F','D'} or a custom strategy.
+        By default: `None`.
+
+    Returns
+    -------
+    dtype_strategy : st.SearchStrategy[np.dtype]
+        Strategy for dtypes that are recognised by BLAS/LAPACK.
+    """
+    opts = {'allow_infinity': False, 'allow_nan': False,
+            'min_value': -1e10, 'max_value': 1e10}
+    opts.update(kwds)
+    if choice is None:
+        choice = ['f', 'd', 'F', 'D']
+    if isinstance(choice, str):
+        choice = st.just(choice)
+    if isinstance(choice, (list, tuple)):
+        choice = st.sampled_from(choice)
+    code = draw(choice)
+    dtype, element_st = _DTYPES[code]
+    opts['width'] = dtype().itemsize * 8
+    return dtype, element_st(**opts)
+
+
+@st.composite
+def broadcastable(draw, signature: str,
+                  dtype_st=None, **kwds) -> st.SearchStrategy:
+    """Create a hypothesis strategy for a tuple of arrays with the signature
+
+    Parameters
+    ----------
+    signature : str
+        Signature of array core dimension, without the return
+    dtype_st : None, str, Sequence[str], SearchStrategy, optional
+        Strategy for dtype code of numbers: a choice, or a list to choose from,
+        or `None` to choose from {'f','d','F','D'} or a custom strategy.
+        By default: `None`.
+
+    Returns
+    -------
+    strategy : st.SearchStrategy
+        strategy to produce a tuple of arrays that broadcast with the given
+        core dimension signature.
+    """
+    dtype, elements = draw(numeric_dtypes(dtype_st))
+    kwds['signature'] = signature + '->()'
+    shape_st = hyn.mutually_broadcastable_shapes(**kwds)
+    shapes = draw(shape_st).input_shapes
+    kwds = {'fill': st.nothing(), 'elements': elements}
+    strategies = []
+    for shape in shapes:
+        strategies.append(hyn.arrays(dtype, shape, **kwds))
+    return tuple(draw(strat) for strat in strategies)
+
+
+@st.composite
+def constant(draw, signature: str, dtype_st=None, **kwds) -> st.SearchStrategy:
+    """Create a hypothesis strategy for a constant array with the signature
+
+    Parameters
+    ----------
+    signature : str
+        Signature of array core dimension, without the return
+    dtype_st : None, str, Sequence[str], SearchStrategy, optional
+        Strategy for dtype code of numbers: a choice, or a list to choose from,
+        or `None` to choose from {'f','d','F','D'} or a custom strategy.
+        By default: `None`.
+
+    Returns
+    -------
+    strategy : st.SearchStrategy
+        strategy to produce a tuple of arrays that broadcast with the given
+        core dimension signature.
+    """
+    dtype, elements = draw(numeric_dtypes(dtype_st))
+    kwds['signature'] = signature + '->()'
+    shape_st = hyn.mutually_broadcastable_shapes(**kwds)
+    shape = draw(shape_st).input_shapes[0]
+    fill = draw(elements)
+    return np.full(shape, fill, dtype)
+
+
+# =============================================================================
+# Helpers for TestCaseNumpy with Hypothesis
+# =============================================================================
+
+
+def non_singular(matrix: np.ndarray) -> np.ndarray:
+    """Check that matrix/matrices are non-singular
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        square matrix/array of square matrices whose determinant to check.
+
+    Returns
+    -------
+    is_not_singular : np.ndarray
+        bool/array of bools that are True if the matrix is non-singular.
+    """
+    return np.abs(np.linalg.slogdet(matrix)[1]) < 500
+
+
+def all_non_singular(*matrices: np.ndarray) -> bool:
+    """Check that matrices are non-singular
+
+    Parameters
+    ----------
+    matrices : np.ndarray
+        square matrices whose determinant to check.
+
+    Returns
+    -------
+    are_not_singular : bool
+        True if all of the the matrices are non-singular.
+    """
+    return all(np.all(non_singular(mat)) for mat in matrices)
+
+
+def core_only(*arrays: np.ndarray, dims: int = 2) -> np.ndarray:
+    """Strip all non-core dimensions from arrays
+
+    Parameters
+    ----------
+    arrays : np.ndarray
+        Arrays to remove dimensions from.
+    dims : int, optional
+        Number of core dimensions to leave, by default 2.
+
+    Returns
+    -------
+    stripped : np.ndarray
+        Arrays with only core dimensions left.
+    """
+    result = tuple(arr[(0,) * (arr.ndim - dims)] for arr in arrays)
+    return result[0] if len(result) == 1 else result
+
+
+# =============================================================================
+# Helpers for TestCaseNumpy methods
+# =============================================================================
+
+
+def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
+    """Return decorator to loop a test over a sequence attribute of a TestCase.
+
+    Decorated function must take ``attr_name`` as a keyword argument.
+
+    Note: This is not a decorator - it is a function that returns a decorator.
+    Even when there are no arguments, you must call it as ``@loop_test()``.
+
+    Parameters
+    ----------
+    msg: str, optional
+        message to pass to ``TestCase.subTest``.
+    attr_name: str, default:'sctype'
+        name of iterable, indexable attribute of ``TestCase`` to loop over.
+    attr_inds: int, slice, default:slice(None)
+        which elements of ``TestCase.attr_name`` to loop over.
+    """
+    def loop_dec(func):
+        @_ft.wraps(func)
+        def loop_func(self, *args, **kwds):
+            if isinstance(attr_name, str):
+                the_attr = getattr(self, attr_name)
+    #                __unittest = False
+                for val in the_attr[attr_inds]:
+                    opts = {attr_name: val}
+                    with self.subTest(msg=msg, **opts):
+                        func(self, *args, **opts, **kwds)
+            else:
+                the_attr = [getattr(self, nam)[attr_inds] for nam in attr_name]
+                for vals in zip(*the_attr):
+                    # opts = {name: val for name, val in zip(attr_name, vals)}
+                    opts = dict(zip(attr_name, vals))
+                    with self.subTest(msg=msg, **opts):
+                        func(self, *args, **opts, **kwds)
+        return loop_func
+    return loop_dec
 
 
 CMPLX = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,

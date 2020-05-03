@@ -163,7 +163,49 @@ def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
     return tuple(arrays)
 
 
-def return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
+def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
+    """Shape of result of broadcasted matrix operation
+
+    Parameters
+    ----------
+    signature : Tuple[str]
+        Signature of the operation, without optional axes or spaces,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    shapes : Tuple[int, ...]
+        Shapes of arguments of matrix operation.
+
+    Returns
+    -------
+    output_shape : Tuple[int]
+        Shape of result of broadcasted matrix operation.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    msg = (f'Shape: {shapes}. Signature: {signature}.')
+    sigs = _split_signature(signature)
+    dims = [len(sig) for sig in sigs]
+    broads, cores, sizes = [], [], {}
+    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
+        raise ValueError('Not enough cores dimensions. ' + msg)
+    for shape, dim in zip(shapes, dims):
+        broads.append(shape[:-dim])
+        cores.append(shape[-dim:])
+    for sig, core in zip(sigs, cores):
+        for name, siz in zip(sig, core):
+            sizes.setdefault(name, siz)
+            if sizes[name] != siz:
+                raise ValueError('Inner matrix dimensions mismatch: ' + msg)
+    broad = np.broadcast(*(np.empty(broad) for broad in broads)).shape
+    core = []
+    for name in sigs[-1]:
+        core.append(sizes[name])
+    return broad + tuple(core)
+
+
+def array_return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
     """Shape of result of broadcasted matrix operation
 
     Parameters
@@ -184,22 +226,4 @@ def return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
     ValueError
         If `arrays.shape`s do not match signatures.
     """
-    msg = (f'Shape:{[array.shape for array in arrays]}. Signature:{signature}.')
-    sigs = _split_signature(signature)
-    dims = [len(sig) for sig in sigs]
-    broads, cores, sizes = [], [], {}
-    if any(array.ndim < dim for array, dim in zip(arrays, dims)):
-        raise ValueError('Not enough cores dimensions. ' + msg)
-    for array, dim in zip(arrays, dims):
-        broads.append(array.shape[:-dim])
-        cores.append(array.shape[-dim:])
-    for sig, core in zip(sigs, cores):
-        for name, siz in zip(sig, core):
-            sizes.setdefault(name, siz)
-            if sizes[name] != siz:
-                raise ValueError('Inner matrix dimensions mismatch: ' + msg)
-    broads.append(np.broadcast(*(np.empty(broad) for broad in broads)).shape)
-    cores.append([])
-    for name in sigs[-1]:
-        cores[-1].append(sizes[name])
-    return broads[-1] + tuple(cores[-1])
+    return return_shape(signature, *(array.shape for array in arrays))

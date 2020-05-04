@@ -149,10 +149,8 @@ class TestResultStopTB(_ut.TextTestResult):
         """
         super().addSubTest(test, subtest, err)
         if err is not None:
-            if issubclass(err[0], test.failureException):
-                msg = "FAIL"
-            else:
-                msg = "ERROR"
+            msg = ("fail" if issubclass(err[0], test.failureException)
+                   else "error")
             if self.showAll:
                 self.stream.writeln(msg)
             elif self.dots:
@@ -193,9 +191,9 @@ class TestProgramNoSort(_ut.TestProgram):
     def __init__(self, *args, resultclass=TestResultStopTB, **kwds):
         kwds.setdefault('testLoader', nosortTestLoader)
         kwds.setdefault('testRunner', _ut.TextTestRunner)
-        super().__init__(*args, **kwds)
         if resultclass is not None:
-            self.testRunner.resultclass = resultclass
+            kwds['testRunner'].resultclass = resultclass
+        super().__init__(*args, **kwds)
 
 
 main = TestProgramNoSort
@@ -480,7 +478,7 @@ def signature_shapes(draw, signature: str,
         given core dimension signature.
     """
     opts = {'signature': signature + '->()', 'base_shape': (),
-            'min_dims': 0, 'max_dims': None, 'min_side': 1, max_side: None}
+            'min_dims': 0, 'max_dims': None, 'min_side': 1, 'max_side': None}
     opts.update(kwds)
     return draw(hyn.mutually_broadcastable_shapes(**opts)).input_shapes
 

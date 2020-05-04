@@ -3,6 +3,8 @@
 """
 import unittest as _ut
 import functools as _ft
+import contextlib as _cx
+from typing import Tuple
 from fnmatch import fnmatchcase
 import numpy as np
 import hypothesis.strategies as st
@@ -15,8 +17,8 @@ __all__ = [
         'TestProgramNoSort',
         'nosortTestLoader',
         'main',
-        'loop_test',
         'miss_str',
+        'loop_test',
         'asa',
         'randn_asa',
         'zeros_asa',
@@ -25,6 +27,14 @@ __all__ = [
         'core_dim_err',
         'num_dim_err',
         'invalid_err',
+        'complex_numbers',
+        'numeric_dtypes',
+        'signature_shapes',
+        'broadcastable',
+        'constant',
+        'non_singular',
+        'all_non_singular',
+        'core_only',
         ]
 # =============================================================================
 # Error specs for assertRaisesRegex
@@ -121,12 +131,16 @@ class TestResultStopTB(_ut.TextTestResult):
     ``__unittest = True``. This can be done at the function level or at the
     module level. If ``__unittest = True`` appears at the module level, it can
     be overridden in specific functions by writing ``__unittest = False``.
+    This relies on undocumented private internals of `unittest`, so it could
+    stop working with a future update of `unittest`.
 
-    Checks if there is a variable name ending with `__unittest` in the frame
+    It checks if there is a variable name ending with `__unittest` in the frame
     and if that variable evaluates as True. Only the last variable satisfying
     the first criterion is tested for the second, with locals added after
     globals and otherwise appearing in the order they were added to the dicts.
     """
+    # names of variables that tell us if this traceback level should be dropped
+    stoppers: list = ["__unittest", "the_error_hypothesis_found"]
 
     def addSubTest(self, test, subtest, err):
         """Called at the end of a subtest.
@@ -146,13 +160,15 @@ class TestResultStopTB(_ut.TextTestResult):
                 self.stream.flush()
 
     def _is_relevant_tb_level(self, tb):
+        """Should this level of traceback be dropped from message?"""
         f_vars = tb.tb_frame.f_globals.copy()
         f_vars.update(tb.tb_frame.f_locals)  # locals after/overwrite globals
-        flags = [v for k, v in f_vars.items() if k.endswith('__unittest')]
+        flags = [bool(v) for k, v in f_vars.items()
+                 if any(k.endswith(stop) for stop in self.stoppers)]
         # locals have precedence over globals, so we look at last element.
         # any matches & is the last match's frame variable True?
         return flags and flags[-1]
-        # This would fail because key in f_locals is '_TestCase????__unittest':
+        # # This fails because key in f_locals is '_TestCase????__unittest':
         # return '__unittest' in f_vars and f_vars['__unittest']
 
 
@@ -225,8 +241,8 @@ class TestCaseNumpy(_ut.TestCase):
         # can be extended in Subclass: assign before calling super().setUp()
         extra_sctypes = getattr(self, 'sctype', [])
         self.sctype = ['f', 'd', 'F', 'D'] + extra_sctypes
-        # testing ndarray values
-        self.all_close_opts = {'atol': 1e-5, 'rtol': 1e-5, 'equal_nan': False}
+        # testing ndarray values (relative to np.float64's eps)
+        self.all_close_opts = {'atol': 1e-10, 'rtol': 1e-10, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 
     def pick_var_type(self, sctype):
@@ -239,15 +255,18 @@ class TestCaseNumpy(_ut.TestCase):
             setattr(self, var, getattr(self, '_' + var)[sctype])
 
     def assertArrayAllClose(self, actual, desired, msg=None):
-        """Calls numpy.allclose (so it broadcasts, unlike
-        numpy.testing.assert_allclose) and processes the results like a
+        """Calls numpy.allclose and processes the results like a
         unittest.TestCase method.
+
+        It broadcasts, unlike numpy.testing.assert_allclose.
+        It adjusts the tolerances according to the `desired.dtype`'s eps.
+        The original tolerances are for `np.float64`.
         """
         # __unittest = True
         opts = self.all_close_opts.copy()
-        # epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
-        # opts['rtol'] *= epsratio
-        # opts['atol'] *= epsratio
+        epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
+        opts['rtol'] *= epsratio
+        opts['atol'] *= epsratio
         if not np.allclose(actual, desired, **opts):
             if msg is None:
                 msg = miss_str(actual, desired, **opts)
@@ -286,6 +305,7 @@ class TestCaseNumpy(_ut.TestCase):
         if np.allclose(actual, desired, **self.all_close_opts):
             if msg is None:
                 msg = miss_str(actual, desired, **self.all_close_opts)
+                msg.replace("Should be", "Shouldn't be")
             self.fail(msg)
 
     def assertArrayNotEqual(self, actual, desired, msg=None):
@@ -374,8 +394,18 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
 # =============================================================================
 
 
+def _extract_kwds(kwds: dict, **defaults) -> dict:
+    """Take keys in defaults and pop from kwds, return as a dict"""
+    extracted = {}
+    for key, value in defaults.items():
+        extracted[key] = kwds.pop(key, value)
+    return extracted
+
+
 def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
     """Strategy to generate complex numbers of specified width
+
+    Takes any keyword arguments for `hypothesis.strategies.floats`
 
     Returns
     -------
@@ -397,92 +427,130 @@ _DTYPES = {
 
 
 @st.composite
-def numeric_dtypes(draw, choice=None, **kwds) -> st.SearchStrategy[np.dtype]:
+def numeric_dtypes(draw, code_st=None, **kwds):
     """Strategy to generate dtypes codes
 
     Parameters
     ----------
-    choice : None, str, Sequence[str], SearchStrategy, optional
-        Strategy for dtype code of numbers: a choice, or a list to choose from,
+    code_st : None|str|Sequence[str]|SearchStrategy[str], optional
+        Strategy for dtype-code of numbers: a choice, or a list to choose from,
         or `None` to choose from {'f','d','F','D'} or a custom strategy.
         By default: `None`.
+    Also takes any keyword arguments for `hypothesis.strategies.floats`.
 
     Returns
     -------
     dtype_strategy : st.SearchStrategy[np.dtype]
         Strategy for dtypes that are recognised by BLAS/LAPACK.
+    elements_strategy : st.SearchStrategy[Number]
+        Strategy for numbers of that dtype.
     """
-    opts = {'allow_infinity': False, 'allow_nan': False,
-            'min_value': -1e10, 'max_value': 1e10}
+    opts = {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
+            'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
     opts.update(kwds)
-    if choice is None:
-        choice = ['f', 'd', 'F', 'D']
-    if isinstance(choice, str):
-        choice = st.just(choice)
-    if isinstance(choice, (list, tuple)):
-        choice = st.sampled_from(choice)
-    code = draw(choice)
+    if code_st is None:
+        code_st = st.sampled_from(['f', 'd', 'F', 'D'])
+    elif isinstance(code_st, str):
+        code_st = st.just(code_st)
+    elif isinstance(code_st, (list, tuple)):
+        code_st = st.sampled_from(code_st)
+    code = draw(code_st)
     dtype, element_st = _DTYPES[code]
     opts['width'] = dtype().itemsize * 8
     return dtype, element_st(**opts)
 
 
 @st.composite
-def broadcastable(draw, signature: str,
-                  dtype_st=None, **kwds) -> st.SearchStrategy:
+def signature_shapes(draw, signature: str,
+                     **kwds) -> st.SearchStrategy[Tuple[Tuple[int, ...], ...]]:
+    """Create a hypothesis strategy for a tuple of shapes with the signature
+
+    Parameters
+    ----------
+    signature : str
+        Signature of array core dimension, without the return
+    Also takes any keyword arguments (excluding `num_shapes`) for
+    `hypothesis.extra.numpy.mutually_broadcastable_shapes`.
+
+    Returns
+    -------
+    shape_strategy : st.SearchStrategy[Tuple[Tuple[int, ...], ...]]
+        strategy to produce a tuple of tuples of ints that broadcast with the
+        given core dimension signature.
+    """
+    opts = {'signature': signature + '->()', 'base_shape': (),
+            'min_dims': 0, 'max_dims': None, 'min_side': 1, max_side: None}
+    opts.update(kwds)
+    return draw(hyn.mutually_broadcastable_shapes(**opts)).input_shapes
+
+
+@st.composite
+def _arrays_args(draw, signature, code_st, kwds):
+    """Generate inputs for hyn.arrays strategy
+    """
+    num_opts = _extract_kwds(kwds, min_value=-1e10, max_value=1e10,
+                             allow_nan=False, allow_infinity=False,
+                             exclude_min=False, exclude_max=False)
+    dtype, elements = draw(numeric_dtypes(code_st, **num_opts))
+    shape_opts = _extract_kwds(kwds, base_shape=(), min_dims=0, max_dims=None,
+                               min_side=1, max_side=None)
+    shapes = draw(signature_shapes(signature, **shape_opts))
+    return dtype, shapes, elements
+
+
+@st.composite
+def broadcastable(draw, signature: str, code_st=None,
+                  **kwds) -> st.SearchStrategy[Tuple[np.ndarray, ...]]:
     """Create a hypothesis strategy for a tuple of arrays with the signature
 
     Parameters
     ----------
     signature : str
         Signature of array core dimension, without the return
-    dtype_st : None, str, Sequence[str], SearchStrategy, optional
+    code_st : None|str|Sequence[str]|SearchStrategy[str], optional
         Strategy for dtype code of numbers: a choice, or a list to choose from,
         or `None` to choose from {'f','d','F','D'} or a custom strategy.
         By default: `None`.
+    Also takes any keyword arguments for `hypothesis.strategies.floats` or
+    `hypothesis.extra.numpy.mutually_broadcastable_shapes`, except `num_shapes`.
 
     Returns
     -------
-    strategy : st.SearchStrategy
-        strategy to produce a tuple of arrays that broadcast with the given
+    strategy : st.SearchStrategy[Tuple[np.ndarray, ...]]
+        Strategy to produce a tuple of arrays that broadcast with the given
         core dimension signature.
     """
-    dtype, elements = draw(numeric_dtypes(dtype_st))
-    kwds['signature'] = signature + '->()'
-    shape_st = hyn.mutually_broadcastable_shapes(**kwds)
-    shapes = draw(shape_st).input_shapes
-    kwds = {'fill': st.nothing(), 'elements': elements}
-    strategies = []
-    for shape in shapes:
-        strategies.append(hyn.arrays(dtype, shape, **kwds))
-    return tuple(draw(strat) for strat in strategies)
+    dtype, shapes, elements = draw(_arrays_args(signature, code_st, kwds))
+    kwds.update(dtype=dtype, elements=elements, fill=st.nothing())
+    result = tuple(draw(hyn.arrays(shape=shape, **kwds)) for shape in shapes)
+    return result[0] if len(result) == 1 else result
 
 
 @st.composite
-def constant(draw, signature: str, dtype_st=None, **kwds) -> st.SearchStrategy:
+def constant(draw, signature: str, code_st=None,
+             **kwds) -> st.SearchStrategy[np.ndarray]:
     """Create a hypothesis strategy for a constant array with the signature
 
     Parameters
     ----------
     signature : str
         Signature of array core dimension, without the return
-    dtype_st : None, str, Sequence[str], SearchStrategy, optional
+    code_st : None|str|Sequence[str]|SearchStrategy[str], optional
         Strategy for dtype code of numbers: a choice, or a list to choose from,
         or `None` to choose from {'f','d','F','D'} or a custom strategy.
         By default: `None`.
+    Also takes any keyword arguments for `hypothesis.strategies.floats` or
+    `hypothesis.extra.numpy.mutually_broadcastable_shapes`, except `num_shapes`.
 
     Returns
     -------
-    strategy : st.SearchStrategy
-        strategy to produce a tuple of arrays that broadcast with the given
-        core dimension signature.
+    strategy : st.SearchStrategy[np.ndarray]
+        Strategy to produce an array that broadcasts with the given core
+        dimension signature, with a constant value of thet dtype.
     """
-    dtype, elements = draw(numeric_dtypes(dtype_st))
-    kwds['signature'] = signature + '->()'
-    shape_st = hyn.mutually_broadcastable_shapes(**kwds)
-    shape = draw(shape_st).input_shapes[0]
+    dtype, shapes, elements = draw(_arrays_args(signature, code_st, kwds))
     fill = draw(elements)
-    return np.full(shape, fill, dtype)
+    return np.full(shapes[0], fill, dtype)
 
 
 # =============================================================================

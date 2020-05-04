@@ -31,7 +31,7 @@ conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
 scalars in a way that fits with `numpy.linalg` broadcasting rules (`t,h` only
 transpose the last two indices, `r,c,s` add singleton axes so that linear
 algebra routines treat them as arrays of vectors/scalars rather than matrices,
-and `ur,uc,us` undo the effects of `r,c,s`).[^1]
+and `ur,uc,us` undo the effects of `r,c,s`).
 
 The `lnarray` class also has properties for delayed matrix division:
 ```python
@@ -48,9 +48,6 @@ To get the actual inverse matrices you can explicitly call the objects:
 >>> x = y.inv()
 >>> x = y.pinv()
 ```
-
-[^1]: It used to use a custom `gufunc` for `matmul`, but as of v1.16 `NumPy`
-    does this so we use that instead.
 
 
 ## Rationale
@@ -72,11 +69,14 @@ A = np.linalg.solve(Zi.T, xi).T.dot(Q).dot(np.linalg.solve(Zi, w))
 ```
 Things do get better in Python 3.5 and Numpy 1.10:
 ```python
+Zi = ev @ xi - W
 A = np.linalg.solve(Zi.T, xi).T @ Q @ np.linalg.solve(Zi, w)
 ```
 If I want it to broadcast I'd also have to replace `T` with `swapaxes(-2, -1)`.
-Using this package, I can write it as
+
+Using this package, however, I can write it as
 ```python
+Zi = ev @ xi - W
 A = xi @ Zi.inv @ Q @ (Zi.inv @ w)
 # or even
 Z = (ev @ xi - W).inv
@@ -105,12 +105,15 @@ reasons:
 
 ## Requirements
 
-* Python 3.7
-* Numpy 1.16
-* C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
-(see [below](#building-the-cpython-modules))
+* [Python 3.7](https://docs.python.org/3/)
+* [Numpy 1.16](https://numpy.org/doc/stable/index.html)
 * BLAS/Lapack distribution that was present when the binaries were built
+* [to build] C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
+(see [below](#building-the-cpython-modules))
+* [to build] [Setuptools v41.0](https://setuptools.readthedocs.io) (recommended).
+* [to test] [Hypothesis 5.8](https://hypothesis.readthedocs.io).
 
+The version numbers above are minimum requirements only.
 Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability.
 
 ## Classes
@@ -121,20 +124,22 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
     for dealing with stacks of vectors and scalars.
 * `invarray`:
     Performs exact matrix division when it is matrix multiplied (@).
-    Returned by `lnarray.inv`. It calls `solve` behind the scenes.
-    Does not actually invert the matrix unless it is explicitly called.
+    Returned by `lnarray.inv`.
+    Does not actually invert the matrix unless it is explicitly called,
+    it calls `solve` behind the scenes instead.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of an `invarray`
-    object will affect the original `lnarray` object.
+    object will affect the original `lnarray` object, and *vice versa*.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
 * `pinvarray`:
     Performs least-squares matrix division when it is matrix multiplied (@).
-    Returned by `lnarray.pinv`. It calls `lstsq` behind the scenes.
-    Does not actually pseudoinvert the matrix unless it is explicitly called.
+    Returned by `lnarray.pinv`. 
+    Does not actually pseudoinvert the matrix unless it is explicitly called,
+    it calls `lstsq` behind the scenes instead.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of a `pinvarray`
-    object will affect the original `lnarray` object.
+    object will affect the original `lnarray` object, and *vice versa*.
     I think it is best not to store these objects in variables, and call on
     `lnarray.pinv` on the rhs instead.
 
@@ -142,7 +147,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.[^1]
+    Alias for `numpy.matmul`.[^1](#footnotes)
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
@@ -236,7 +241,7 @@ The following are not defined:
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    This is an alias for `numpy.matmul`
+    This is an alias for `numpy.matmul`.[^1](#footnotes)
 * `gufuncs.solve`:
     These are literally the same as the function above.
 * `gufuncs.rsolve`:
@@ -373,12 +378,12 @@ If you have `setuptools`, you can also do:
 this builds it in-place and creates an `.egg-link` file to make it available
 system-wide.
 
-Note: if you update to a new version of `numpy`, you might need to rebuild
+Note: if you update to a new version of `python` or `numpy`, you might need to rebuild
 the C modules.
 
 ## Running unit tests
 
-You can test the build process and installation by running the unit tests.
+You can test the build process and installation by running the unit tests (which require [the `hypothesis` package](https://hypothesis.readthedocs.io)).
 Execute this command in the folder containing this file:
 ```
 > python -m unittest
@@ -388,15 +393,24 @@ or
 > python -m unittest discover -s <folder/containing/README.md>
 ```
 You can expect occassional failures when using single precision floats.
+The 'falsifying example' produced by `hypothesis` would have `dtype=numpy.float32` or `dtype=numpy.complex64`.
 The failure messages would have `sctype='f'` or `sctype='F'` in the titles and 
 the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
 
 You can customise which tests are run and how the results are displayed
-using the command line options for the 
-[unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).
+using [the command line options for the 
+`unittest` module](https://docs.python.org/3/library/unittest.html#command-line-interface).
 
 ## To dos
 
 * SVD based versions of `lstsq_qr` and `qr_lstsq`
 (and a QR based version of `lstsq` for completeness).
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors.
+
+#
+
+### Footnotes
+
+1. This package previously used a custom `gufunc` for `matmul`, 
+    but as of v1.16 `NumPy` does this so we use that instead.
+

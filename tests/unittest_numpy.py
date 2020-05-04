@@ -264,9 +264,10 @@ class TestCaseNumpy(_ut.TestCase):
         """
         # __unittest = True
         opts = self.all_close_opts.copy()
-        epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
-        opts['rtol'] *= epsratio
-        opts['atol'] *= epsratio
+        if np.issubdtype(actual.dtype, np.inexact):
+            epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
+            opts['rtol'] *= epsratio
+            opts['atol'] *= epsratio
         if not np.allclose(actual, desired, **opts):
             if msg is None:
                 msg = miss_str(actual, desired, **opts)

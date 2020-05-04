@@ -352,7 +352,7 @@ class TestSolveVectors(TestMatsVecs):
         m_ss, m_sb, m_bb, m_bs = arrays[:-2]
         v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
-        smob, widb, bib, talb = [arr.shape[:-2] for arr in arrays]
+        smob, widb, bib, talb = [arr.shape[:-2] for arr in arrays[:-2]]
         hy.assume(np.all(utn.non_singular(m_ss)))
         hy.assume(np.all(utn.non_singular(m_bb)))
         hy.assume(wide[-2] < wide[-1])
@@ -405,7 +405,7 @@ class TestSolveVectors(TestMatsVecs):
         m_ss, m_sb, m_bb, m_bs = arrays[:-2]
         v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
-        smob, widb, bib, talb = [arr.shape[:-2] for arr in arrays]
+        smob, widb, bib, talb = [arr.shape[:-2] for arr in arrays[:-2]]
         hy.assume(np.all(utn.non_singular(m_ss)))
         hy.assume(np.all(utn.non_singular(m_bb)))
         hy.assume(wide[-2] < wide[-1])
@@ -457,6 +457,7 @@ class TestSolveVal(TestMatsVecs):
 
     @utn.loop_test()
     def test_solve_returns_expected_values(self, sctype):
+        self.pick_var_type(sctype)
         arrays = [self.m_ss, self.m_sb, self.m_bs]
         m_ss, m_sb, m_bs = arrays
         hy.assume(np.all(utn.non_singular(m_ss)))

@@ -268,7 +268,8 @@ class TestCaseNumpy(_ut.TestCase):
             opts['atol'] *= epsratio
         if not np.allclose(actual, desired, **opts):
             if msg is None:
-                msg = miss_str(actual, desired, **opts)
+                msg = ''
+            msg += miss_str(actual, desired, **opts)
             self.fail(msg)
 
     def assertArrayEqual(self, actual, desired, msg=None):
@@ -303,8 +304,9 @@ class TestCaseNumpy(_ut.TestCase):
         # __unittest = True
         if np.allclose(actual, desired, **self.all_close_opts):
             if msg is None:
-                msg = miss_str(actual, desired, **self.all_close_opts)
-                msg.replace("Should be", "Shouldn't be")
+                msg = ''
+            msg += miss_str(actual, desired, **self.all_close_opts)
+            msg.replace("Should be", "Shouldn't be")
             self.fail(msg)
 
     def assertArrayNotEqual(self, actual, desired, msg=None):

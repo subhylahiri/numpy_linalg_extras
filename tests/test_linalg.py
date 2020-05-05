@@ -240,8 +240,8 @@ class TestShape(utn.TestCaseNumpy):
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         smol, wide, tall = [arr.shape for arr in arrays]
-        smob, widb, talb = smol[:-2], wide[:-2], tall[:-2]  # broadcasting shape
-        mini, maxi = (wide[-2],), (wide[-1],)
+        smob, widb, talb = [arr.shape[:-2] for arr in arrays]
+        mini, maxi = wide[-2:-1], wide[-1:]
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("separate"):

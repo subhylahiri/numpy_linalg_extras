@@ -140,7 +140,7 @@ class TestResultStopTB(_ut.TextTestResult):
     globals and otherwise appearing in the order they were added to the dicts.
     """
     # names of variables that tell us if this traceback level should be dropped
-    stoppers: list = ["__unittest", "the_error_hypothesis_found"]
+    stoppers: list = ["__unittest"]
 
     def addSubTest(self, test, subtest, err):
         """Called at the end of a subtest.

@@ -63,8 +63,8 @@ class TestMatsVecs(utn.TestCaseNumpy):
             self._m_bb[sctype] = utn.randn_asa((7, 7), sctype)
             self._a_bs[sctype] = utn.randn_asa((2, 7, 3), sctype)
             self._a_sb[sctype] = utn.randn_asa((4, 1, 3, 7), sctype)
-            self._a_ss[sctype] = utn.randn_asa((5, 1, 3, 3), sctype)
-            self._a_bb[sctype] = utn.randn_asa((3, 7, 7), sctype)
+            self._a_ss[sctype] = utn.randn_asa((4, 1, 3, 3), sctype)
+            self._a_bb[sctype] = utn.randn_asa((4, 2, 7, 7), sctype)
 
 
 class TestBlas(TestMatsVecs):

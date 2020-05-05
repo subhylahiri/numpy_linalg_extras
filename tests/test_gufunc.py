@@ -7,8 +7,12 @@ import numpy_linalg.gufuncs._gufuncs_blas as gfb
 if __name__.find('tests.') < 0:
     # pylint: disable=import-error
     import unittest_numpy as utn
+    import hypothesis_numpy as hn
+    from unittest_tweaks import main
 else:
     from . import unittest_numpy as utn
+    from . import hypothesis_numpy as hn
+    from .unittest_tweaks import main
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
@@ -227,4 +231,4 @@ class TestCloop(TestBlas):
 
 # =============================================================================
 if __name__ == '__main__':
-    utn.main(verbosity=2)
+    main(verbosity=2)

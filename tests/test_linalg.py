@@ -11,9 +11,9 @@ import numpy_linalg as la
 import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
 if __name__.find('tests.') < 0:
-    import unittest_numpy as utn
+    from test_gufunc import utn, hn, main
 else:
-    from . import unittest_numpy as utn
+    from .test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
@@ -60,10 +60,10 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.col(array), shape + (1,))
         self.assertArrayShape(la.scalar(array), shape + (1, 1))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'))
     def test_functions_matmul(self, arrays):
         m_sb, m_bs = arrays[:-2]
-        v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
 
         # with self.subTest('matmul'):
@@ -79,12 +79,12 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(lr.rmatmul(v_b, m_sb), wide[:-1])
         self.assertArrayShape(lr.rmatmul(v_b, v_b), ())
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
     def test_functions_solve(self, arrays):
         m_ss, m_sb, m_bs = arrays[:-2]
-        v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, tall = [arr.shape for arr in arrays[:-2]]
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        hy.assume(hn.all_non_singular(m_ss))
 
         # with self.subTest('solve'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', smol, wide)
@@ -95,10 +95,10 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.rsolve(m_bs, m_ss), expect)
         self.assertArrayShape(la.rsolve(v_s, m_ss), smol[:-1])
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a),(b)', 'd'))
     def test_functions_lstsq(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays[:-2]
-        v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
 
         # with self.subTest('lstsq'):
@@ -117,12 +117,12 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.rlstsq(m_ss, v_s), smol[:-1])
         self.assertArrayShape(la.rlstsq(v_s, m_bs), tall[:-1])
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
     def test_functions_matldiv(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
-        v_s = utn.core_only(arrays[-1], dims=1)
+        v_s = hn.core_only(arrays[-1], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-1]]
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        hy.assume(hn.all_non_singular(m_ss))
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest('solve'):
@@ -137,12 +137,12 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.matldiv(m_sb, v_s), drop(wide))
         self.assertArrayShape(la.matldiv(v_s, m_ss), smol[:-1])
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
     def test_functions_matrdiv(self, arrays):
         m_ss, m_sb, m_bs = arrays[:-2]
-        v_s, v_b = utn.core_only(*arrays[-2:], dims=1)
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, tall = [arr.shape for arr in arrays[:-2]]
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        hy.assume(hn.all_non_singular(m_ss))
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest('rsolve'):
@@ -156,7 +156,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.matrdiv(m_ss, v_s), smol[:-1])
         self.assertArrayShape(la.matrdiv(v_s, m_bs), tall[:-1])
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', 'd'))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
@@ -182,7 +182,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShapesAre(la.qr(m_sb, 'raw'), (trnsp(wide),
                                                         widb + mini))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', 'd'))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
@@ -208,7 +208,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShapesAre(la.lq(m_sb, 'raw'),
                                     (trnsp(wide), widb + mini))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', 'd'))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
@@ -236,7 +236,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShapesAre(la.lqr(m_sb, 'raw'),
                                     (trnsp(wide), widb + mini))
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', 'd'))
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         smol, wide, tall = [arr.shape for arr in arrays]
@@ -262,7 +262,7 @@ class TestShape(utn.TestCaseNumpy):
 class TestValue(utn.TestCaseNumpy):
     """Testing values returned by linalg functions"""
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_functions_matmul(self, arrays):
         m_sb, m_bs = arrays
 
@@ -273,10 +273,10 @@ class TestValue(utn.TestCaseNumpy):
         self.assertArrayAllClose(lr.rmatmul(m_bs, m_sb),
                                  gf.rmatmul(m_bs, m_sb))
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_functions_solve(self, arrays):
         m_ss, m_sb, m_bs = arrays
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        hy.assume(hn.all_non_singular(m_ss))
 
         # with self.subTest('solve'):
         self.assertArrayAllClose(la.solve(m_ss, m_sb), gf.solve(m_ss, m_sb))
@@ -288,10 +288,10 @@ class TestValue(utn.TestCaseNumpy):
         self.assertArrayAllClose(la.rsolve(m_bs, m_ss),
                                     gf.rsolve(m_bs, m_ss))
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,b),(b,a),(b)', None))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(b)', None))
     def test_functions_lstsq(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
-        v_b = utn.core_only(arrays[-1], dims=1)
+        v_b = hn.core_only(arrays[-1], dims=1)
         hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
 
         # with self.subTest('lstsq'):
@@ -306,10 +306,10 @@ class TestValue(utn.TestCaseNumpy):
                                     gf.rlstsq(m_ss, m_bs))
         self.assertArrayAllClose(la.rlstsq(v_b, m_sb), gf.rlstsq(v_b, m_sb))
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
     def test_functions_matldiv(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        hy.assume(hn.all_non_singular(m_ss))
         hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
 
         # with self.subTest('solve'):
@@ -325,11 +325,11 @@ class TestValue(utn.TestCaseNumpy):
         self.assertArrayAllClose(la.matldiv(m_sb, m_ss),
                                     gf.lstsq(m_sb, m_ss))
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a),(b)', None))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(b)', None))
     def test_functions_matrdiv(self, arrays):
         m_ss, m_sb, m_bs = arrays[:-1]
-        v_b = utn.core_only(arrays[-1], dims=1)
-        hy.assume(np.all(utn.non_singular(m_ss)))
+        v_b = hn.core_only(arrays[-1], dims=1)
+        hy.assume(hn.all_non_singular(m_ss))
         hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
 
         # with self.subTest('rsolve'):
@@ -341,7 +341,7 @@ class TestValue(utn.TestCaseNumpy):
         self.assertArrayAllClose(la.matrdiv(v_b, m_sb),
                                     gf.rlstsq(v_b, m_sb))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
@@ -365,7 +365,7 @@ class TestValue(utn.TestCaseNumpy):
         hhold, _ = la.qr(m_sb, 'raw')
         self.assertArrayAllClose(right, np.triu(la.transpose(hhold)))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2]]
@@ -389,7 +389,7 @@ class TestValue(utn.TestCaseNumpy):
         hhold, _ = la.lq(m_sb, 'raw')
         self.assertArrayAllClose(left, np.tril(la.transpose(hhold))[box])
 
-    @hy.given(utn.broadcastable('(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
@@ -413,7 +413,7 @@ class TestValue(utn.TestCaseNumpy):
         hhold, _ = la.lqr(m_sb, 'raw')
         self.assertArrayAllClose(left, np.tril(la.transpose(hhold))[box[:-1]])
 
-    @hy.given(utn.broadcastable('(a,a),(a,b),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
@@ -441,7 +441,7 @@ class TestValue(utn.TestCaseNumpy):
 
     @unittest.expectedFailure
     @errstate
-    @hy.given(utn.constant('(a,a)', ['d', 'D'], min_side=2))
+    @hy.given(hn.constant('(a,a)', ['d', 'D'], min_side=2))
     def test_low_rank(self, ones_ss):
         unitary, right = la.qr(ones_ss)
         self.assertArrayAllClose(unitary @ right, ones_ss)
@@ -453,4 +453,4 @@ class TestValue(utn.TestCaseNumpy):
 
 # =============================================================================
 if __name__ == '__main__':
-    utn.main(verbosity=2)
+    main(verbosity=2)

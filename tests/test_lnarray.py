@@ -10,10 +10,10 @@ import numpy_linalg.gufuncs as gf
 from numpy_linalg.gufuncs import array_return_shape as return_shape
 if __name__.find('tests.') < 0:
     # pylint: disable=import-error
-    import unittest_numpy as utn
+    from test_gufunc import utn, hn, main
     from test_linalg import trnsp, insert
 else:
-    from . import unittest_numpy as utn
+    from .test_gufunc import utn, hn, main
     from .test_linalg import trnsp, insert
 # pylint: disable=missing-function-docstring
 # =============================================================================
@@ -54,316 +54,316 @@ class TestArray(utn.TestCaseNumpy):
         self.sctype = ['i']
         super().setUp()
 
-    @hy.given(utn.broadcastable('(a,b),(b,a),(a,a),(b,b)', 'd'))
+    @hy.given(hn.broadcastable('(a,b),(b,a),(a,a),(b,b)', 'd'))
     def test_return_array_types(self, arrays):
-        wide_n, tall_n = arrays[:2]
-        wide, tall, smol, big = view_as(*arrays)
-        tall_m, small_m, big_m = utn.core_only(tall, smol, big)
-        hy.assume(np.all(utn.non_singular(smol)))
-        hy.assume(np.all(utn.non_singular(big)))
-        hy.assume(wide.ndim != smol.ndim - 1)  # np..solve's broadcasting issue
+        m_sb_n, m_bs_n = arrays[:2]
+        m_sb, m_bs, m_ss, m_bb = view_as(*arrays)
+        m_bs_m, m_ss_m, m_bb_m = hn.core_only(m_bs, m_ss, m_bb)
+        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(m_sb.ndim != m_ss.ndim - 1)  # np..solve's broadcasting issue
 
-        self.assertIsInstance(wide @ tall, la.lnarray)
-        self.assertIsInstance(wide_n @ tall, la.lnarray)
-        tw_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', tall, wide), 'd')
-        tw_r = la.matmul(tall, wide_n, tw_o)
+        self.assertIsInstance(m_sb @ m_bs, la.lnarray)
+        self.assertIsInstance(m_sb_n @ m_bs, la.lnarray)
+        tw_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', m_bs, m_sb), 'd')
+        tw_r = la.matmul(m_bs, m_sb_n, tw_o)
         self.assertIsInstance(tw_r, np.ndarray)
         self.assertIsInstance(tw_o, np.ndarray)
-        self.assertIsInstance(np.matmul(tall, wide_n), np.ndarray)
-        self.assertIsInstance(la.solve(smol, wide_n), la.lnarray)
-        self.assertIsInstance(npl.solve(smol, wide_n), np.ndarray)
-        self.assertIsInstance(la.lstsq(tall, big), la.lnarray)
-        self.assertIsInstance(npl.lstsq(tall_m, big_m, rcond=None)[0],
+        self.assertIsInstance(np.matmul(m_bs, m_sb_n), np.ndarray)
+        self.assertIsInstance(la.solve(m_ss, m_sb_n), la.lnarray)
+        self.assertIsInstance(npl.solve(m_ss, m_sb_n), np.ndarray)
+        self.assertIsInstance(la.lstsq(m_bs, m_bb), la.lnarray)
+        self.assertIsInstance(npl.lstsq(m_bs_m, m_bb_m, rcond=None)[0],
                               np.ndarray)
-        self.assertIsInstance(la.lu(smol)[0], la.lnarray)
-        self.assertIsInstance(la.lu(tall_n)[0], np.ndarray)
-        self.assertIsInstance(la.qr(smol)[0], la.lnarray)
-        self.assertIsInstance(la.qr(tall_n)[0], np.ndarray)
-        self.assertIsInstance(la.lq(smol)[0], la.lnarray)
-        self.assertIsInstance(la.lq(tall_n)[0], np.ndarray)
-        self.assertIsInstance(la.lqr(smol)[0], la.lnarray)
-        self.assertIsInstance(la.lqr(tall_n)[0], np.ndarray)
-        self.assertIsInstance(npl.qr(small_m)[0], np.ndarray)
+        self.assertIsInstance(la.lu(m_ss)[0], la.lnarray)
+        self.assertIsInstance(la.lu(m_bs_n)[0], np.ndarray)
+        self.assertIsInstance(la.qr(m_ss)[0], la.lnarray)
+        self.assertIsInstance(la.qr(m_bs_n)[0], np.ndarray)
+        self.assertIsInstance(la.lq(m_ss)[0], la.lnarray)
+        self.assertIsInstance(la.lq(m_bs_n)[0], np.ndarray)
+        self.assertIsInstance(la.lqr(m_ss)[0], la.lnarray)
+        self.assertIsInstance(la.lqr(m_bs_n)[0], np.ndarray)
+        self.assertIsInstance(npl.qr(m_ss_m)[0], np.ndarray)
 
-    @hy.given(utn.broadcastable('(a,b),(b,b)', 'D'))
+    @hy.given(hn.broadcastable('(a,b),(b,b)', 'D'))
     def test_lnarray_shape_methods(self, arrays):
-        tall, square = view_as(*arrays)
-        tall_sh, square_sh = tall.shape, square.shape
-        hy.assume(tall_sh[-2] > tall_sh[-1])
-        hy.assume(np.max(np.abs(tall.imag)) > .01)
-        hy.assume(np.max(np.abs(tall.real)) / np.max(np.abs(tall.imag)) < 1e3)
+        m_bs, m_ss = view_as(*arrays)
+        tall, smol = m_bs.shape, m_ss.shape
+        hy.assume(hn.tall(m_bs))
+        hy.assume(np.max(np.abs(m_bs.imag)) > .01)
+        hy.assume(np.max(np.abs(m_bs.real)) / np.max(np.abs(m_bs.imag)) < 1e3)
 
-        expect = trnsp(tall_sh)
-        self.assertArrayShape(tall.t, expect)
-        self.assertArrayShape(tall.h, expect)
-        self.assertArrayNotAllClose(tall.t, tall.h)
-        self.assertArrayShape(square.c, square_sh + (1,))
-        self.assertArrayShape(tall.c.uc, tall_sh)
-        expect = insert(square_sh)
-        self.assertArrayShape(square.r, expect)
-        self.assertArrayShape(tall.r.ur, tall_sh)
-        self.assertArrayShape(square.s, square_sh + (1, 1))
-        self.assertArrayShape(tall.s.us, tall_sh)
+        expect = trnsp(tall)
+        self.assertArrayShape(m_bs.t, expect)
+        self.assertArrayShape(m_bs.h, expect)
+        self.assertArrayNotAllClose(m_bs.t, m_bs.h)
+        self.assertArrayShape(m_ss.c, smol + (1,))
+        self.assertArrayShape(m_bs.c.uc, tall)
+        expect = insert(smol)
+        self.assertArrayShape(m_ss.r, expect)
+        self.assertArrayShape(m_bs.r.ur, tall)
+        self.assertArrayShape(m_ss.s, smol + (1, 1))
+        self.assertArrayShape(m_bs.s.us, tall)
 
-        # expect = square_sh[:1] + (1,) + square_sh[1:2] + (1,) + square_sh[2:]
-        expect = insert(insert(square_sh, 2), 1)
-        self.assertArrayShape(square.expand_dims(1, 3), expect)
-        expect = tall_sh[:1] + (np.prod(tall_sh[1:4]),) + tall_sh[4:]
-        self.assertArrayShape(tall.flattish(1, 4), expect)
+        # expect = smol[:1] + (1,) + smol[1:2] + (1,) + smol[2:]
+        expect = insert(insert(smol, 2), 1)
+        self.assertArrayShape(m_ss.expand_dims(1, 3), expect)
+        expect = tall[:1] + (np.prod(tall[1:4]),) + tall[4:]
+        self.assertArrayShape(m_bs.flattish(1, 4), expect)
         with self.assertRaisesRegex(ValueError, "repeated axes"):
-            tall.expand_dims(tall.ndim - 1, -3)
-        half = (tall.ndim + 2) // 2 + 1
+            m_bs.expand_dims(m_bs.ndim - 1, -3)
+        half = (m_bs.ndim + 2) // 2 + 1
         with self.assertRaises(ValueError):
-            (tall.s).flattish(half, -half)
+            (m_bs.s).flattish(half, -half)
 
-    @hy.given(utn.broadcastable('(a,b),(b,b),(b)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,b),(b)', None))
     def test_lnarray_operations_return_expected_values(self, arrays):
-        tall, smol, vec = view_as(*arrays)
-        tall_m = utn.core_only(tall)
-        vec = utn.core_only(vec, dims=1)
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        hy.assume(smol.ndim != 3)  # causes np..solve's broadcasting issue
-        hy.assume(np.all(utn.non_singular(smol)))
+        m_bs, m_ss, vec = view_as(*arrays)
+        m_bs_m = hn.core_only(m_bs)
+        vec = hn.core_only(vec, dims=1)
+        hy.assume(hn.tall(m_bs))
+        hy.assume(m_ss.ndim != 3)  # causes np..solve's broadcasting issue
+        hy.assume(hn.all_non_singular(m_ss))
 
-        ts_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', tall, smol),
-                        smol.dtype)
-        ts_r = la.matmul(tall, smol, ts_o)
+        ts_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', m_bs, m_ss),
+                        m_ss.dtype)
+        ts_r = la.matmul(m_bs, m_ss, ts_o)
         self.assertArrayAllClose(ts_r, ts_o)
-        self.assertArrayAllClose(tall @ smol, np.matmul(tall, smol))
-        self.assertArrayAllClose(tall @ smol, np.matmul(tall, smol))
-        self.assertArrayAllClose(tall @ vec, np.matmul(tall, vec))
-        self.assertArrayAllClose(gf.solve(smol, vec), npl.solve(smol, vec.c).uc)
-        self.assertArrayAllClose(gf.lstsq(tall_m.t, vec),
-                                 npl.lstsq(tall_m.t, vec, rcond=None)[0])
-        self.assertArrayAllClose(gf.rmatmul(smol, tall), np.matmul(tall, smol))
-        # tall @= smol
-        # self.assertArrayAllClose(ts_r, tall)
+        self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
+        self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
+        self.assertArrayAllClose(m_bs @ vec, np.matmul(m_bs, vec))
+        self.assertArrayAllClose(gf.solve(m_ss, vec), npl.solve(m_ss, vec.c).uc)
+        self.assertArrayAllClose(gf.lstsq(m_bs_m.t, vec),
+                                 npl.lstsq(m_bs_m.t, vec, rcond=None)[0])
+        self.assertArrayAllClose(gf.rmatmul(m_ss, m_bs), np.matmul(m_bs, m_ss))
+        # m_bs @= m_ss
+        # self.assertArrayAllClose(ts_r, m_bs)
 
 
 class TestPinvarray(utn.TestCaseNumpy):
     """test pinvarray & invarray classes
     """
 
-    @hy.given(utn.broadcastable('(a,a),(b,a)', ['d', 'D']))
+    @hy.given(hn.broadcastable('(a,a),(b,a)', ['d', 'D']))
     def test_pinvarray_attribute_types(self, arrays):
-        smol, tall = view_as(*arrays)
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        self.assertIsInstance(smol.pinv, la.pinvarray)
-        self.assertIsInstance(smol.inv, la.invarray)
-        self.assertIs(smol.pinv.dtype, tall.dtype)
-        self.assertIsInstance(smol.pinv.pinv, la.lnarray)
-        self.assertIsInstance(smol.inv.inv, la.lnarray)
-        self.assertIsInstance(smol.pinv(), la.lnarray)
-        self.assertIsInstance(smol.inv(), la.lnarray)
+        m_ss, m_bs = view_as(*arrays)
+        hy.assume(hn.tall(m_bs))
+        self.assertIsInstance(m_ss.pinv, la.pinvarray)
+        self.assertIsInstance(m_ss.inv, la.invarray)
+        self.assertIs(m_ss.pinv.dtype, m_bs.dtype)
+        self.assertIsInstance(m_ss.pinv.pinv, la.lnarray)
+        self.assertIsInstance(m_ss.inv.inv, la.lnarray)
+        self.assertIsInstance(m_ss.pinv(), la.lnarray)
+        self.assertIsInstance(m_ss.inv(), la.lnarray)
 
-        tall_p = la.pinvarray(tall)
-        self.assertIsInstance(tall_p, la.pinvarray)
-        self.assertIsInstance(tall_p.pinv, la.lnarray)
-        self.assertIsInstance(2 * tall_p, la.pinvarray)
-        self.assertIsInstance((2 * tall_p).pinv, la.lnarray)
-        pout = la.pinvarray(la.empty_like(tall))
-        np.multiply(2, tall_p, pout)
+        m_bs_p = la.pinvarray(m_bs)
+        self.assertIsInstance(m_bs_p, la.pinvarray)
+        self.assertIsInstance(m_bs_p.pinv, la.lnarray)
+        self.assertIsInstance(2 * m_bs_p, la.pinvarray)
+        self.assertIsInstance((2 * m_bs_p).pinv, la.lnarray)
+        pout = la.pinvarray(la.empty_like(m_bs))
+        np.multiply(2, m_bs_p, pout)
         self.assertIsInstance(pout, la.pinvarray)
         self.assertIsInstance(pout.pinv, la.lnarray)
         with self.assertRaises(AttributeError):
-            tall_p.inv  # pylint: disable=no-member,pointless-statement
+            m_bs_p.inv  # pylint: disable=no-member,pointless-statement
         with self.assertRaises(TypeError):
-            smol.inv.pinv  # pylint: disable=pointless-statement
+            m_ss.inv.pinv  # pylint: disable=pointless-statement
 
     @hy.given(hyn.arrays('d', hyn.array_shapes(min_dims=2)))
     def test_pinvarray_shape_methods(self, array):
-        tall = array.view(la.lnarray)
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        tall_p = tall.pinv
-        expect = trnsp(tall.shape)
-        self.assertEqual(tall_p.ndim, len(expect))
-        self.assertEqual(tall_p.shape, expect)
-        self.assertEqual(tall_p.size, np.prod(expect))
-        self.assertArrayShape(tall_p(), expect)
+        m_bs = array.view(la.lnarray)
+        hy.assume(hn.tall(m_bs))
+        m_bs_p = m_bs.pinv
+        expect = trnsp(m_bs.shape)
+        self.assertEqual(m_bs_p.ndim, len(expect))
+        self.assertEqual(m_bs_p.shape, expect)
+        self.assertEqual(m_bs_p.size, np.prod(expect))
+        self.assertArrayShape(m_bs_p(), expect)
         with self.assertRaises(ValueError):
-            tall.inv  # pylint: disable=pointless-statement
-        tall_p = tall.c.pinv
-        expect = insert(tall.shape)
+            m_bs.inv  # pylint: disable=pointless-statement
+        m_bs_p = m_bs.c.pinv
+        expect = insert(m_bs.shape)
         now_expect = expect[1::-1] + expect[2:]
-        self.assertArrayShape(tall_p.swapaxes(0, 1), now_expect)
+        self.assertArrayShape(m_bs_p.swapaxes(0, 1), now_expect)
         now_expect = expect[2::-1] + expect[3:]
-        self.assertArrayShape(tall_p.swapaxes(0, 2), now_expect)
+        self.assertArrayShape(m_bs_p.swapaxes(0, 2), now_expect)
         now_expect = trnsp(expect)
-        self.assertArrayShape(tall_p.swapaxes(-1, -2), now_expect)
+        self.assertArrayShape(m_bs_p.swapaxes(-1, -2), now_expect)
 
-    @hy.given(utn.broadcastable('(a,b),(b,a),(b,a)', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a),(b,a)', None))
     def test_pinvarray_in_functions(self, arrays):
-        wide, high, tall = view_as(*arrays)
-        hy.assume(tall.shape[-2] > tall.shape[-1])
+        m_sb, high, m_bs = view_as(*arrays)
+        hy.assume(hn.tall(m_bs))
 
-        self.assertArrayAllClose(gf.matmul(tall.pinv, high),
-                                 gf.lstsq(tall, high))
-        self.assertArrayAllClose(gf.matmul(wide, tall.pinv.t),
-                                 gf.rlstsq(wide, tall.t))
-        xpout = la.pinvarray(la.empty_like(tall))
-        tall_p = np.multiply(tall.pinv, 2, out=xpout)
-        self.assertArrayAllClose(tall_p.pinv, xpout.pinv)
-        self.assertArrayAllClose(tall_p.pinv, tall / 2)
+        self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
+                                 gf.lstsq(m_bs, high))
+        self.assertArrayAllClose(gf.matmul(m_sb, m_bs.pinv.t),
+                                 gf.rlstsq(m_sb, m_bs.t))
+        xpout = la.pinvarray(la.empty_like(m_bs))
+        m_bs_p = np.multiply(m_bs.pinv, 2, out=xpout)
+        self.assertArrayAllClose(m_bs_p.pinv, xpout.pinv)
+        self.assertArrayAllClose(m_bs_p.pinv, m_bs / 2)
         with self.assertRaises(TypeError):
-            gf.matmul(tall.pinv, wide.pinv)
-        self.assertArrayAllClose(gf.lstsq(wide.pinv, high),
-                                 gf.matmul(wide, high))
+            gf.matmul(m_bs.pinv, m_sb.pinv)
+        self.assertArrayAllClose(gf.lstsq(m_sb.pinv, high),
+                                 gf.matmul(m_sb, high))
         with self.assertRaises(TypeError):
-            gf.lstsq(high, wide.pinv)
-        self.assertArrayAllClose(gf.rlstsq(high.t, wide.t.pinv),
-                                 gf.matmul(high.t, wide.t))
+            gf.lstsq(high, m_sb.pinv)
+        self.assertArrayAllClose(gf.rlstsq(high.t, m_sb.t.pinv),
+                                 gf.matmul(high.t, m_sb.t))
         with self.assertRaises(TypeError):
-            gf.rlstsq(wide.t.pinv, high.t)
+            gf.rlstsq(m_sb.t.pinv, high.t)
         with self.assertRaises(TypeError):
-            gf.rmatmul(wide.pinv, tall.pinv)
+            gf.rmatmul(m_sb.pinv, m_bs.pinv)
         with self.assertRaises(TypeError):
-            gf.solve(wide.pinv, high)
+            gf.solve(m_sb.pinv, high)
         with self.assertRaises(TypeError):
-            gf.rsolve(wide, tall.pinv)
+            gf.rsolve(m_sb, m_bs.pinv)
 
-    @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_invarray_in_functions(self, arrays):
-        smol, tall, wide = view_as(*arrays)
-        mini = tall[..., :smol.shape[-1], :]
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        hy.assume(np.all(utn.non_singular(smol)))
+        m_ss, m_bs, m_sb = view_as(*arrays)
+        mini = m_bs[..., :m_ss.shape[-1], :]
+        hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(m_ss))
 
-        self.assertArrayAllClose(gf.matmul(smol.inv, wide),
-                                 gf.solve(smol, wide))
-        self.assertArrayAllClose(gf.matmul(tall, smol.inv),
-                                 gf.rsolve(tall, smol))
-        self.assertArrayAllClose(gf.matmul(smol.inv, mini.inv).inv, mini @ smol)
-        self.assertArrayAllClose(gf.solve(smol.inv, wide),
-                                 gf.matmul(smol, wide))
-        self.assertArrayAllClose(gf.solve(mini, smol.inv).inv,
-                                 gf.matmul(smol, mini))
-        self.assertArrayAllClose(gf.solve(mini.inv, smol.inv),
-                                 gf.rsolve(mini, smol))
-        self.assertArrayAllClose(gf.rsolve(smol, mini.inv),
-                                 gf.matmul(smol, mini))
-        self.assertArrayAllClose(gf.rsolve(mini.inv, smol).inv,
-                                 gf.matmul(smol, mini))
-        self.assertArrayAllClose(gf.rsolve(mini.inv, smol.inv),
-                                 gf.solve(mini, smol))
-        self.assertArrayAllClose(gf.rmatmul(smol, mini.inv),
-                                 gf.solve(mini, smol))
-        self.assertArrayAllClose(gf.rmatmul(mini.inv, smol),
-                                 gf.rsolve(smol, mini))
-        self.assertArrayAllClose(gf.rmatmul(mini.inv, smol.inv).inv, mini @ smol)
+        self.assertArrayAllClose(gf.matmul(m_ss.inv, m_sb),
+                                 gf.solve(m_ss, m_sb))
+        self.assertArrayAllClose(gf.matmul(m_bs, m_ss.inv),
+                                 gf.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose(gf.matmul(m_ss.inv, mini.inv).inv, mini @ m_ss)
+        self.assertArrayAllClose(gf.solve(m_ss.inv, m_sb),
+                                 gf.matmul(m_ss, m_sb))
+        self.assertArrayAllClose(gf.solve(mini, m_ss.inv).inv,
+                                 gf.matmul(m_ss, mini))
+        self.assertArrayAllClose(gf.solve(mini.inv, m_ss.inv),
+                                 gf.rsolve(mini, m_ss))
+        self.assertArrayAllClose(gf.rsolve(m_ss, mini.inv),
+                                 gf.matmul(m_ss, mini))
+        self.assertArrayAllClose(gf.rsolve(mini.inv, m_ss).inv,
+                                 gf.matmul(m_ss, mini))
+        self.assertArrayAllClose(gf.rsolve(mini.inv, m_ss.inv),
+                                 gf.solve(mini, m_ss))
+        self.assertArrayAllClose(gf.rmatmul(m_ss, mini.inv),
+                                 gf.solve(mini, m_ss))
+        self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss),
+                                 gf.rsolve(m_ss, mini))
+        self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss.inv).inv, mini @ m_ss)
 
-    @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_bad_p_invarray_combos_in_functions(self, arrays):
-        smol, tall, wide = view_as(*arrays)
-        mini = tall[..., :smol.shape[-1], :]
-        hy.assume(tall.shape[-2] > tall.shape[-1])
+        m_ss, m_bs, m_sb = view_as(*arrays)
+        mini = m_bs[..., :m_ss.shape[-1], :]
+        hy.assume(hn.tall(m_bs))
 
         with self.assertRaises(TypeError):
-            la.solve(wide.pinv, mini)
+            la.solve(m_sb.pinv, mini)
         with self.assertRaises(TypeError):
-            la.rsolve(mini, tall.pinv)
+            la.rsolve(mini, m_bs.pinv)
         with self.assertRaises(TypeError):
-            la.solve(mini, tall.pinv)
+            la.solve(mini, m_bs.pinv)
         with self.assertRaises(TypeError):
-            la.rsolve(wide.pinv, mini)
+            la.rsolve(m_sb.pinv, mini)
         with self.assertRaises(TypeError):
-            la.solve(wide.pinv, tall.pinv)
+            la.solve(m_sb.pinv, m_bs.pinv)
         with self.assertRaises(TypeError):
-            la.rsolve(wide.pinv, tall.pinv)
+            la.rsolve(m_sb.pinv, m_bs.pinv)
         with self.assertRaises(TypeError):
-            la.matmul(smol.inv, tall.pinv)
+            la.matmul(m_ss.inv, m_bs.pinv)
         with self.assertRaises(TypeError):
-            la.matmul(wide.pinv, mini.inv)
+            la.matmul(m_sb.pinv, mini.inv)
         with self.assertRaises(TypeError):
-            la.solve(tall.pinv, mini.inv)
+            la.solve(m_bs.pinv, mini.inv)
         with self.assertRaises(TypeError):
-            la.rsolve(mini.inv, wide.pinv)
+            la.rsolve(mini.inv, m_sb.pinv)
 
-    @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_good_p_invarray_combos_in_lstsq(self, arrays):
-        smol, tall, wide = view_as(*arrays)
-        mini = tall[..., :smol.shape[-1], :]
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        hy.assume(np.all(utn.non_singular(smol)))
-        hy.assume(np.all(utn.non_singular(mini)))
+        m_ss, m_bs, m_sb = view_as(*arrays)
+        mini = m_bs[..., :m_ss.shape[-1], :]
+        hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_non_singular(mini))
 
-        self.assertArrayAllClose(la.lstsq(mini.inv, wide),
-                                 la.matmul(mini, wide))
-        self.assertArrayAllClose(la.rlstsq(tall, mini.inv),
-                                 la.matmul(tall, mini))
-        self.assertArrayAllClose(la.lstsq(mini.inv, tall.pinv),
-                                 la.rlstsq(mini, tall))
-        self.assertArrayAllClose(la.rlstsq(mini.inv, wide.pinv),
-                                 la.solve(mini, wide))
-        self.assertArrayAllClose(la.lstsq(mini.inv, smol.inv),
-                                 la.rsolve(mini, smol))
-        self.assertArrayAllClose(la.rlstsq(mini.inv, smol.inv),
-                                 la.solve(mini, smol))
-        self.assertArrayAllClose(la.lstsq(tall.pinv, smol.inv),
-                                 la.rsolve(tall, smol))
-        self.assertArrayAllClose(la.rlstsq(wide.pinv, smol.inv),
-                                 la.lstsq(wide, smol))
+        self.assertArrayAllClose(la.lstsq(mini.inv, m_sb),
+                                 la.matmul(mini, m_sb))
+        self.assertArrayAllClose(la.rlstsq(m_bs, mini.inv),
+                                 la.matmul(m_bs, mini))
+        self.assertArrayAllClose(la.lstsq(mini.inv, m_bs.pinv),
+                                 la.rlstsq(mini, m_bs))
+        self.assertArrayAllClose(la.rlstsq(mini.inv, m_sb.pinv),
+                                 la.solve(mini, m_sb))
+        self.assertArrayAllClose(la.lstsq(mini.inv, m_ss.inv),
+                                 la.rsolve(mini, m_ss))
+        self.assertArrayAllClose(la.rlstsq(mini.inv, m_ss.inv),
+                                 la.solve(mini, m_ss))
+        self.assertArrayAllClose(la.lstsq(m_bs.pinv, m_ss.inv),
+                                 la.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose(la.rlstsq(m_sb.pinv, m_ss.inv),
+                                 la.lstsq(m_sb, m_ss))
 
-    @hy.given(utn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_good_p_invarray_combos_in_solve(self, arrays):
-        smol, tall, wide = view_as(*arrays)
-        mini = tall[..., :smol.shape[-1], :]
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        hy.assume(np.all(utn.non_singular(smol)))
-        hy.assume(np.all(utn.non_singular(mini)))
+        m_ss, m_bs, m_sb = view_as(*arrays)
+        mini = m_bs[..., :m_ss.shape[-1], :]
+        hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_non_singular(mini))
 
-        self.assertArrayAllClose(la.solve(smol.inv, tall.pinv),
-                                 la.rlstsq(smol, tall))
-        self.assertArrayAllClose(la.rsolve(wide.pinv, mini.inv),
-                                 la.lstsq(wide, mini))
+        self.assertArrayAllClose(la.solve(m_ss.inv, m_bs.pinv),
+                                 la.rlstsq(m_ss, m_bs))
+        self.assertArrayAllClose(la.rsolve(m_sb.pinv, mini.inv),
+                                 la.lstsq(m_sb, mini))
 
-    @hy.given(utn.broadcastable('(a,b),(b,a),(b,a),()', None))
+    @hy.given(hn.broadcastable('(a,b),(b,a),(b,a),()', None))
     def test_pinvarray_operators(self, arrays):
-        wide, high, tall, scal = view_as(*arrays)
+        m_sb, high, m_bs, scal = view_as(*arrays)
         scal = scal.s
-        hy.assume(tall.shape[-2] > tall.shape[-1])
+        hy.assume(hn.tall(m_bs))
 
-        self.assertArrayAllClose(tall.pinv @ high, gf.lstsq(tall, high))
-        self.assertArrayAllClose(tall.pinv() @ high, gf.lstsq(tall, high))
-        self.assertArrayAllClose(wide @ tall.pinv.t, gf.rlstsq(wide, tall.t))
+        self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high))
+        self.assertArrayAllClose(m_bs.pinv() @ high, gf.lstsq(m_bs, high))
+        self.assertArrayAllClose(m_sb @ m_bs.pinv.t, gf.rlstsq(m_sb, m_bs.t))
         with self.assertRaises(TypeError):
-            tall.pinv @ wide.pinv  # pylint: disable=pointless-statement
-        self.assertArrayAllClose((tall.pinv * 3.5).pinv, tall / 3.5)
-        self.assertArrayAllClose((2.4 * tall.pinv).pinv, tall / 2.4)
-        self.assertArrayAllClose((tall.pinv / 3.564).pinv, tall * 3.564)
+            m_bs.pinv @ m_sb.pinv  # pylint: disable=pointless-statement
+        self.assertArrayAllClose((m_bs.pinv * 3.5).pinv, m_bs / 3.5)
+        self.assertArrayAllClose((2.4 * m_bs.pinv).pinv, m_bs / 2.4)
+        self.assertArrayAllClose((m_bs.pinv / 3.564).pinv, m_bs * 3.564)
         with self.assertRaises(TypeError):
-            65 / tall.pinv  # pylint: disable=pointless-statement
-        self.assertArrayAllClose((tall.pinv * scal).pinv, tall / scal)
-        self.assertArrayAllClose((scal * tall.pinv).pinv, tall / scal)
-        self.assertArrayAllClose((tall.pinv / scal).pinv, tall * scal)
+            65 / m_bs.pinv  # pylint: disable=pointless-statement
+        self.assertArrayAllClose((m_bs.pinv * scal).pinv, m_bs / scal)
+        self.assertArrayAllClose((scal * m_bs.pinv).pinv, m_bs / scal)
+        self.assertArrayAllClose((m_bs.pinv / scal).pinv, m_bs * scal)
         with self.assertRaises(TypeError):
-            scal / tall.pinv  # pylint: disable=pointless-statement
+            scal / m_bs.pinv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            scal.pinv * tall.pinv  # pylint: disable=pointless-statement
+            scal.pinv * m_bs.pinv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            tall.pinv + wide  # pylint: disable=pointless-statement
-        told = 1. * tall
-        tall_p = tall.pinv
-        tall_p *= 2
-        self.assertArrayAllClose(tall, told / 2)
+            m_bs.pinv + m_sb  # pylint: disable=pointless-statement
+        told = 1. * m_bs
+        m_bs_p = m_bs.pinv
+        m_bs_p *= 2
+        self.assertArrayAllClose(m_bs, told / 2)
 
-    @hy.given(utn.broadcastable('(a,a),(b,a),(a,b),()', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),()', None))
     def test_invarray_operators(self, arrays):
-        smol, tall, wide, scal = view_as(*arrays)
+        m_ss, m_bs, m_sb, scal = view_as(*arrays)
         scal = scal.s
-        mini = tall[..., :smol.shape[-1], :]
-        hy.assume(tall.shape[-2] > tall.shape[-1])
-        hy.assume(np.all(utn.non_singular(smol)))
-        hy.assume(np.all(utn.non_singular(mini)))
+        mini = m_bs[..., :m_ss.shape[-1], :]
+        hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_non_singular(mini))
 
-        self.assertArrayAllClose(smol.inv @ wide, gf.solve(smol, wide))
-        self.assertArrayAllClose(smol.inv() @ wide, gf.solve(smol, wide))
-        self.assertArrayAllClose(tall @ smol.inv, gf.rsolve(tall, smol))
-        self.assertArrayAllClose((smol.inv @ mini.inv).inv, mini @ smol)
-        self.assertArrayAllClose((smol.inv * 3.5).inv, smol / 3.5)
-        self.assertArrayAllClose((2.4 * smol.inv).inv, smol / 2.4)
-        self.assertArrayAllClose((smol.inv / 3.564).inv, smol * 3.564)
+        self.assertArrayAllClose(m_ss.inv @ m_sb, gf.solve(m_ss, m_sb))
+        self.assertArrayAllClose(m_ss.inv() @ m_sb, gf.solve(m_ss, m_sb))
+        self.assertArrayAllClose(m_bs @ m_ss.inv, gf.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose((m_ss.inv @ mini.inv).inv, mini @ m_ss)
+        self.assertArrayAllClose((m_ss.inv * 3.5).inv, m_ss / 3.5)
+        self.assertArrayAllClose((2.4 * m_ss.inv).inv, m_ss / 2.4)
+        self.assertArrayAllClose((m_ss.inv / 3.564).inv, m_ss * 3.564)
         with self.assertRaises(TypeError):
-            45.564 / smol.inv  # pylint: disable=pointless-statement
+            45.564 / m_ss.inv  # pylint: disable=pointless-statement
         self.assertArrayAllClose((mini.inv * scal).inv, mini / scal)
         self.assertArrayAllClose((scal * mini.inv).inv, mini / scal)
         self.assertArrayAllClose((mini.inv / scal).inv, mini * scal)
@@ -372,12 +372,12 @@ class TestPinvarray(utn.TestCaseNumpy):
         with self.assertRaises(TypeError):
             scal.inv * mini.inv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
-            smol + mini.inv  # pylint: disable=pointless-statement
+            m_ss + mini.inv  # pylint: disable=pointless-statement
         mini_old = 1. * mini
         mini_i = mini.inv
-        mini_i @= smol.inv
-        self.assertArrayAllClose(mini, smol @ mini_old)
+        mini_i @= m_ss.inv
+        self.assertArrayAllClose(mini, m_ss @ mini_old)
 
 
 if __name__ == '__main__':
-    utn.main(verbosity=2)
+    main(verbosity=2)

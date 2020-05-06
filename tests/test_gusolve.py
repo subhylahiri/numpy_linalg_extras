@@ -6,15 +6,18 @@ import hypothesis as hy
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
-from numpy_linalg.gufuncs import return_shape, array_return_shape
-if __name__.find('tests.') < 0:
-    from test_linalg import trnsp, drop, chop
-    from test_gufunc import utn, hn, main
-else:
+from numpy_linalg.gufuncs import array_return_shape
+if 'tests.' in __name__:
     from .test_linalg import trnsp, drop, chop
     from .test_gufunc import utn, hn, main
+else:
+    from test_linalg import trnsp, drop, chop
+    from test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
+hy.settings.register_profile("debug",
+                             suppress_health_check=(hy.HealthCheck.too_slow,))
+hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
 # =============================================================================
@@ -268,10 +271,9 @@ class TestSolveShape(utn.TestCaseNumpy):
             gfl.lu_solve(x_f, i_p, m_bb)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlu_solve(m_sb, x_f, i_p)
-        m_ss, right = make_bad_broadcast(m_ss, m_sb)
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.lu_solve(x_f, i_p, right)
+            gfl.lu_solve(x_f, *make_bad_broadcast(i_p, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rsolve_lu_returns_expected_shapes(self, arrays):
@@ -305,10 +307,9 @@ class TestSolveShape(utn.TestCaseNumpy):
             gfl.rlu_solve(m_ss, x_f, i_p)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lu_solve(x_f, i_p, m_sb)
-        left, m_bb = make_bad_broadcast(m_sb, m_bb)
         _, x_f, i_p = gfl.rsolve_lu(m_sb, m_bb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rlu_solve(left, x_f, i_p)
+            gfl.rlu_solve(*make_bad_broadcast(m_sb, x_f), i_p)
 
 
 class TestSolveVectors(utn.TestCaseNumpy):

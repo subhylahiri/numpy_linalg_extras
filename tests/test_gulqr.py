@@ -7,17 +7,20 @@ import numpy as np
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
-if __name__.find('tests.') < 0:
+if 'tests.' in __name__:
+    from .test_gufunc import utn, hn, main
+    from .test_linalg import trnsp, drop, chop, grow
+else:
     # pylint: disable=import-error
     from test_gufunc import utn, hn, main
     from test_linalg import trnsp, drop, chop, grow
-else:
-    from .test_gufunc import utn, hn, main
-    from .test_linalg import trnsp, drop, chop, grow
 # pylint: disable=missing-function-docstring
 # pylint: disable=unsupported-assignment-operation
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
+hy.settings.register_profile("debug",
+                             suppress_health_check=(hy.HealthCheck.too_slow,))
+hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv']
 # =============================================================================
@@ -83,10 +86,10 @@ class TestQRPinvShape(utn.TestCaseNumpy):
         self.assertArrayShape(gfl.pinv(m_bs), trnsp(tall))
         # with self.subTest(msg='wide,+qr'):
         self.assertArrayShapesAre(gfl.pinv_qrm(m_sb), (
-            trnsp(wide), trnsp(wide), drop(wide)))
+            trnsp(wide), trnsp(wide), wide[:-1]))
         # with self.subTest(msg='tall,+qr'):
         self.assertArrayShapesAre(gfl.pinv_qrn(m_bs), (
-            trnsp(tall), trnsp(tall), tall[:-1]))
+            trnsp(tall), trnsp(tall), drop(tall)))
         # with self.subTest(msg='wide,-qr'):
         _, m_sb_f, m_sb_tau = gfl.pinv_qrm(m_sb)
         self.assertArrayShape(gfl.qr_pinv(m_sb_f, m_sb_tau), trnsp(wide))
@@ -187,7 +190,7 @@ class TestQR(utn.TestCaseNumpy):
         num = rrr.shape[-1]
         ht_bs, tau = gfl.qr_rawn(m_bs)
         h_bs = transpose(ht_bs)
-        vecs: np.ndarray = np.tril(h_bs, -1)
+        vecs = np.tril(h_bs, -1)
         vecs[(...,) + np.diag_indices(num)] = 1
         vnorm = gfb.norm(row(tau) * vecs, axis=-2)**2
         right = np.triu(h_bs)
@@ -272,7 +275,7 @@ class TestLQ(utn.TestCaseNumpy):
         num = llo.shape[-2]
         ht_sb, tau = gfl.lq_rawm(m_sb)
         h_sb = transpose(ht_sb)
-        vecs: np.ndarray = np.triu(h_sb, 1)
+        vecs = np.triu(h_sb, 1)
         vecs[(...,) + np.diag_indices(num)] = 1
         vnorm = gfb.norm(col(tau) * vecs, axis=-1)**2
         left = np.tril(h_sb)

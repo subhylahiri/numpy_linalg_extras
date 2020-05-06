@@ -8,14 +8,17 @@ import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
 from numpy_linalg.gufuncs import array_return_shape as return_shape
-if __name__.find('tests.') < 0:
+if 'tests.' in __name__:
+    from .test_gufunc import utn, hn, main
+    from .test_linalg import trnsp, insert
+else:
     # pylint: disable=import-error
     from test_gufunc import utn, hn, main
     from test_linalg import trnsp, insert
-else:
-    from .test_gufunc import utn, hn, main
-    from .test_linalg import trnsp, insert
 # pylint: disable=missing-function-docstring
+hy.settings.register_profile("debug",
+                             suppress_health_check=(hy.HealthCheck.too_slow,))
+hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================

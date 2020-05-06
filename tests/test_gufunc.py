@@ -1,21 +1,25 @@
 # -*- coding: utf-8 -*-
 """Test C-loop and BLAS ufuncs + qr
 """
+import hypothesis as hy
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-if __name__.find('tests.') < 0:
+if 'tests.' in __name__:
+    from . import unittest_numpy as utn
+    from . import hypothesis_numpy as hn
+    from .unittest_tweaks import main
+else:
     # pylint: disable=import-error
     import unittest_numpy as utn
     import hypothesis_numpy as hn
     from unittest_tweaks import main
-else:
-    from . import unittest_numpy as utn
-    from . import hypothesis_numpy as hn
-    from .unittest_tweaks import main
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
+hy.settings.register_profile("debug",
+                             suppress_health_check=(hy.HealthCheck.too_slow,))
+hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestMatsVecs', 'TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
@@ -219,7 +223,7 @@ class TestCloop(TestBlas):
     @utn.loop_test(msg="x \\ y == y / x. ", attr_inds=slice(-1,))
     def test_rtrue_divide_returns_expected_values(self, sctype):
         self.pick_var_type(sctype)
-        zout = np.empty((4, 1, 3, 7), sctype)
+        zout = np.empty_like(self.a_sb)
         x = self.m_bs.T
         x[np.abs(x) < 1e-5] += 1.
         y = self.a_sb

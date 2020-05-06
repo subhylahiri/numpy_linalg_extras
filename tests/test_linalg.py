@@ -10,13 +10,16 @@ import numpy as np
 import numpy_linalg as la
 import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
-if __name__.find('tests.') < 0:
-    from test_gufunc import utn, hn, main
-else:
+if 'tests.' in __name__:
     from .test_gufunc import utn, hn, main
+else:
+    from test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
+hy.settings.register_profile("debug",
+                             suppress_health_check=(hy.HealthCheck.too_slow,))
+hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestShape', 'TestValue']
 # =============================================================================

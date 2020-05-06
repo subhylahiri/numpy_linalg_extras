@@ -41,7 +41,7 @@ def _default_opts(kind: str) -> dict:
         return {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
                 'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
     if kind == "shape":
-        return {'min_dims': 0, 'max_dims': 6, 'min_side': 1, 'max_side': 10,
+        return {'min_dims': 0, 'max_dims': 3, 'min_side': 1, 'max_side': 5,
                 'base_shape': ()}
     raise ValueError(f"Unknown option kind: {kind}")
 

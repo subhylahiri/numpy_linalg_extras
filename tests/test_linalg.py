@@ -38,6 +38,14 @@ def insert(shape, axis=-1):
     """Shape -> shape with one axis inserted"""
     return shape[:axis] + (1,) + shape[axis:]
 
+def chop(shape, axis=-1):
+    """Shape -> shape with last axes reduced to square"""
+    return shape[:-2] + (min(shape[-2:]),) * 2
+
+def grow(shape, axis=-1):
+    """Shape -> shape with last axes expanded to square"""
+    return shape[:-2] + (max(shape[-2:]),) * 2
+
 
 def tril(matrix):
     """Lower triangle of matrix, excluding diagonal"""
@@ -160,103 +168,75 @@ class TestShape(utn.TestCaseNumpy):
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        widb, talb = wide[:-2], tall[:-2]  # broadcasting shape
-        mini, maxi = (wide[-2],), (wide[-1],)
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.qr(m_bs, 'reduced'),
-                                    (tall, talb + 2*mini))
-        self.assertArrayShapesAre(la.qr(m_sb, 'reduced'),
-                                    (widb + 2*mini, wide))
+        self.assertArrayShapesAre(la.qr(m_bs, 'reduced'), (tall, chop(tall)))
+        self.assertArrayShapesAre(la.qr(m_sb, 'reduced'), (chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.qr(m_bs, 'complete'),
-                                    (talb + 2*maxi, tall))
-        self.assertArrayShapesAre(la.qr(m_sb, 'complete'),
-                                    (widb + 2*mini, wide))
+        self.assertArrayShapesAre(la.qr(m_bs, 'complete'), (grow(tall), tall))
+        self.assertArrayShapesAre(la.qr(m_sb, 'complete'), (chop(wide), wide))
         # with self.subTest("r/raw"):
-        self.assertArrayShape(la.qr(m_bs, 'r'), talb + 2*mini)
+        self.assertArrayShape(la.qr(m_bs, 'r'), chop(tall))
         self.assertArrayShape(la.qr(m_sb, 'r'), wide)
-        self.assertArrayShapesAre(la.qr(m_bs, 'raw'), (trnsp(tall),
-                                                        talb + mini))
-        self.assertArrayShapesAre(la.qr(m_sb, 'raw'), (trnsp(wide),
-                                                        widb + mini))
+        self.assertArrayShapesAre(la.qr(m_bs, 'raw'), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(la.qr(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        widb, talb = wide[:-2], tall[:-2]  # broadcasting shape
-        mini, maxi = (wide[-2],), (wide[-1],)
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.lq(m_bs, 'reduced'),
-                                    (tall, talb + 2*mini))
-        self.assertArrayShapesAre(la.lq(m_sb, 'reduced'),
-                                    (widb + 2*mini, wide))
+        self.assertArrayShapesAre(la.lq(m_bs, 'reduced'), (tall, chop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'reduced'), (chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.lq(m_bs, 'complete'),
-                                    (tall, talb + 2*mini))
-        self.assertArrayShapesAre(la.lq(m_sb, 'complete'),
-                                    (wide, widb + 2*maxi))
+        self.assertArrayShapesAre(la.lq(m_bs, 'complete'), (tall, chop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'complete'), (wide, grow(wide)))
         # with self.subTest("l/raw"):
         self.assertArrayShape(la.lq(m_bs, 'l'), tall)
-        self.assertArrayShape(la.lq(m_sb, 'l'), widb + 2*mini)
-        self.assertArrayShapesAre(la.lq(m_bs, 'raw'),
-                                    (trnsp(tall), talb + mini))
-        self.assertArrayShapesAre(la.lq(m_sb, 'raw'),
-                                    (trnsp(wide), widb + mini))
+        self.assertArrayShape(la.lq(m_sb, 'l'), chop(wide))
+        self.assertArrayShapesAre(la.lq(m_bs, 'raw'), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        widb, talb = wide[:-2], tall[:-2]  # broadcasting shape
-        mini, maxi = (wide[-2],), (wide[-1],)
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.lqr(m_bs, 'reduced'),
-                                    (tall, talb + 2*mini))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'reduced'),
-                                    (widb + 2*mini, wide))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'reduced'), (tall, chop(tall)))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'reduced'), (chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.lqr(m_bs, 'complete'),
-                                    (talb + 2*maxi, tall))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'complete'),
-                                    (wide, widb + 2*maxi))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'complete'), (grow(tall), tall))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'complete'), (wide, grow(wide)))
         # with self.subTest("r/l/raw"):
-        self.assertArrayShape(la.lqr(m_bs, 'l'), talb + 2*mini)
-        self.assertArrayShape(la.lqr(m_sb, 'l'), widb + 2*mini)
-        self.assertArrayShape(la.lqr(m_bs, 'r'), talb + 2*mini)
-        self.assertArrayShape(la.lqr(m_sb, 'r'), widb + 2*mini)
-        self.assertArrayShapesAre(la.lqr(m_bs, 'raw'),
-                                    (trnsp(tall), talb + mini))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'raw'),
-                                    (trnsp(wide), widb + mini))
+        self.assertArrayShape(la.lqr(m_bs, 'l'), chop(tall))
+        self.assertArrayShape(la.lqr(m_sb, 'l'), chop(wide))
+        self.assertArrayShape(la.lqr(m_bs, 'r'), chop(tall))
+        self.assertArrayShape(la.lqr(m_sb, 'r'), chop(wide))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'raw'), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', 'd'))
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         smol, wide, tall = [arr.shape for arr in arrays]
-        smob, widb, talb = [arr.shape[:-2] for arr in arrays]
-        mini, maxi = wide[-2:-1], wide[-1:]
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("separate"):
         self.assertArrayShapesAre(la.lu(m_ss, 'separate'),
-                                (smol, smol, smol[:-1]))
+                                  (smol, smol, smol[:-1]))
         self.assertArrayShapesAre(la.lu(m_bs, 'separate'),
-                                (tall, talb + 2*mini, talb + mini))
+                                  (tall, chop(tall), drop(tall)))
         self.assertArrayShapesAre(la.lu(m_sb, 'separate'),
-                                (widb + 2*mini, wide, widb + mini))
+                                  (chop(wide), wide, wide[:-1]))
         # with self.subTest("raw"):
-        self.assertArrayShapesAre(la.lu(m_ss, 'raw'), (smol, smob+mini))
-        self.assertArrayShapesAre(la.lu(m_bs, 'raw'),
-                                    (trnsp(tall), talb+mini))
-        self.assertArrayShapesAre(la.lu(m_sb, 'raw'),
-                                    (trnsp(wide), widb+mini))
+        self.assertArrayShapesAre(la.lu(m_ss, 'raw'), (smol, smol[:-1]))
+        self.assertArrayShapesAre(la.lu(m_bs, 'raw'), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(la.lu(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
 
 
 class TestValue(utn.TestCaseNumpy):
@@ -267,11 +247,9 @@ class TestValue(utn.TestCaseNumpy):
         m_sb, m_bs = arrays
 
         # with self.subTest('matmul'):
-        self.assertArrayAllClose(la.matmul(m_bs, m_sb),
-                                 gf.matmul(m_bs, m_sb))
+        self.assertArrayAllClose(la.matmul(m_bs, m_sb), gf.matmul(m_bs, m_sb))
         # with self.subTest('rmatmul'):
-        self.assertArrayAllClose(lr.rmatmul(m_bs, m_sb),
-                                 gf.rmatmul(m_bs, m_sb))
+        self.assertArrayAllClose(lr.rmatmul(m_bs, m_sb), gf.rmatmul(m_bs, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_functions_solve(self, arrays):
@@ -285,8 +263,7 @@ class TestValue(utn.TestCaseNumpy):
         slv_r = la.solve(m_ss, m_sb, out=slv_out)
         self.assertArrayAllClose(slv_out, slv_r)
         # with self.subTest('rsolve'):
-        self.assertArrayAllClose(la.rsolve(m_bs, m_ss),
-                                    gf.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose(la.rsolve(m_bs, m_ss), gf.rsolve(m_bs, m_ss))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(b)', None))
     def test_functions_lstsq(self, arrays):
@@ -302,8 +279,7 @@ class TestValue(utn.TestCaseNumpy):
         lsq_r = la.lstsq(m_bs, m_bb, out=lsq_out)
         self.assertArrayAllClose(lsq_out, lsq_r)
         # with self.subTest('rlstsq'):
-        self.assertArrayAllClose(la.rlstsq(m_ss, m_bs),
-                                    gf.rlstsq(m_ss, m_bs))
+        self.assertArrayAllClose(la.rlstsq(m_ss, m_bs), gf.rlstsq(m_ss, m_bs))
         self.assertArrayAllClose(la.rlstsq(v_b, m_sb), gf.rlstsq(v_b, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
@@ -313,17 +289,14 @@ class TestValue(utn.TestCaseNumpy):
         hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
 
         # with self.subTest('solve'):
-        self.assertArrayAllClose(la.matldiv(m_ss, m_sb),
-                                    gf.solve(m_ss, m_sb))
+        self.assertArrayAllClose(la.matldiv(m_ss, m_sb), gf.solve(m_ss, m_sb))
         slv_sh = gf.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         slv_out = np.empty(slv_sh, m_ss.dtype)
         slv_r = la.matldiv(m_ss, m_sb, out=slv_out)
         self.assertArrayAllClose(slv_out, slv_r)
         # with self.subTest('lstsq'):
-        self.assertArrayAllClose(la.matldiv(m_bs, m_bb),
-                                    gf.lstsq(m_bs, m_bb))
-        self.assertArrayAllClose(la.matldiv(m_sb, m_ss),
-                                    gf.lstsq(m_sb, m_ss))
+        self.assertArrayAllClose(la.matldiv(m_bs, m_bb), gf.lstsq(m_bs, m_bb))
+        self.assertArrayAllClose(la.matldiv(m_sb, m_ss), gf.lstsq(m_sb, m_ss))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(b)', None))
     def test_functions_matrdiv(self, arrays):
@@ -333,13 +306,10 @@ class TestValue(utn.TestCaseNumpy):
         hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
 
         # with self.subTest('rsolve'):
-        self.assertArrayAllClose(la.matrdiv(m_bs, m_ss),
-                                     gf.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose(la.matrdiv(m_bs, m_ss), gf.rsolve(m_bs, m_ss))
         # with self.subTest('rlstsq'):
-        self.assertArrayAllClose(la.matrdiv(m_ss, m_bs),
-                                    gf.rlstsq(m_ss, m_bs))
-        self.assertArrayAllClose(la.matrdiv(v_b, m_sb),
-                                    gf.rlstsq(v_b, m_sb))
+        self.assertArrayAllClose(la.matrdiv(m_ss, m_bs), gf.rlstsq(m_ss, m_bs))
+        self.assertArrayAllClose(la.matrdiv(v_b, m_sb), gf.rlstsq(v_b, m_sb))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr(self, arrays):

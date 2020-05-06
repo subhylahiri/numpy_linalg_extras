@@ -8,10 +8,10 @@ import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
 from numpy_linalg.gufuncs import return_shape, array_return_shape
 if __name__.find('tests.') < 0:
-    from test_linalg import trnsp, drop
+    from test_linalg import trnsp, drop, chop
     from test_gufunc import utn, hn, main
 else:
-    from .test_linalg import trnsp, drop
+    from .test_linalg import trnsp, drop, chop
     from .test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
@@ -48,19 +48,14 @@ class TestLU(utn.TestCaseNumpy):
     def test_lu_basic_returns_expected_shapes(self, arrays):
         m_sb, m_bb, m_bs = arrays
         wide, big, tall = [arr.shape for arr in arrays]
-        widb, bib, talb = [arr.shape[:-2] for arr in arrays]
-        mini, maxi = wide[-2:-1], wide[-1:]
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg="square"):
-        self.assertArrayShapesAre(gfl.lu_m(m_bb),
-                                  (big, big, big[:-1]))
+        self.assertArrayShapesAre(gfl.lu_m(m_bb), (big, big, big[:-1]))
         # with self.subTest(msg="wide"):
-        self.assertArrayShapesAre(gfl.lu_m(m_sb),
-                                  (widb + 2*mini, wide, wide[:-1]))
+        self.assertArrayShapesAre(gfl.lu_m(m_sb), (chop(wide), wide, wide[:-1]))
         # with self.subTest(msg="tall"):
-        self.assertArrayShapesAre(gfl.lu_n(m_bs),
-                                  (tall, talb + 2*mini, talb + mini))
+        self.assertArrayShapesAre(gfl.lu_n(m_bs), (tall, chop(tall), drop(tall)))
 
     @hy.given(hn.broadcastable('(a,b),(b,b),(b,a)', 'd'))
     def test_lu_raw_returns_expected_shapes(self, arrays):
@@ -334,7 +329,7 @@ class TestSolveVectors(utn.TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(m_bs, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv:
+            # This would succed/broadcast error if interpreted as Mv:
             gfl.solve(m_bb[off_b], m_sb[y_one])
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
@@ -354,7 +349,7 @@ class TestSolveVectors(utn.TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve_lu(m_bs, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv:
+            # This would succed/broadcast error if interpreted as Mv:
             gfl.solve_lu(m_bb[off_b], m_sb[y_one])
 
     @hy.given(hn.broadcastable('(a,a),(a),(b)', 'd'))
@@ -380,7 +375,7 @@ class TestSolveVectors(utn.TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_ss, m_bs)
+        off_b, y_one = make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve'):
         self.assertArrayShape(gfl.rsolve(v_s, m_ss), m_ss.shape[:-1])
@@ -388,10 +383,9 @@ class TestSolveVectors(utn.TestCaseNumpy):
             gfl.rsolve(v_s, m_bb)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve(v_s, m_sb)
-        # This would fail if interpreted as vM:
-        expect = array_return_shape('(a,b),(b,b)->(a,b)',
-                                    m_bs[y_one], m_ss[off_b])
-        self.assertArrayShape(gfl.rsolve(m_bs[y_one], m_ss[off_b]), expect)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as vM:
+            gfl.rsolve(m_sb[y_one], m_ss[off_b])
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
     def test_rsolve_lu_flexible_signature_with_vectors(self, arrays):
@@ -399,6 +393,7 @@ class TestSolveVectors(utn.TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
+        off_b, y_one = make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve_lu'):
         self.assertArrayShapesAre(
@@ -408,30 +403,26 @@ class TestSolveVectors(utn.TestCaseNumpy):
             gfl.rsolve_lu(v_s, m_bb)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve_lu(v_s, m_sb)
-        # This would differ if interpreted as vM: (3)(7)/(3)(7,7)->(3)(7)
-        expect = array_return_shape('(a,b),(b,b)->(a,b)', m_bs, m_ss)
-        expect_f = expect[:-2] + m_ss.shape[-2:]
-        self.assertArrayShapesAre(gfl.rsolve_lu(m_bs, m_ss),
-                                  (expect, expect_f, expect_f[:-1]))
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as vM:
+            gfl.rsolve_lu(m_sb, m_ss)
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
     def test_rlu_solve_flexible_signature_with_vectors(self, arrays):
-        m_ss, m_bs = arrays[:-2]
+        m_ss, m_sb, m_bs = arrays[:-2]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_ss, m_bs)
+        off_b, y_one = make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rlu_solve'):
         _, x_f, i_p = gfl.rsolve_lu(v_s, m_ss)
         self.assertArrayShape(gfl.rlu_solve(v_s, x_f, i_p), m_ss.shape[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlu_solve(v_b, x_f, i_p)
-        # This would fail if interpreted as vM:
-        self.assertArrayShape(gfl.rlu_solve(m_bs[y_one], x_f[off_b], i_p[off_b]),
-                              array_return_shape('(a,b),(b,b)->(a,b)',
-                                                 m_bs[y_one], x_f[off_b]))
-        # with self.subTest('lu_solve'):
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as vM:
+            gfl.rlu_solve(m_sb[y_one], x_f[off_b], i_p[off_b])
         self.assertArrayShape(gfl.lu_solve(x_f, i_p, v_s),  m_ss.shape[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lu_solve(x_f, i_p, v_b)

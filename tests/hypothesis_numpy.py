@@ -35,6 +35,17 @@ def _extract_kwds(kwds: dict, **defaults) -> dict:
     return extracted
 
 
+def _default_opts(kind: str) -> dict:
+    """Get default options for dtype/shape strategies"""
+    if kind == "dtype":
+        return {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
+                'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
+    if kind == "shape":
+        return {'min_dims': 0, 'max_dims': 6, 'min_side': 1, 'max_side': 10,
+                'base_shape': ()}
+    raise ValueError(f"Unknown option kind: {kind}")
+
+
 def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
     """Strategy to generate complex numbers of specified width
 
@@ -61,7 +72,7 @@ _DTYPES = {
 
 @st.composite
 def numeric_dtypes(draw, code_st: CodeStrategy = None,
-                   **kwds) -> st.SearchStrategy[Tuple[np.dtype, Number]]:
+                   **kwds) -> Tuple[np.dtype, Number]:
     """Strategy to generate dtypes codes
 
     Parameters
@@ -74,13 +85,12 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
 
     Returns
     -------
-    dtype_strategy : st.SearchStrategy[np.dtype]
+    dtype_strategy : np.dtype
         Strategy for dtypes that are recognised by BLAS/LAPACK.
-    elements_strategy : st.SearchStrategy[Number]
+    elements_strategy : Number
         Strategy for numbers of that dtype.
     """
-    opts = {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
-            'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
+    opts = _default_opts("dtype")
     opts.update(kwds)
     if code_st is None:
         code_st = st.sampled_from(['f', 'd', 'F', 'D'])
@@ -95,8 +105,7 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
 
 
 @st.composite
-def signature_shapes(draw, signature: str,
-                     **kwds) -> st.SearchStrategy[Tuple[Shape, ...]]:
+def signature_shapes(draw, signature: str, **kwds) -> Tuple[Shape, ...]:
     """Create a hypothesis strategy for a tuple of shapes with the signature
 
     Parameters
@@ -108,37 +117,33 @@ def signature_shapes(draw, signature: str,
 
     Returns
     -------
-    shape_strategy : st.SearchStrategy[Tuple[Tuple[int, ...], ...]]
+    shape_strategy : Tuple[Tuple[int, ...], ...]
         strategy to produce a tuple of tuples of ints that broadcast with the
         given core dimension signature.
     """
-    opts = {'signature': signature + '->()', 'base_shape': (),
-            'min_dims': 0, 'max_dims': None, 'min_side': 1, 'max_side': None}
+    opts = _default_opts("shape")
     opts.update(kwds)
+    opts['signature'] = signature + '->()'
     return draw(hyn.mutually_broadcastable_shapes(**opts)).input_shapes
 
 
 @st.composite
-def _arrays_args(draw,
-                 signature: str,
-                 code_st: CodeStrategy,
-                 kwds: dict) -> st.SearchStrategy[Tuple[
-                     np.dtype, Tuple[Shape, ...], Number]]:
+def _arrays_args(draw, signature: str, code_st: CodeStrategy,
+                 kwds: dict) -> Tuple[np.dtype, Tuple[Shape, ...], Number]:
     """Generate inputs for hyn.arrays strategy
     """
-    num_opts = _extract_kwds(kwds, min_value=-1e10, max_value=1e10,
-                             allow_nan=False, allow_infinity=False,
-                             exclude_min=False, exclude_max=False)
+    num_opts = _extract_kwds(kwds, **_default_opts("dtype"))
     dtype, elements = draw(numeric_dtypes(code_st, **num_opts))
-    shape_opts = _extract_kwds(kwds, base_shape=(), min_dims=0, max_dims=None,
-                               min_side=1, max_side=None)
+    shape_opts = _extract_kwds(kwds, **_default_opts("shape"))
     shapes = draw(signature_shapes(signature, **shape_opts))
+    if kwds:
+        raise ValueError(f"Unknown keywords: {list(kwds)}")
     return dtype, shapes, elements
 
 
 @st.composite
 def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
-                  **kwds) -> st.SearchStrategy[Tuple[np.ndarray, ...]]:
+                  **kwds) -> Tuple[np.ndarray, ...]:
     """Create a hypothesis strategy for a tuple of arrays with the signature
 
     Parameters
@@ -154,7 +159,7 @@ def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
 
     Returns
     -------
-    strategy : st.SearchStrategy[Tuple[np.ndarray, ...]]
+    strategy : Tuple[np.ndarray, ...]
         Strategy to produce a tuple of arrays that broadcast with the given
         core dimension signature.
     """
@@ -166,7 +171,7 @@ def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
 
 @st.composite
 def constant(draw, signature: str, code_st: CodeStrategy = None,
-             **kwds) -> st.SearchStrategy[np.ndarray]:
+             **kwds) -> np.ndarray:
     """Create a hypothesis strategy for a constant array with the signature
 
     Parameters
@@ -182,7 +187,7 @@ def constant(draw, signature: str, code_st: CodeStrategy = None,
 
     Returns
     -------
-    strategy : st.SearchStrategy[np.ndarray]
+    strategy : np.ndarray
         Strategy to produce an array that broadcasts with the given core
         dimension signature, with a constant value of thet dtype.
     """

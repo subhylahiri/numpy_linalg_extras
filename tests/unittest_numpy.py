@@ -99,8 +99,7 @@ class TestCaseNumpy(_ut.TestCase):
             opts['rtol'] *= epsratio
             opts['atol'] *= epsratio
         if not np.allclose(actual, desired, **opts):
-            if msg is None:
-                msg = ''
+            msg = '' if msg is None else f'{msg}\n'
             msg += miss_str(actual, desired, **opts)
             self.fail(msg)
 

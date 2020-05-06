@@ -183,7 +183,7 @@ class TestProgramNoSort(_ut.TestProgram):
         if len(args) < 4:
             kwds.setdefault('testRunner', _ut.TextTestRunner)
             if resultclass is not None:
-                kwds['testRunner'].resultclass =
+                kwds['testRunner'].resultclass = resultclass
         if len(args) < 5:
             kwds.setdefault('testLoader', nosortTestLoader)
         super().__init__(*args, **kwds)

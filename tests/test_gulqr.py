@@ -8,12 +8,12 @@ import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main
-    from .test_linalg import trnsp, drop, chop, grow
+    from .test_gufunc import utn, hn, main, drop
+    from .test_linalg import trnsp, chop, grow
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main
-    from test_linalg import trnsp, drop, chop, grow
+    from test_gufunc import utn, hn, main, drop
+    from test_linalg import trnsp, chop, grow
 # pylint: disable=missing-function-docstring
 # pylint: disable=unsupported-assignment-operation
 # pylint: disable=invalid-sequence-index
@@ -79,6 +79,8 @@ class TestQRPinvShape(utn.TestCaseNumpy):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
 
         # with self.subTest(msg='wide'):
         self.assertArrayShape(gfl.pinv(m_sb), trnsp(wide))
@@ -318,6 +320,7 @@ class TestPinv(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
 
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='wide'):
@@ -338,6 +341,7 @@ class TestPinv(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
 
         # with self.subTest(msg='tall'):
         tall_p = gfl.pinv(m_bs)

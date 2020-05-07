@@ -46,6 +46,17 @@ def _default_opts(kind: str) -> dict:
     raise ValueError(f"Unknown option kind: {kind}")
 
 
+def integers(**kwds) -> st.SearchStrategy[float]:
+    """Strategy to generate real numbers of specified width
+
+    This is a wrapper for `hypothesis.strategies.integers` that swallows
+    irrelevant keywords.
+    """
+    min_value = kwds.get('min_value', None)
+    max_value = kwds.get('max_value', None)
+    return st.integers(min_value=min_value, max_value=max_value)
+
+
 def real_numbers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
@@ -77,6 +88,7 @@ _DTYPES = {
     'd': (np.float64, real_numbers),
     'F': (np.complex64, complex_numbers),
     'D': (np.complex128, complex_numbers),
+    'i': (np.int32, integers)
 }
 
 
@@ -141,11 +153,11 @@ def _arrays_args(draw, signature: str, code_st: CodeStrategy,
     """Generate inputs for hyn.arrays strategy
     """
     num_opts = _extract_kwds(kwds, **_default_opts("dtype"))
-    dtype, elements = draw(numeric_dtypes(code_st, **num_opts))
     shape_opts = _extract_kwds(kwds, **_default_opts("shape"))
-    shapes = draw(signature_shapes(signature, **shape_opts))
     if kwds:
         raise ValueError(f"Unknown keywords: {list(kwds)}")
+    dtype, elements = draw(numeric_dtypes(code_st, **num_opts))
+    shapes = draw(signature_shapes(signature, **shape_opts))
     return dtype, shapes, elements
 
 

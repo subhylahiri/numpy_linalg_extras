@@ -70,7 +70,10 @@ PyDoc_STRVAR(lu__doc__,
 "    Upper triangular matrix.\n"
 "IP: ndarray (...,K)\n"
 "   Vector of pivot indices, where swaps `A[...,i,:] <--> A[...,IP[i],:]`\n"
-"   are performed in order `i=1,...,K`."
+"   are performed in order `i=1,...,K`.\n"
+"\nNotes\n-----\n"
+"Nothing will fail if you make the wrong choice of `lu_m` or `lu_n`.\n"
+"You will merely waste memory for the unused elements of `L`, `U`, and `IP`.\n"
 );
 
 PyDoc_STRVAR(lu_raw__doc__,

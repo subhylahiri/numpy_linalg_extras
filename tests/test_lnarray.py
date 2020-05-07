@@ -10,11 +10,11 @@ import numpy_linalg.gufuncs as gf
 from numpy_linalg.gufuncs import array_return_shape as return_shape
 if 'tests.' in __name__:
     from .test_gufunc import utn, hn, main
-    from .test_linalg import trnsp, insert
+    from .test_linalg import trnsp
 else:
     # pylint: disable=import-error
     from test_gufunc import utn, hn, main
-    from test_linalg import trnsp, insert
+    from test_linalg import trnsp
 # pylint: disable=missing-function-docstring
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
@@ -43,6 +43,11 @@ def view_as(*arrays: np.ndarray, kind: type = la.lnarray) -> la.lnarray:
     """
     result = tuple(arr.view(kind) for arr in arrays)
     return result[0] if len(result) == 1 else result
+
+
+def insert(shape, axis=-1):
+    """Shape -> shape with one axis inserted"""
+    return shape[:axis] + (1,) + shape[axis:]
 
 
 # =============================================================================
@@ -198,6 +203,7 @@ class TestPinvarray(utn.TestCaseNumpy):
     def test_pinvarray_in_functions(self, arrays):
         m_sb, high, m_bs = view_as(*arrays)
         hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
 
         self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
                                  gf.lstsq(m_bs, high))
@@ -288,6 +294,8 @@ class TestPinvarray(utn.TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
+        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        # hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
 
         self.assertArrayAllClose(la.lstsq(mini.inv, m_sb),
                                  la.matmul(mini, m_sb))
@@ -313,6 +321,8 @@ class TestPinvarray(utn.TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
+        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        # hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
 
         self.assertArrayAllClose(la.solve(m_ss.inv, m_bs.pinv),
                                  la.rlstsq(m_ss, m_bs))

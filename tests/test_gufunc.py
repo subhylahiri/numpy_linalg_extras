@@ -2,9 +2,11 @@
 """Test C-loop and BLAS ufuncs + qr
 """
 import hypothesis as hy
+import hypothesis.extra.numpy as hyn
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
+from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
     from . import unittest_numpy as utn
     from . import hypothesis_numpy as hn
@@ -16,134 +18,121 @@ else:
     from unittest_tweaks import main
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
+# =============================================================================
 errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('debug')
+vectors = hyn.arrays(dtype=np.float64,
+                     shape=hyn.array_shapes(min_dims=1, max_dims=1),
+                     elements=hn.real_numbers())
+matrices = hyn.arrays(dtype=np.float64,
+                      shape=hyn.array_shapes(min_dims=2),
+                      elements=hn.real_numbers())
 # =============================================================================
-__all__ = ['TestMatsVecs', 'TestBlas', 'TestBlasVectors', 'TestCloop']
+__all__ = ['TestBlas', 'TestBlasVectors', 'TestCloop']
+# =============================================================================
+
+
+def drop(shape, axis=-2):
+    """Shape -> shape with one axis dropped"""
+    return shape[:axis] + shape[axis+1:]
+
+
+def make_bad_broadcast(left, right, cores=(2, 2)):
+    """Stack arrays so they no longer broadcast"""
+    axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
+    new_left = np.stack((left,) * 3)[np.s_[:,] + (None,) * (-axis)]
+    new_right = np.stack((right,) * 2)[np.s_[:,] + (None,) * axis]
+    return new_left, new_right
+
+
+def make_off_by_one(matrices, vectors):
+    """Arrange so that matrices.ndim = vectors.ndim + 1"""
+    off_by_one = matrices.ndim - vectors.ndim - 1
+    return (None,)*(-off_by_one), (None,)*off_by_one
+
+
 # =============================================================================
 # Test BLAS ufuncs
 # =============================================================================
 
 
-class TestMatsVecs(utn.TestCaseNumpy):
-    """Collection of vectors and matrices for tests"""
-    ones_ss: np.ndarray
-    ones_sb: np.ndarray
-    ones_bs: np.ndarray
-    id_s: np.ndarray
-    id_b: np.ndarray
-    v_s: np.ndarray
-    v_b: np.ndarray
-    m_bs: np.ndarray
-    m_sb: np.ndarray
-    m_ss: np.ndarray
-    m_bb: np.ndarray
-    a_bs: np.ndarray
-    a_sb: np.ndarray
-    a_ss: np.ndarray
-    a_bb: np.ndarray
-
-    def setUp(self):
-        super().setUp()
-        # prefixes: v(ector), m(atrix, a(rray of matrices)
-        # suffixes: s(mall), b(ig)
-        self.varnames = ['ones_ss', 'ones_sb', 'ones_bs',
-                         'id_s', 'id_b', 'v_s', 'v_b',
-                         'm_bs', 'm_sb', 'm_ss', 'm_bb',
-                         'a_bs', 'a_sb', 'a_ss', 'a_bb']
-        self._ones_ss, self._ones_sb, self._ones_bs = {}, {}, {}
-        self._id_s, self._id_b, self._v_s, self._v_b = {}, {}, {}, {}
-        self._m_bs, self._m_sb, self._m_ss, self._m_bb = {}, {}, {}, {}
-        self._a_bs, self._a_sb, self._a_ss, self._a_bb = {}, {}, {}, {}
-        for sctype in self.sctype:
-            self._ones_ss[sctype] = utn.ones_asa((3, 3), sctype)
-            self._ones_sb[sctype] = utn.ones_asa((3, 7), sctype)
-            self._ones_bs[sctype] = utn.ones_asa((7, 3), sctype)
-            self._id_s[sctype] = np.eye(3, dtype=sctype)
-            self._id_b[sctype] = np.eye(7, dtype=sctype)
-            self._v_s[sctype] = utn.randn_asa((3,), sctype)
-            self._v_b[sctype] = utn.randn_asa((7,), sctype)
-            self._m_bs[sctype] = utn.randn_asa((7, 3), sctype)
-            self._m_sb[sctype] = utn.randn_asa((3, 7), sctype)
-            self._m_ss[sctype] = utn.randn_asa((3, 3), sctype)
-            self._m_bb[sctype] = utn.randn_asa((7, 7), sctype)
-            self._a_bs[sctype] = utn.randn_asa((2, 7, 3), sctype)
-            self._a_sb[sctype] = utn.randn_asa((4, 1, 3, 7), sctype)
-            self._a_ss[sctype] = utn.randn_asa((4, 1, 3, 3), sctype)
-            self._a_bb[sctype] = utn.randn_asa((4, 2, 7, 7), sctype)
-
-
-class TestBlas(TestMatsVecs):
+class TestBlas(utn.TestCaseNumpy):
     """Testing norm, matmul and rmatmul"""
 
     def setUp(self):
         self.gf = gfb
-        self.sctype = ['i']
         super().setUp()
-        self.varnames += ['nrms', 'vecs', 'prod']
-        self._nrms, self._vecs, self._prod = {}, {}, {}
-        for sctype in self.sctype:
-            self._vecs[sctype] = utn.asa(np.arange(24).reshape((2, 3, 4)),
-                                         np.arange(8).reshape((2, 1, 4)),
-                                         sctype)
-            nsq = utn.asa(np.array([[14, 126, 366], [734, 1230, 1854]]),
-                          np.array([[14], [126]]), sctype)
-            self._nrms[sctype] = np.sqrt(nsq.real + nsq.imag)
-            self._prod[sctype] = self._a_sb[sctype] @ self._a_bs[sctype]
 
-    def test_norm_returns_expected_shapes(self):
-        self.pick_var_type('d')
-        self.assertArrayShape(self.gf.norm(self.a_bs), (2, 7))
-        self.assertArrayShape(self.gf.norm(self.a_bs, axis=1), (2, 3))
-        self.assertArrayShape(self.gf.norm(self.v_b, keepdims=True), (1,))
-        self.assertArrayShape(self.gf.norm(self.v_b), ())
+    @hy.given(matrices)
+    def test_norm_returns_expected_shapes(self, m_bs):
+        v_s = m_bs[(0,) * (m_bs.ndim - 1)]
+        tall = m_bs.shape
 
-    @utn.loop_test(msg='norm values', attr_inds=slice(-1))
-    def test_norm_returns_expected_values(self, sctype: str):
-        self.pick_var_type(sctype)
-        nout = np.empty((2, 3), dtype=sctype.lower())
-        nrms = self.gf.norm(self.vecs, out=nout)
-        self.assertArrayAllClose(nrms, self.nrms)
-        self.assertArrayAllClose(nout, self.nrms)
+        self.assertArrayShape(self.gf.norm(m_bs), tall[:-1])
+        self.assertArrayShape(self.gf.norm(m_bs, axis=-2), drop(tall))
+        self.assertArrayShape(self.gf.norm(v_s, keepdims=True), (1,))
+        self.assertArrayShape(self.gf.norm(v_s), ())
 
-    def test_matmul_returns_expected_shapes(self):
-        self.pick_var_type('d')
-        self.assertArrayShape(self.gf.matmul(self.m_sb, self.m_bs), (3, 3))
-        self.assertArrayShape(self.gf.matmul(self.a_bs, self.m_ss), (2, 7, 3))
+    @hy.given(hn.broadcastable('(a,b)', None))
+    def test_norm_returns_expected_values(self, m_bs: np.ndarray):
+        nout = np.empty_like(m_bs[..., 0].real)
+        nrms = self.gf.norm(m_bs, out=nout)
+        norms = np.sqrt((np.abs(m_bs)**2).sum(-1))
+        self.assertArrayAllClose(nrms, norms)
+        self.assertArrayAllClose(nout, norms)
+
+    @hy.given(hn.broadcastable('(a,b),(b,c)', 'd'))
+    def test_matmul_returns_expected_shapes(self, arrays):
+        m_sb, m_bs = arrays
+        hy.assume(hn.nonsquare(m_sb))
+        hy.assume(hn.nonsquare(m_bs))
+
+        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        self.assertArrayShape(self.gf.matmul(m_sb, m_bs), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            self.gf.matmul(self.m_bs, self.m_bs)
+            self.gf.matmul(m_bs, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.matmul(self.a_ss, self.a_sb)
+            self.gf.matmul(*make_bad_broadcast(m_sb, m_bs))
 
-    @utn.loop_test(msg='matmul values')
-    def test_matmul_returns_expected_values(self, sctype):
-        self.pick_var_type(sctype)
-        pout = np.empty((4, 2, 3, 3), sctype)
-        prod = self.gf.matmul(self.a_sb, self.a_bs, out=pout)
-        self.assertArrayAllClose(prod, self.prod)
-        self.assertArrayAllClose(pout, self.prod)
+    @hy.given(hn.broadcastable('(a,b),(b,c)', None))
+    def test_matmul_returns_expected_values(self, arrays):
+        m_sb, m_bs = arrays
+        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
 
-    def test_rmatmul_returns_expected_shapes(self):
-        self.pick_var_type('d')
-        self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.m_bs), (7, 7))
-        self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb), (2, 7, 3))
+        pout = np.empty(expect, m_sb.dtype)
+        pres = self.gf.matmul(m_sb, m_bs, out=pout)
+        prod = np.matmul(m_sb, m_bs)
+        self.assertArrayAllClose(pres, prod)
+        self.assertArrayAllClose(pout, prod)
+
+    @hy.given(hn.broadcastable('(a,b),(b,c)', 'd'))
+    def test_rmatmul_returns_expected_shapes(self, arrays):
+        m_sb, m_bs = arrays
+        hy.assume(hn.nonsquare(m_sb))
+        hy.assume(hn.nonsquare(m_bs))
+
+        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        self.assertArrayShape(self.gf.rmatmul(m_bs, m_sb), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            self.gf.rmatmul(self.m_bs, self.m_bs)
+            self.gf.rmatmul(m_bs, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.rmatmul(self.a_sb, self.a_ss)
+            self.gf.rmatmul(*make_bad_broadcast(m_bs, m_sb))
 
-    @utn.loop_test(msg='rmatmul values')
-    def test_rmatmul_returns_expected_values(self, sctype):
-        self.pick_var_type(sctype)
-        pout = np.empty((4, 2, 3, 3), sctype)
-        prod = self.gf.rmatmul(self.a_bs, self.a_sb, out=pout)
-        self.assertArrayAllClose(prod, self.prod)
-        self.assertArrayAllClose(pout, self.prod)
+    @hy.given(hn.broadcastable('(a,b),(b,c)', None))
+    def test_rmatmul_returns_expected_values(self, arrays):
+        m_sb, m_bs = arrays
+        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+
+        pout = np.empty(expect, m_sb.dtype)
+        pres = self.gf.rmatmul(m_bs, m_sb, out=pout)
+        prod = np.matmul(m_sb, m_bs)
+        self.assertArrayAllClose(pres, prod)
+        self.assertArrayAllClose(pout, prod)
 
 
-class TestBlasVectors(TestMatsVecs):
+class TestBlasVectors(utn.TestCaseNumpy):
     """Testing matmul and rmatmul"""
 
     def setUp(self):
@@ -151,53 +140,63 @@ class TestBlasVectors(TestMatsVecs):
         self.sctype = ['i']
         super().setUp()
 
-    def test_matmul_flexible_signature_with_vectors(self):
-        self.pick_var_type('d')
-        with self.subTest('matrix-vector'):
-            self.assertArrayShape(self.gf.matmul(self.m_sb, self.v_b), (3,))
-            self.assertArrayShape(self.gf.matmul(self.a_bs, self.v_s), (2, 7))
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.matmul(self.m_sb, self.v_s)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as Mv: (3)(7,7) @ (3)(7)
-                self.gf.matmul(self.a_bb, self.m_sb)  # Mv would work, but MM
-        with self.subTest('vector-matrix'):
-            self.assertArrayShape(self.gf.matmul(self.v_s, self.m_ss), (3,))
-            self.assertArrayShape(self.gf.matmul(self.v_b, self.a_bb), (3, 7))
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.matmul(self.v_b, self.m_sb)
-            # This would fail if interpreted as vM: (3)(7) @ (2)(7,3)
-            self.assertArrayShape(self.gf.matmul(self.m_sb, self.a_bs),
-                                  (2, 3, 3))  # vM wouldn't work, but MM ok
-        with self.subTest('vector-vector'):
-            self.assertArrayShape(self.gf.matmul(self.v_s, self.v_s), ())
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.matmul(self.v_s, self.v_b)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a),(b)', 'd'))
+    def test_matmul_flexible_signature_with_vectors(self, arrays):
+        m_ss, m_sb, m_bb, m_bs = arrays[:-2]
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
+        smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
+        hy.assume(hn.nonsquare(m_sb))
+        off_b, y_one = make_off_by_one(m_sb, m_sb)
 
-    def test_rmatmul_flexible_signature_with_vectors(self):
-        self.pick_var_type('d')
-        with self.subTest('matrix-vector'):
-            self.assertArrayShape(self.gf.rmatmul(self.v_s, self.m_bs), (7,))
-            self.assertArrayShape(self.gf.rmatmul(self.v_b, self.a_sb),
-                                  (4, 1, 3))
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.rmatmul(self.v_b, self.m_bs)
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                # This would work if interpreted as Mv: (3)(7,7) @ (3)(7)
-                self.gf.rmatmul(self.m_sb, self.a_bb)  # Mv would work, but MM
-        with self.subTest('vector-matrix'):
-            self.assertArrayShape(self.gf.rmatmul(self.m_sb, self.v_s), (7,))
-            self.assertArrayShape(self.gf.rmatmul(self.a_sb, self.v_s),
-                                  (4, 1, 7))
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.rmatmul(self.m_bs, self.v_s)
-            # This would fail if interpreted as vM: (7)(7) @ (2)(7,3)
-            self.assertArrayShape(self.gf.rmatmul(self.a_bs, self.m_bb),
-                                  (2, 7, 3))  # Mv wouldn't work, but MM ok
-        with self.subTest('vector-vector'):
-            self.assertArrayShape(self.gf.rmatmul(self.v_b, self.v_b), ())
-            with self.assertRaisesRegex(*utn.core_dim_err):
-                self.gf.rmatmul(self.v_b, self.v_s)
+        # with self.subTest('matrix-vector'):
+        self.assertArrayShape(self.gf.matmul(m_sb, v_b), wide[:-1])
+        self.assertArrayShape(self.gf.matmul(m_bs, v_s), tall[:-1])
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(m_sb, v_s)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as Mv:
+            self.gf.matmul(m_sb[off_b], m_sb[y_one])
+        # with self.subTest('vector-matrix'):
+        self.assertArrayShape(self.gf.matmul(v_s, m_ss), smol[:-1])
+        self.assertArrayShape(self.gf.matmul(v_b, m_bb), big[:-1])
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(v_b, m_sb)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as vM:
+            self.gf.matmul(m_sb[y_one], m_sb[off_b])
+        # with self.subTest('vector-vector'):
+        self.assertArrayShape(self.gf.matmul(v_s, v_s), ())
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.matmul(v_s, v_b)
+
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a),(b)', 'd'))
+    def test_rmatmul_flexible_signature_with_vectors(self, arrays):
+        m_ss, m_sb, m_bb, m_bs = arrays[:-2]
+        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
+        smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
+        hy.assume(hn.nonsquare(m_sb))
+        off_b, y_one = make_off_by_one(m_sb, m_sb)
+
+        # with self.subTest('matrix-vector'):
+        self.assertArrayShape(self.gf.rmatmul(v_s, m_bs), tall[:-1])
+        self.assertArrayShape(self.gf.rmatmul(v_b, m_sb), wide[:-1])
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(v_b, m_bs)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as Mv:
+            self.gf.rmatmul(m_sb[y_one], m_sb[off_b])
+        # w\ith self.subTest('vector-matrix'):
+        self.assertArrayShape(self.gf.rmatmul(m_ss, v_s), smol[:-1])
+        self.assertArrayShape(self.gf.rmatmul(m_bb, v_b), big[:-1])
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(m_bs, v_s)
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            # This would succed/broadcast error if interpreted as vM:
+            self.gf.rmatmul(m_sb[off_b], m_sb[y_one])
+        # with self.subTest('vector-vector'):
+        self.assertArrayShape(self.gf.rmatmul(v_b, v_b), ())
+        with self.assertRaisesRegex(*utn.core_dim_err):
+            self.gf.rmatmul(v_b, v_s)
 
 
 # =============================================================================
@@ -213,24 +212,26 @@ class TestCloop(TestBlas):
         super().setUp()
         self.gf = gfc
 
-    def test_rtrue_divide_returns_expected_shapes(self):
-        self.pick_var_type('d')
-        self.assertArrayShape(self.gf.rtrue_divide(self.m_sb, self.a_sb),
-                              (4, 1, 3, 7))
-        with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.rtrue_divide(self.a_sb, self.prod)
+    @hy.given(hn.broadcastable('(a,b),(a,b)', 'd'))
+    def test_rtrue_divide_returns_expected_shapes(self, arrays):
+        a_bs, m_bs = arrays
 
-    @utn.loop_test(msg="x \\ y == y / x. ", attr_inds=slice(-1,))
-    def test_rtrue_divide_returns_expected_values(self, sctype):
-        self.pick_var_type(sctype)
-        zout = np.empty_like(self.a_sb)
-        x = self.m_bs.T
-        x[np.abs(x) < 1e-5] += 1.
-        y = self.a_sb
-        z = self.gf.rtrue_divide(x, y, out=zout)
-        zz = y / x
-        self.assertArrayAllClose(z, zz)
-        self.assertArrayNotAllClose(z, x / y, msg='x \\ y != x / y')
+        expect = array_return_shape('(),()->()', a_bs, m_bs)
+        self.assertArrayShape(self.gf.rtrue_divide(a_bs, m_bs), expect)
+        with self.assertRaisesRegex(*utn.broadcast_err):
+            self.gf.rtrue_divide(*make_bad_broadcast(m_bs, a_bs))
+
+    @hy.given(hn.broadcastable('(a,b),(a,b)', None))
+    def test_rtrue_divide_returns_expected_values(self, arrays):
+        a_bs, m_bs = arrays
+
+        expect = array_return_shape('(),()->()', a_bs, m_bs)
+        zout = np.empty(expect, m_bs.dtype)
+        a_bs[np.abs(a_bs) < 1e-5] += 1.
+        zres = self.gf.rtrue_divide(a_bs, m_bs, out=zout)
+        zzz = m_bs / a_bs
+        self.assertArrayAllClose(zres, zzz)
+        self.assertArrayAllClose(zout, zzz)
 
 
 # =============================================================================

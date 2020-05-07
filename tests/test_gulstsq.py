@@ -10,14 +10,12 @@ import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, TestMatsVecs
-    from .test_linalg import trnsp, drop, chop, grow
-    from .test_gusolve import make_off_by_one, make_bad_broadcast
+    from .test_gufunc import utn, hn, main, vectors, drop, make_bad_broadcast, make_off_by_one
+    from .test_linalg import trnsp
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main, TestMatsVecs
-    from test_linalg import trnsp, drop, chop, grow
-    from test_gusolve import make_off_by_one, make_bad_broadcast
+    from test_gufunc import utn, hn, main, vectors, drop, make_bad_broadcast, make_off_by_one
+    from test_linalg import trnsp
 # pylint: disable=missing-function-docstring
 # =============================================================================
 errstate = np.errstate(invalid='raise')
@@ -26,9 +24,6 @@ hy.settings.register_profile("debug",
 hy.settings.load_profile('debug')
 qr_funcs = hy.strategies.sampled_from([gfl.lstsq_qrm, gfl.lstsq_qrn])
 rqr_funcs = hy.strategies.sampled_from([gfl.rlstsq_qrm, gfl.rlstsq_qrn])
-vectors = hyn.arrays(dtype=np.float64,
-                     shape=hyn.array_shapes(min_dims=1, max_dims=1),
-                     elements=hn.real_numbers())
 # =============================================================================
 __all__ = ['TestLstsqShape', 'TestLstsqVectors', 'TestLstsqVal']
 # =============================================================================
@@ -51,20 +46,7 @@ def tau_len_vec(vec: np.ndarray, func: np.ufunc) -> int:
 # =============================================================================
 
 
-class TestLstsq(TestMatsVecs):
-    """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
-
-    def setUp(self):
-        self.func = [gfl.lstsq_qrm, gfl.lstsq_qrn,
-                     gfl.rlstsq_qrm, gfl.rlstsq_qrn]
-        self.tau_len = [{'bs': (7,), 'sb': (3,), 'vs': (3,), 'vb': (7,)},
-                        {'bs': (3,), 'sb': (7,), 'vs': (), 'vb': ()},
-                        {'bs': (3,), 'sb': (7,), 'vs': (3,), 'vb': (7,)},
-                        {'bs': (7,), 'sb': (3,), 'vs': (), 'vb': ()}]
-        super().setUp()
-
-
-class TestLstsqShape(TestLstsq):
+class TestLstsqShape(utn.TestCaseNumpy):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @errstate
@@ -238,7 +220,7 @@ class TestLstsqShape(TestLstsq):
             gfl.qr_lstsq(x_f, *make_bad_broadcast(tau, m_ss, (1, 2)))
 
 
-class TestLstsqVectors(TestLstsq):
+class TestLstsqVectors(utn.TestCaseNumpy):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'))
@@ -254,7 +236,7 @@ class TestLstsqVectors(TestLstsq):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(m_sb, v_b)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv:
+            # This would succed/broadcast error if interpreted as Mv:
             gfl.lstsq(m_sb[off_b], m_bs[y_one])
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'))
@@ -302,7 +284,7 @@ class TestLstsqVectors(TestLstsq):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlstsq(v_b, m_bs)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as vM: (3)(7)\(3)(7,7)
+            # This would succed/broadcast error if interpreted as vM: (3)(7)\(3)(7,7)
             gfl.rlstsq(m_bs[y_one], m_sb[off_b])
 
     @hy.given(vectors, vectors)
@@ -314,7 +296,7 @@ class TestLstsqVectors(TestLstsq):
             gfl.rlstsq(v_s, v_b)
 
 
-class TestLstsqQRVectors(TestLstsq):
+class TestLstsqQRVectors(utn.TestCaseNumpy):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), qr_funcs)
@@ -336,7 +318,7 @@ class TestLstsqQRVectors(TestLstsq):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_sb, v_b)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv:
+            # This would succed/broadcast error if interpreted as Mv:
             func(m_sb[off_b], m_bs[y_one])
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), qr_funcs)
@@ -347,8 +329,7 @@ class TestLstsqQRVectors(TestLstsq):
         hy.assume(hn.wide(m_sb))
 
         tau = m_sb.shape[:-2] + tau_len_vec(v_s, func)
-        self.assertArrayShapesAre(func(v_s, m_sb),
-                                  (drop(m_sb), m_sb.shape[:-1], tau))
+        self.assertArrayShapesAre(func(v_s, m_sb), (drop(wide), wide[:-1], tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(v_s, m_bs)
 
@@ -369,8 +350,7 @@ class TestLstsqQRVectors(TestLstsq):
         hy.assume(hn.wide(m_sb))
 
         tau = m_sb.shape[:-2] + tau_len_vec(v_b, func)
-        self.assertArrayShapesAre(func(m_sb, v_b),
-                                  (m_sb.shape[:-1], drop(m_sb), tau))
+        self.assertArrayShapesAre(func(m_sb, v_b), (wide[:-1], drop(wide), tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_bs, v_b)
 
@@ -386,14 +366,14 @@ class TestLstsqQRVectors(TestLstsq):
 
         tau = m_sb.shape[:-2] + tau_len(m_sb, func)
         self.assertArrayShapesAre(func(v_b, m_sb),
-                                  (m_sb.shape[:-1], trnsp(m_sb), tau))
+                                  (wide[:-1], trnsp(wide), tau))
         tau = m_bs.shape[:-2] + tau_len(m_bs, func)
         self.assertArrayShapesAre(func(v_s, m_bs),
-                                  (m_bs.shape[:-1], trnsp(m_bs), tau))
+                                  (tall[:-1], trnsp(tall), tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(v_b, m_bs)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as vM:
+            # This would succed/broadcast error if interpreted as vM:
             func(m_bs[y_one], m_sb[off_b])
 
     @hy.given(vectors, vectors, rqr_funcs)
@@ -401,12 +381,12 @@ class TestLstsqQRVectors(TestLstsq):
         hy.assume(len(v_s) != len(v_b))
 
         tau = tau_len_vec(v_s, func)
-        self.assertArrayShapesAre(func(v_s, v_s), ((), v_s.shspe, tau))
+        self.assertArrayShapesAre(func(v_s, v_s), ((), v_s.shape, tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(v_s, v_b)
 
 
-class TestQRLstsqVectors(TestLstsq):
+class TestQRLstsqVectors(utn.TestCaseNumpy):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), qr_funcs)
@@ -429,7 +409,7 @@ class TestQRLstsqVectors(TestLstsq):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(x_f, tau, v_b)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv: (4,1)(3,7)\(7)(3)
+            # This would succed/broadcast error if interpreted as Mv:
             gfl.qr_lstsq(x_f[off_b], tau[off_b], m_bs[y_one])
 
 
@@ -452,8 +432,6 @@ class TestQRLstsqVectors(TestLstsq):
 
     @hy.given(vectors, vectors, qr_funcs)
     def test_qr_lstsq_flexible_signature_with_vectors_vv(self, v_s, v_b, func):
-        self.pick_var_type('d')
-        arrays = [self.v_s, self.v_b]
         v_s, v_b = hn.core_only(*arrays, dims=1)
         hy.assume(len(v_s) != len(v_b))
 
@@ -500,13 +478,11 @@ class TestQRLstsqVectors(TestLstsq):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(v_s, x_f, tau)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would work if interpreted as Mv: (4,1)(3,7)\(7)(3)
+            # This would succed/broadcast error if interpreted as Mv: (4,1)(3,7)\(7)(3)
             gfl.rqr_lstsq(m_bs[y_one], x_f[off_b], tau[off_b])
 
     @hy.given(vectors, vectors, qr_funcs)
     def test_rqr_lstsq_flexible_signature_with_vectors_vv(self, v_s, v_b, func):
-        self.pick_var_type('d')
-        arrays = [self.v_s, self.v_b]
         v_s, v_b = hn.core_only(*arrays, dims=1)
         hy.assume(len(v_s) != len(v_b))
 
@@ -518,7 +494,7 @@ class TestQRLstsqVectors(TestLstsq):
             gfl.rqr_lstsq(v_b, x_f, tau)
 
 
-class TestLstsqVal(TestLstsq):
+class TestLstsqVal(utn.TestCaseNumpy):
     """Testing (r)lstsq, (r)lstsq_qr? and (r)qr_lstsq"""
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
@@ -591,7 +567,6 @@ class TestLstsqVal(TestLstsq):
     def test_lstsq_qr_returns_expected_values_with_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
 
         suffix = func.__name__[-1] + ')'
         # underconstrained

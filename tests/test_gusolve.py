@@ -8,11 +8,11 @@ import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
 from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
-    from .test_linalg import trnsp, drop, chop
-    from .test_gufunc import utn, hn, main
+    from .test_gufunc import utn, hn, main, drop, make_bad_broadcast, make_off_by_one
+    from .test_linalg import trnsp, chop, grow
 else:
-    from test_linalg import trnsp, drop, chop
-    from test_gufunc import utn, hn, main
+    from test_gufunc import utn, hn, main, drop, make_bad_broadcast, make_off_by_one
+    from test_linalg import trnsp, chop, grow
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("debug",
@@ -20,25 +20,6 @@ hy.settings.register_profile("debug",
 hy.settings.load_profile('debug')
 # =============================================================================
 __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
-# =============================================================================
-# Shape helper
-# =============================================================================
-
-
-def make_off_by_one(matrices, vectors):
-    """Arrange so that matrices.ndim = vectors.ndim + 1"""
-    off_by_one = matrices.ndim - vectors.ndim - 1
-    return (None,)*(-off_by_one), (None,)*off_by_one
-
-
-def make_bad_broadcast(left, right, cores=(2, 2)):
-    """Stack arrays so they no longer broadcast"""
-    axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
-    new_left = np.stack((left,) * 3)[np.s_[:,] + (None,) * (-axis)]
-    new_right = np.stack((right,) * 2)[np.s_[:,] + (None,) * axis]
-    return new_left, new_right
-
-
 # =============================================================================
 # Test LU
 # =============================================================================
@@ -55,9 +36,12 @@ class TestLU(utn.TestCaseNumpy):
 
         # with self.subTest(msg="square"):
         self.assertArrayShapesAre(gfl.lu_m(m_bb), (big, big, big[:-1]))
+        self.assertArrayShapesAre(gfl.lu_n(m_bb), (big, big, big[:-1]))
         # with self.subTest(msg="wide"):
         self.assertArrayShapesAre(gfl.lu_m(m_sb), (chop(wide), wide, wide[:-1]))
+        self.assertArrayShapesAre(gfl.lu_n(m_sb), (wide, grow(wide), drop(wide)))
         # with self.subTest(msg="tall"):
+        self.assertArrayShapesAre(gfl.lu_m(m_bs), (grow(tall), tall, tall[:-1]))
         self.assertArrayShapesAre(gfl.lu_n(m_bs), (tall, chop(tall), drop(tall)))
 
     @hy.given(hn.broadcastable('(a,b),(b,b),(b,a)', 'd'))
@@ -273,7 +257,7 @@ class TestSolveShape(utn.TestCaseNumpy):
             gfl.rlu_solve(m_sb, x_f, i_p)
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.lu_solve(x_f, *make_bad_broadcast(i_p, m_sb))
+            gfl.lu_solve(x_f, *make_bad_broadcast(i_p, m_sb, (1, 2)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rsolve_lu_returns_expected_shapes(self, arrays):

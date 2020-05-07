@@ -197,8 +197,12 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
     if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
         raise ValueError('Not enough cores dimensions. ' + msg)
     for shape, dim in zip(shapes, dims):
-        broads.append(shape[:-dim])
-        cores.append(shape[-dim:])
+        if dim:
+            broads.append(shape[:-dim])
+            cores.append(shape[-dim:])
+        else:
+            broads.append(shape)
+            cores.append(())
     for sig, core in zip(sigs_in, cores):
         for name, siz in zip(sig, core):
             sizes.setdefault(name, siz)

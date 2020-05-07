@@ -11,9 +11,9 @@ import numpy_linalg as la
 import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main
+    from .test_gufunc import utn, hn, main, drop
 else:
-    from test_gufunc import utn, hn, main
+    from test_gufunc import utn, hn, main, drop
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
@@ -32,18 +32,10 @@ def trnsp(shape):
     return shape[:-2] + shape[:-3:-1]
 
 
-def drop(shape, axis=-2):
-    """Shape -> shape with one axis dropped"""
-    return shape[:axis] + shape[axis+1:]
-
-
-def insert(shape, axis=-1):
-    """Shape -> shape with one axis inserted"""
-    return shape[:axis] + (1,) + shape[axis:]
-
 def chop(shape, axis=-1):
     """Shape -> shape with last axes reduced to square"""
     return shape[:-2] + (min(shape[-2:]),) * 2
+
 
 def grow(shape, axis=-1):
     """Shape -> shape with last axes expanded to square"""
@@ -70,7 +62,7 @@ class TestShape(utn.TestCaseNumpy):
     def test_functions_shape(self, array):
         shape = array.shape
         self.assertArrayShape(la.transpose(array), trnsp(shape))
-        self.assertArrayShape(la.row(array), insert(shape))
+        self.assertArrayShape(la.row(array), shape[:-1] + (1,) + shape[-1:])
         self.assertArrayShape(la.col(array), shape + (1,))
         self.assertArrayShape(la.scalar(array), shape + (1, 1))
 
@@ -230,7 +222,7 @@ class TestShape(utn.TestCaseNumpy):
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         smol, wide, tall = [arr.shape for arr in arrays]
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("separate"):
         self.assertArrayShapesAre(la.lu(m_ss, 'separate'),

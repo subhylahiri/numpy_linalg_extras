@@ -50,6 +50,9 @@ def grow(shape, axis=-1):
     return shape[:-2] + (max(shape[-2:]),) * 2
 
 
+# -----------------------------------------------------------------------------
+
+
 def tril(matrix):
     """Lower triangle of matrix, excluding diagonal"""
     return np.tril(matrix, -1)

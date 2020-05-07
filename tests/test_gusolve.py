@@ -31,7 +31,7 @@ def make_off_by_one(matrices, vectors):
     return (None,)*(-off_by_one), (None,)*off_by_one
 
 
-def make_bad_broadcast(left, right, cores=(0, 0)):
+def make_bad_broadcast(left, right, cores=(2, 2)):
     """Stack arrays so they no longer broadcast"""
     axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
     new_left = np.stack((left,) * 3)[np.s_[:,] + (None,) * (-axis)]

@@ -46,6 +46,16 @@ def _default_opts(kind: str) -> dict:
     raise ValueError(f"Unknown option kind: {kind}")
 
 
+def real_numbers(**kwds) -> st.SearchStrategy[float]:
+    """Strategy to generate real numbers of specified width
+
+    This is a wrapper for `hypothesis.strategies.floats` with different defaults
+    """
+    opts = _default_opts("dtype")
+    opts.update(kwds)
+    return st.floats(**opts)
+
+
 def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
     """Strategy to generate complex numbers of specified width
 
@@ -63,8 +73,8 @@ def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
 
 
 _DTYPES = {
-    'f': (np.float32, st.floats),
-    'd': (np.float64, st.floats),
+    'f': (np.float32, real_numbers),
+    'd': (np.float64, real_numbers),
     'F': (np.complex64, complex_numbers),
     'D': (np.complex128, complex_numbers),
 }
@@ -90,8 +100,6 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
     elements_strategy : Number
         Strategy for numbers of that dtype.
     """
-    opts = _default_opts("dtype")
-    opts.update(kwds)
     if code_st is None:
         code_st = st.sampled_from(['f', 'd', 'F', 'D'])
     elif isinstance(code_st, str):
@@ -100,8 +108,8 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
         code_st = st.sampled_from(code_st)
     code = draw(code_st)
     dtype, element_st = _DTYPES[code]
-    opts['width'] = dtype().itemsize * 8
-    return dtype, element_st(**opts)
+    kwds['width'] = dtype().itemsize * 8
+    return dtype, element_st(**kwds)
 
 
 @st.composite

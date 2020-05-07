@@ -162,7 +162,10 @@ def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
     signature = signature.lstrip('(').rstrip(')').replace('->', ',')
     arrays = []
     for array in signature.split('),('):
-        arrays.append(tuple(array.split(',')))
+        if array:
+            arrays.append(tuple(array.split(',')))
+        else:
+            arrays.append(())
     return tuple(arrays)
 
 

@@ -1,25 +1,50 @@
 # -*- coding: utf-8 -*-
 """Customised unittest for numpy
+
+Classes
+-------
+TestCaseNumpy
+    A `unittest.TestCase` subclass with assert methods for testing array values
+    and shapes. Create test cases by subclassing this.
+
+Functions
+---------
+trnsp
+    Modify a shape (tuple of ints) by swapping last two entries.
+drop
+    Modify a shape by removing an entry.
+chop
+    Modify a shape by setting the smaller of the last two entries to the larger.
+grow
+    Modify a shape by setting the larger of the last two entries to the smaller.
+
+Constants
+---------
+broadcast_err
+    Tuple of arguments for `unittest.TestCase.assertRaisesRegex` to match a
+    error due to mismatched broadcasting dimensions.
+core_dim_err
+    Tuple of arguments to match a error due to mismatched core dimensions.
+num_dim_err
+    Tuple of arguments to match a error caused by too few dimensions.
+invalid_err
+    Tuple of arguments to match a numerical error.
 """
 import unittest as _ut
-import functools as _ft
 import contextlib as _cx
 from typing import Tuple
-from fnmatch import fnmatchcase
 import numpy as np
 # pylint: disable=invalid-name
 __all__ = [
     'TestCaseNumpy',
-    'miss_str',
-    'loop_test',
-    'asa',
-    'randn_asa',
-    'zeros_asa',
-    'ones_asa',
     'broadcast_err',
     'core_dim_err',
     'num_dim_err',
     'invalid_err',
+    'trnsp',
+    'drop',
+    'chop',
+    'grow',
 ]
 # =============================================================================
 # Error specs for assertRaisesRegex
@@ -65,24 +90,23 @@ class TestCaseNumpy(_ut.TestCase):
     """
 
     def setUp(self):
-        # Variables used in testing:
-        self.varnames = []
-        # Scalar types:
-        # can be extended in Subclass: assign before calling super().setUp()
-        extra_sctypes = getattr(self, 'sctype', [])
-        self.sctype = ['f', 'd', 'F', 'D'] + extra_sctypes
         # testing ndarray values (relative to np.float64's eps)
         self.all_close_opts = {'atol': 1e-10, 'rtol': 1e-10, 'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 
-    def pick_var_type(self, sctype):
-        """Set scalar types of member variables.
-
-        If `self.varnames` is `['a', 'b', ...]`, it sets `self.a, self.b, ...`
-        to `self._a[sctype], self._b[sctype], ...`.
-        """
-        for var in self.varnames:
-            setattr(self, var, getattr(self, '_' + var)[sctype])
+    @_cx.contextmanager
+    def _adjusted_tols(self, array: np.ndarray):
+        """Adjusting all_close tolerances for dtype"""
+        try:
+            old_opts = self.all_close_opts.copy()
+            if np.issubdtype(array.dtype, np.inexact):
+                epsratio = np.finfo(array.dtype).eps / np.finfo(np.float64).eps
+                # single/double epsratio ~ 5.6e8
+                self.all_close_opts['rtol'] *= epsratio
+                self.all_close_opts['atol'] *= epsratio
+            yield
+        finally:
+            self.all_close_opts = old_opts
 
     def assertArrayAllClose(self, actual, desired, msg=None):
         """Calls numpy.allclose and processes the results like a
@@ -93,15 +117,24 @@ class TestCaseNumpy(_ut.TestCase):
         The original tolerances are for `np.float64`.
         """
         # __unittest = True
-        opts = self.all_close_opts.copy()
-        if np.issubdtype(actual.dtype, np.inexact):
-            epsratio = np.finfo(actual.dtype).eps / np.finfo(np.float64).eps
-            opts['rtol'] *= epsratio
-            opts['atol'] *= epsratio
-        if not np.allclose(actual, desired, **opts):
-            msg = '' if msg is None else f'{msg}\n'
-            msg += miss_str(actual, desired, **opts)
-            self.fail(msg)
+        with self._adjusted_tols(np.array(desired)):
+            if not np.allclose(actual, desired, **self.all_close_opts):
+                msg = '' if msg is None else f'{msg}\n'
+                msg += miss_str(actual, desired, **self.all_close_opts)
+                self.fail(msg)
+
+    def assertArrayNotAllClose(self, actual, desired, msg=None):
+        """Calls numpy.allclose (so it broadcasts, unlike
+        numpy.testing.assert_allclose), negates and processes the results like
+        a unittest.TestCase method.
+        """
+        # __unittest = True
+        with self._adjusted_tols(np.array(desired)):
+            if np.allclose(actual, desired, **self.all_close_opts):
+                msg = '' if msg is None else f'{msg}\n'
+                msg += miss_str(actual, desired, **self.all_close_opts)
+                msg.replace("Should be", "Shouldn't be")
+                self.fail(msg)
 
     def assertArrayEqual(self, actual, desired, msg=None):
         """Calls numpy.all(numpy.equal(...)) and processes the results like a
@@ -125,19 +158,6 @@ class TestCaseNumpy(_ut.TestCase):
         """
         # __unittest = True
         if np.any(actual <= desired):
-            self.fail(msg)
-
-    def assertArrayNotAllClose(self, actual, desired, msg=None):
-        """Calls numpy.allclose (so it broadcasts, unlike
-        numpy.testing.assert_allclose), negates and processes the results like
-        a unittest.TestCase method.
-        """
-        # __unittest = True
-        if np.allclose(actual, desired, **self.all_close_opts):
-            if msg is None:
-                msg = ''
-            msg += miss_str(actual, desired, **self.all_close_opts)
-            msg.replace("Should be", "Shouldn't be")
             self.fail(msg)
 
     def assertArrayNotEqual(self, actual, desired, msg=None):

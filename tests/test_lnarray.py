@@ -2,19 +2,16 @@
 """Test lnarray class
 """
 import hypothesis as hy
-import hypothesis.extra.numpy as hyn
 import numpy as np
 import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
 from numpy_linalg.gufuncs import array_return_shape as return_shape
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main
-    from .test_linalg import utn.trnsp
+    from .test_gufunc import utn, hn, main, matrices
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main
-    from test_linalg import utn.trnsp
+    from test_gufunc import utn, hn, main, matrices
 # pylint: disable=missing-function-docstring
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
@@ -57,10 +54,6 @@ def insert(shape, axis=-1):
 
 class TestArray(utn.TestCaseNumpy):
     """Testing lnarray"""
-
-    def setUp(self):
-        self.sctype = ['i']
-        super().setUp()
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a,a),(b,b)', 'd'))
     def test_return_array_types(self, arrays):
@@ -156,6 +149,8 @@ class TestPinvarray(utn.TestCaseNumpy):
     def test_pinvarray_attribute_types(self, arrays):
         m_ss, m_bs = view_as(*arrays)
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_non_singular(m_ss))
+
         self.assertIsInstance(m_ss.pinv, la.pinvarray)
         self.assertIsInstance(m_ss.inv, la.invarray)
         self.assertIs(m_ss.pinv.dtype, m_bs.dtype)
@@ -178,12 +173,14 @@ class TestPinvarray(utn.TestCaseNumpy):
         with self.assertRaises(TypeError):
             m_ss.inv.pinv  # pylint: disable=pointless-statement
 
-    @hy.given(hyn.arrays('d', hyn.array_shapes(min_dims=2)))
+    @hy.given(matrices)
     def test_pinvarray_shape_methods(self, array):
         m_bs = array.view(la.lnarray)
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
         m_bs_p = m_bs.pinv
         expect = utn.trnsp(m_bs.shape)
+
         self.assertEqual(m_bs_p.ndim, len(expect))
         self.assertEqual(m_bs_p.shape, expect)
         self.assertEqual(m_bs_p.size, np.prod(expect))
@@ -236,6 +233,7 @@ class TestPinvarray(utn.TestCaseNumpy):
         mini = m_bs[..., :m_ss.shape[-1], :]
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_non_singular(mini))
 
         self.assertArrayAllClose(gf.matmul(m_ss.inv, m_sb),
                                  gf.solve(m_ss, m_sb))
@@ -332,8 +330,10 @@ class TestPinvarray(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a),(b,a),()', None))
     def test_pinvarray_operators(self, arrays):
         m_sb, high, m_bs, scal = view_as(*arrays)
+        scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high))
         self.assertArrayAllClose(m_bs.pinv() @ high, gf.lstsq(m_bs, high))
@@ -362,6 +362,7 @@ class TestPinvarray(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),()', None))
     def test_invarray_operators(self, arrays):
         m_ss, m_bs, m_sb, scal = view_as(*arrays)
+        scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
         mini = m_bs[..., :m_ss.shape[-1], :]
         hy.assume(hn.tall(m_bs))

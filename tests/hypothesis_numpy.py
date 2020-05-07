@@ -1,4 +1,45 @@
 """Hypothesis strategies for numpy arrays, and some tools for the generated data
+
+Strategies
+----------
+complex_numbers
+    Similar to `hypothesis.strategies.complex_numbers`, but it takes the same
+    options as `hypothesis.strategies.floats`.
+real_numbers
+    Wrapper of `hypothesis.strategies.floats` with different default options.
+integers
+    Wrapper of `hypothesis.strategies.integers` to ignore irrelevant options.
+numeric_dtypes
+    Generate `dtype` and `elements` values for `hypothesis.extra.numpy.arrays`
+signature_shapes
+    Generate `shape` values for `hypothesis.extra.numpy.arrays` that broadcast
+    with a given signature.
+broadcastable
+    Generate a tuple of arrays of the same generated `dtype` with generated
+    `shape`s that broadcast with a given signature.
+constant
+    Generate a single array with all elements equal, with a generated `dtype`
+    and a `shape` that broadcasts with a given signature.
+
+Functions
+---------
+core_only
+    Romove non-core dimensions from arrays for functions that do not broadcast.
+non_singular
+    Check if individual matrices in an array have finite nonzero determinant.
+    For `hypothesis.assume`.
+all_non_singular
+    Check if every matrix in some arrays has finite nonzero determinant.
+full_rank
+    Check if individual matrices in an array have maximum rank given dimensions.
+all_full_rank
+    Check if every matrix in some arrays has maximum rank given dimensions.
+wide
+    Check if a matrix has more columns than rows.
+tall
+    Check if a matrix has more rows than columns.
+nonsquare
+    Check if a matrix has different numbers of rows and columns.
 """
 import collections.abc
 from numbers import Number
@@ -9,6 +50,8 @@ import numpy as np
 
 __all__ = [
     'complex_numbers',
+    'real_numbers',
+    'integers',
     'numeric_dtypes',
     'signature_shapes',
     'broadcastable',
@@ -16,6 +59,8 @@ __all__ = [
     'core_only',
     'non_singular',
     'all_non_singular',
+    'full_rank',
+    'all_full_rank',
     'wide',
     'tall',
     'nonsquare',
@@ -37,6 +82,7 @@ def _extract_kwds(kwds: dict, **defaults) -> dict:
 
 def _default_opts(kind: str) -> dict:
     """Get default options for dtype/shape strategies"""
+    # Lapack functions raise runtime warnings if passed inf or nan, so exclude
     if kind == "dtype":
         return {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
                 'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
@@ -49,8 +95,12 @@ def _default_opts(kind: str) -> dict:
 def integers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
-    This is a wrapper for `hypothesis.strategies.integers` that swallows
-    irrelevant keywords.
+    This is a wrapper for `hypothesis.strategies.integers` that ignores
+    irrelevant keywords, instead of raising an exception.
+
+    See Also
+    --------
+    `hypothesis.strategies.integers`
     """
     min_value = kwds.get('min_value', None)
     max_value = kwds.get('max_value', None)
@@ -61,7 +111,11 @@ def real_numbers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
     This is a wrapper for `hypothesis.strategies.floats` with different defaults
-    """
+
+    See Also
+    --------
+    `hypothesis.strategies.floats`
+   """
     opts = _default_opts("dtype")
     opts.update(kwds)
     return st.floats(**opts)
@@ -77,6 +131,10 @@ def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
     complex_strategy : st.SearchStrategy[complex]
         Strategy for complex numbers that applies float options to real and
         imaginary parts.
+
+    See Also
+    --------
+    `hypothesis.strategies.complex_numbers`
     """
     if 'width' in kwds:
         kwds['width'] //= 2
@@ -111,6 +169,10 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
         Strategy for dtypes that are recognised by BLAS/LAPACK.
     elements_strategy : Number
         Strategy for numbers of that dtype.
+
+    See Also
+    --------
+    `hypothesis.extra.numpy.arrays`
     """
     if code_st is None:
         code_st = st.sampled_from(['f', 'd', 'F', 'D'])
@@ -140,6 +202,10 @@ def signature_shapes(draw, signature: str, **kwds) -> Tuple[Shape, ...]:
     shape_strategy : Tuple[Tuple[int, ...], ...]
         strategy to produce a tuple of tuples of ints that broadcast with the
         given core dimension signature.
+
+    See Also
+    --------
+    `hypothesis.extra.numpy.arrays`
     """
     opts = _default_opts("shape")
     opts.update(kwds)
@@ -162,7 +228,9 @@ def _arrays_args(draw, signature: str, code_st: CodeStrategy,
 
 
 @st.composite
-def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
+def broadcastable(draw: st.DataObject,
+                  signature: str,
+                  code_st: CodeStrategy = None,
                   **kwds) -> Tuple[np.ndarray, ...]:
     """Create a hypothesis strategy for a tuple of arrays with the signature
 
@@ -182,6 +250,10 @@ def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
     strategy : Tuple[np.ndarray, ...]
         Strategy to produce a tuple of arrays that broadcast with the given
         core dimension signature.
+
+    See Also
+    --------
+    `hypothesis.extra.numpy.arrays`
     """
     dtype, shapes, elements = draw(_arrays_args(signature, code_st, kwds))
     kwds.update(dtype=dtype, elements=elements, fill=st.nothing())
@@ -190,7 +262,9 @@ def broadcastable(draw, signature: str, code_st: CodeStrategy = None,
 
 
 @st.composite
-def constant(draw, signature: str, code_st: CodeStrategy = None,
+def constant(draw: st.DataObject,
+             signature: str,
+             code_st: CodeStrategy = None,
              **kwds) -> np.ndarray:
     """Create a hypothesis strategy for a constant array with the signature
 
@@ -210,6 +284,10 @@ def constant(draw, signature: str, code_st: CodeStrategy = None,
     strategy : np.ndarray
         Strategy to produce an array that broadcasts with the given core
         dimension signature, with a constant value of thet dtype.
+
+    See Also
+    --------
+    `hypothesis.extra.numpy.arrays`
     """
     dtype, shapes, elements = draw(_arrays_args(signature, code_st, kwds))
     fill = draw(elements)
@@ -230,6 +308,7 @@ def core_only(*arrays: np.ndarray, dims: int = 2) -> np.ndarray:
         Arrays to remove dimensions from.
     dims : int, optional
         Number of core dimensions to leave, by default 2.
+        Keyword only.
 
     Returns
     -------
@@ -292,8 +371,8 @@ def full_rank(matrix: np.ndarray) -> Union[np.ndarray, bool]:
     """
     if tall(matrix):
         return non_singular(matrix.swapaxes(-2, -1) @ matrix)
-     if wide(matrix):
-       non_singular(matrix @ matrix.swapaxes(-2, -1))
+    if wide(matrix):
+        return non_singular(matrix @ matrix.swapaxes(-2, -1))
     return non_singular(matrix)
 
 

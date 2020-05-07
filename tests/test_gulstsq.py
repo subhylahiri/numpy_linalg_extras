@@ -10,10 +10,10 @@ import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, vectors, make_bad_broadcast, make_off_by_one
+    from .test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main, vectors, make_bad_broadcast, make_off_by_one
+    from test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
 # pylint: disable=missing-function-docstring
 # =============================================================================
 errstate = np.errstate(invalid='raise')
@@ -22,6 +22,9 @@ hy.settings.register_profile("debug",
 hy.settings.load_profile('debug')
 qr_funcs = hy.strategies.sampled_from([gfl.lstsq_qrm, gfl.lstsq_qrn])
 rqr_funcs = hy.strategies.sampled_from([gfl.rlstsq_qrm, gfl.rlstsq_qrn])
+vectors = hyn.arrays(dtype=np.float64,
+                     shape=hyn.array_shapes(min_dims=1, max_dims=1),
+                     elements=hn.real_numbers())
 # =============================================================================
 __all__ = ['TestLstsqShape', 'TestLstsqVectors', 'TestLstsqVal']
 # =============================================================================
@@ -567,6 +570,7 @@ class TestLstsqVal(utn.TestCaseNumpy):
     def test_lstsq_qr_returns_expected_values_with_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_full_rank(m_sb))
 
         suffix = func.__name__[-1] + ')'
         # underconstrained
@@ -610,7 +614,7 @@ class TestLstsqVal(utn.TestCaseNumpy):
 
     @unittest.expectedFailure
     @errstate
-    @hy.given(hn.constant('(a,b)', None))
+    @hy.given(hn.constant('(a,b)', None, min_side=2))
     def test_lstsq_qr_raises_with_low_rank(self, arrays):
         hy.assume(hn.tall(ones_bs))
         hy.assume(ones_bs.shape[-1] > 1)

@@ -177,8 +177,8 @@ class TestLU(utn.TestCaseNumpy):
         # with self.subTest(msg='inv'):
         id_b = np.identity(m_bb.shape[-1], m_bb.dtype)
         square_i = gfl.inv(m_bb)
-        self.assertArrayAllClose(square_i @ m_bb, id_b)
         self.assertArrayAllClose(m_bb @ square_i, id_b)
+        self.assertArrayAllClose(square_i @ m_bb, id_b)
         # with self.subTest(msg='inv,+lu'):
         square_if, square_f, square_ip = gfl.inv_lu(m_bb)
         luf, ipr = gfl.lu_rawn(m_bb)
@@ -467,7 +467,7 @@ class TestSolveVal(utn.TestCaseNumpy):
 
     @unittest.expectedFailure
     @errstate
-    @hy.given(hn.constant('(a,a)', None))
+    @hy.given(hn.constant('(a,a)', None, min_side=2))
     def test_solve_raises_with_low_rank(self, ones_ss):
         with self.assertRaisesRegex(*utn.invalid_err):
             gfl.solve(ones_ss, ones_ss[...,:2])

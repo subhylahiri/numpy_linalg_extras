@@ -195,7 +195,7 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
     dims = [len(sig) for sig in sigs_in]
     broads, cores, sizes = [], [], {}
     if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
-        raise ValueError('Not enough cores dimensions. ' + msg)
+        raise ValueError('Core array does not have enough dimensions: ' + msg)
     for shape, dim in zip(shapes, dims):
         if dim:
             broads.append(shape[:-dim])
@@ -207,7 +207,7 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
         for name, siz in zip(sig, core):
             sizes.setdefault(name, siz)
             if sizes[name] != siz:
-                raise ValueError('Inner matrix dimensions mismatch: ' + msg)
+                raise ValueError(f'Array mismatch in its core dimension: {msg}')
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:

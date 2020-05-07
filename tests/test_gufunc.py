@@ -23,9 +23,6 @@ errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('debug')
-vectors = hyn.arrays(dtype=np.float64,
-                     shape=hyn.array_shapes(min_dims=1, max_dims=1),
-                     elements=hn.real_numbers())
 matrices = hyn.arrays(dtype=np.float64,
                       shape=hyn.array_shapes(min_dims=2),
                       elements=hn.real_numbers())
@@ -57,8 +54,8 @@ class TestBlas(utn.TestCaseNumpy):
     """Testing norm, matmul and rmatmul"""
 
     def setUp(self):
-        self.gf = gfb
         super().setUp()
+        self.gf = gfb
 
     @hy.given(matrices)
     def test_norm_returns_expected_shapes(self, m_bs):
@@ -131,9 +128,8 @@ class TestBlasVectors(utn.TestCaseNumpy):
     """Testing matmul and rmatmul"""
 
     def setUp(self):
-        self.gf = gfb
-        self.sctype = ['i']
         super().setUp()
+        self.gf = gfb
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a),(b)', 'd'))
     def test_matmul_flexible_signature_with_vectors(self, arrays):
@@ -211,6 +207,7 @@ class TestCloop(TestBlas):
     def test_rtrue_divide_returns_expected_shapes(self, arrays):
         a_bs, m_bs = arrays
 
+        a_bs[np.abs(a_bs) < 1e-5] += 1.
         expect = array_return_shape('(),()->()', a_bs, m_bs)
         self.assertArrayShape(self.gf.rtrue_divide(a_bs, m_bs), expect)
         with self.assertRaisesRegex(*utn.broadcast_err):

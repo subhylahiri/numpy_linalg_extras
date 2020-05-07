@@ -262,7 +262,7 @@ def non_singular(matrix: np.ndarray) -> Union[np.ndarray, bool]:
 
 
 def all_non_singular(*matrices: np.ndarray) -> bool:
-    """Check that matrices are non-singular
+    """Check that all matrices are non-singular
 
     Parameters
     ----------
@@ -275,6 +275,42 @@ def all_non_singular(*matrices: np.ndarray) -> bool:
         True if all of the the matrices are non-singular.
     """
     return all(np.all(non_singular(mat)) for mat in matrices)
+
+
+def full_rank(matrix: np.ndarray) -> Union[np.ndarray, bool]:
+    """Check that matrix/matrices have full rank
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        square matrix/array of square matrices whose rank to check.
+
+    Returns
+    -------
+    is_not_singular : np.ndarray
+        bool/array of bools that are True if the matrix has full rank.
+    """
+    if tall(matrix):
+        return non_singular(matrix.swapaxes(-2, -1) @ matrix)
+     if wide(matrix):
+       non_singular(matrix @ matrix.swapaxes(-2, -1))
+    return non_singular(matrix)
+
+
+def all_full_rank(*matrices: np.ndarray) -> bool:
+    """Check that all matrices have full rank
+
+    Parameters
+    ----------
+    matrices : np.ndarray
+        square matrices whose rank to check.
+
+    Returns
+    -------
+    are_not_singular : bool
+        True if all of the the matrices have full rank.
+    """
+    return all(np.all(full_rank(mat)) for mat in matrices)
 
 
 # -----------------------------------------------------------------------------

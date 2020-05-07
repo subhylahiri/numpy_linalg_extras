@@ -8,12 +8,11 @@ import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 from numpy_linalg import transpose
 from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, drop, make_bad_broadcast, make_off_by_one
-    from .test_linalg import trnsp, chop, grow
+    from .test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
 else:
-    from test_gufunc import utn, hn, main, drop, make_bad_broadcast, make_off_by_one
-    from test_linalg import trnsp, chop, grow
+    from test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
 # pylint: disable=missing-function-docstring
+# =============================================================================
 errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
@@ -38,11 +37,15 @@ class TestLU(utn.TestCaseNumpy):
         self.assertArrayShapesAre(gfl.lu_m(m_bb), (big, big, big[:-1]))
         self.assertArrayShapesAre(gfl.lu_n(m_bb), (big, big, big[:-1]))
         # with self.subTest(msg="wide"):
-        self.assertArrayShapesAre(gfl.lu_m(m_sb), (chop(wide), wide, wide[:-1]))
-        self.assertArrayShapesAre(gfl.lu_n(m_sb), (wide, grow(wide), drop(wide)))
+        self.assertArrayShapesAre(gfl.lu_m(m_sb),
+                                  (utn.chop(wide), wide, wide[:-1]))
+        self.assertArrayShapesAre(gfl.lu_n(m_sb),
+                                  (wide, utn.grow(wide), utn.drop(wide)))
         # with self.subTest(msg="tall"):
-        self.assertArrayShapesAre(gfl.lu_m(m_bs), (grow(tall), tall, tall[:-1]))
-        self.assertArrayShapesAre(gfl.lu_n(m_bs), (tall, chop(tall), drop(tall)))
+        self.assertArrayShapesAre(gfl.lu_m(m_bs),
+                                  (utn.grow(tall), tall, tall[:-1]))
+        self.assertArrayShapesAre(gfl.lu_n(m_bs),
+                                  (tall, utn.chop(tall), utn.drop(tall)))
 
     @hy.given(hn.broadcastable('(a,b),(b,b),(b,a)', 'd'))
     def test_lu_raw_returns_expected_shapes(self, arrays):
@@ -53,9 +56,11 @@ class TestLU(utn.TestCaseNumpy):
         # with self.subTest(msg="square"):
         self.assertArrayShapesAre(gfl.lu_rawm(m_bb), (big, big[:-1]))
         # with self.subTest(msg="wide"):
-        self.assertArrayShapesAre(gfl.lu_rawm(m_sb), (trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(gfl.lu_rawm(m_sb),
+                                  (utn.trnsp(wide), wide[:-1]))
         # with self.subTest(msg="tall"):
-        self.assertArrayShapesAre(gfl.lu_rawn(m_bs), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(gfl.lu_rawn(m_bs),
+                                  (utn.trnsp(tall), utn.drop(tall)))
 
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_lu_basic_returns_expected_values_square(self, m_bb):

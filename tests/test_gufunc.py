@@ -34,11 +34,6 @@ __all__ = ['TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
 
 
-def drop(shape, axis=-2):
-    """Shape -> shape with one axis dropped"""
-    return shape[:axis] + shape[axis+1:]
-
-
 def make_bad_broadcast(left, right, cores=(2, 2)):
     """Stack arrays so they no longer broadcast"""
     axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
@@ -71,7 +66,7 @@ class TestBlas(utn.TestCaseNumpy):
         tall = m_bs.shape
 
         self.assertArrayShape(self.gf.norm(m_bs), tall[:-1])
-        self.assertArrayShape(self.gf.norm(m_bs, axis=-2), drop(tall))
+        self.assertArrayShape(self.gf.norm(m_bs, axis=-2), utn.drop(tall))
         self.assertArrayShape(self.gf.norm(v_s, keepdims=True), (1,))
         self.assertArrayShape(self.gf.norm(v_s), ())
 

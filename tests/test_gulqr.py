@@ -8,12 +8,10 @@ import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, drop
-    from .test_linalg import trnsp, chop, grow
+    from .test_gufunc import utn, hn, main
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main, drop
-    from test_linalg import trnsp, chop, grow
+    from test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 # pylint: disable=unsupported-assignment-operation
 # pylint: disable=invalid-sequence-index
@@ -40,18 +38,20 @@ class TestQRPinvShape(utn.TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='wide'):
-        self.assertArrayShapesAre(gfl.qr_m(m_sb), (chop(wide), wide))
+        self.assertArrayShapesAre(gfl.qr_m(m_sb), (utn.chop(wide), wide))
         self.assertArrayShape(gfl.qr_rm(m_sb), wide)
         with self.assertRaisesRegex(*utn.invalid_err):
             gfl.qr_n(m_sb)
         # with self.subTest(msg='tall'):
-        self.assertArrayShapesAre(gfl.qr_n(m_bs), (tall, chop(tall)))
-        self.assertArrayShape(gfl.qr_rn(m_bs), chop(tall))
+        self.assertArrayShapesAre(gfl.qr_n(m_bs), (tall, utn.chop(tall)))
+        self.assertArrayShape(gfl.qr_rn(m_bs), utn.chop(tall))
         # with self.subTest(msg='complete'):
-        self.assertArrayShapesAre(gfl.qr_m(m_bs), (grow(tall), tall))
+        self.assertArrayShapesAre(gfl.qr_m(m_bs), (utn.grow(tall), tall))
         # with self.subTest(msg='raw'):
-        self.assertArrayShapesAre(gfl.qr_rawm(m_sb), (trnsp(wide), wide[:-1]))
-        self.assertArrayShapesAre(gfl.qr_rawn(m_bs), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(gfl.qr_rawm(m_sb),
+                                  (utn.trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(gfl.qr_rawn(m_bs),
+                                  (utn.trnsp(tall), utn.drop(tall)))
 
     @errstate
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
@@ -61,43 +61,45 @@ class TestQRPinvShape(utn.TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='wide'):
-        self.assertArrayShapesAre(gfl.lq_m(m_sb), (chop(wide), wide))
-        self.assertArrayShape(gfl.lq_lm(m_sb), chop(wide))
+        self.assertArrayShapesAre(gfl.lq_m(m_sb), (utn.chop(wide), wide))
+        self.assertArrayShape(gfl.lq_lm(m_sb), utn.chop(wide))
         # with self.subTest(msg='tall'):
-        self.assertArrayShapesAre(gfl.lq_n(m_bs), (tall, chop(tall)))
+        self.assertArrayShapesAre(gfl.lq_n(m_bs), (tall, utn.chop(tall)))
         self.assertArrayShape(gfl.lq_ln(m_bs), tall)
         with self.assertRaisesRegex(*utn.invalid_err):
             gfl.lq_m(m_bs)
         # with self.subTest(msg='complete'):
-        self.assertArrayShapesAre(gfl.lq_n(m_sb), (wide, grow(wide)))
+        self.assertArrayShapesAre(gfl.lq_n(m_sb), (wide, utn.grow(wide)))
         # with self.subTest(msg='raw'):
-        self.assertArrayShapesAre(gfl.lq_rawm(m_sb), (trnsp(wide), wide[:-1]))
-        self.assertArrayShapesAre(gfl.lq_rawn(m_bs), (trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(gfl.lq_rawm(m_sb),
+                                  (utn.trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(gfl.lq_rawn(m_bs),
+                                  (utn.trnsp(tall), utn.drop(tall)))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_pinv_returns_expected_shapes(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
 
         # with self.subTest(msg='wide'):
-        self.assertArrayShape(gfl.pinv(m_sb), trnsp(wide))
+        self.assertArrayShape(gfl.pinv(m_sb), utn.trnsp(wide))
         # with self.subTest(msg='tall'):
-        self.assertArrayShape(gfl.pinv(m_bs), trnsp(tall))
+        self.assertArrayShape(gfl.pinv(m_bs), utn.trnsp(tall))
         # with self.subTest(msg='wide,+qr'):
-        self.assertArrayShapesAre(gfl.pinv_qrm(m_sb), (
-            trnsp(wide), trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(
+            gfl.pinv_qrm(m_sb), (utn.trnsp(wide), utn.trnsp(wide), wide[:-1]))
         # with self.subTest(msg='tall,+qr'):
-        self.assertArrayShapesAre(gfl.pinv_qrn(m_bs), (
-            trnsp(tall), trnsp(tall), drop(tall)))
+        self.assertArrayShapesAre(
+            gfl.pinv_qrn(m_bs), (utn.trnsp(tall), utn.trnsp(tall), utn.drop(tall)))
         # with self.subTest(msg='wide,-qr'):
         _, m_sb_f, m_sb_tau = gfl.pinv_qrm(m_sb)
-        self.assertArrayShape(gfl.qr_pinv(m_sb_f, m_sb_tau), trnsp(wide))
+        self.assertArrayShape(gfl.qr_pinv(m_sb_f, m_sb_tau), utn.trnsp(wide))
         # with self.subTest(msg='tall,-qr'):
         _, m_bs_f, m_bs_tau = gfl.pinv_qrn(m_bs)
-        self.assertArrayShape(gfl.qr_pinv(m_bs_f, m_bs_tau), trnsp(tall))
+        self.assertArrayShape(gfl.qr_pinv(m_bs_f, m_bs_tau), utn.trnsp(tall))
 
 
 class TestQR(utn.TestCaseNumpy):
@@ -320,7 +322,7 @@ class TestPinv(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='wide'):
@@ -341,7 +343,7 @@ class TestPinv(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         # with self.subTest(msg='tall'):
         tall_p = gfl.pinv(m_bs)

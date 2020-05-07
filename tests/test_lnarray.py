@@ -10,11 +10,11 @@ import numpy_linalg.gufuncs as gf
 from numpy_linalg.gufuncs import array_return_shape as return_shape
 if 'tests.' in __name__:
     from .test_gufunc import utn, hn, main
-    from .test_linalg import trnsp
+    from .test_linalg import utn.trnsp
 else:
     # pylint: disable=import-error
     from test_gufunc import utn, hn, main
-    from test_linalg import trnsp
+    from test_linalg import utn.trnsp
 # pylint: disable=missing-function-docstring
 hy.settings.register_profile("debug",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
@@ -101,7 +101,7 @@ class TestArray(utn.TestCaseNumpy):
         hy.assume(np.max(np.abs(m_bs.imag)) > .01)
         hy.assume(np.max(np.abs(m_bs.real)) / np.max(np.abs(m_bs.imag)) < 1e3)
 
-        expect = trnsp(tall)
+        expect = utn.trnsp(tall)
         self.assertArrayShape(m_bs.t, expect)
         self.assertArrayShape(m_bs.h, expect)
         self.assertArrayNotAllClose(m_bs.t, m_bs.h)
@@ -183,7 +183,7 @@ class TestPinvarray(utn.TestCaseNumpy):
         m_bs = array.view(la.lnarray)
         hy.assume(hn.tall(m_bs))
         m_bs_p = m_bs.pinv
-        expect = trnsp(m_bs.shape)
+        expect = utn.trnsp(m_bs.shape)
         self.assertEqual(m_bs_p.ndim, len(expect))
         self.assertEqual(m_bs_p.shape, expect)
         self.assertEqual(m_bs_p.size, np.prod(expect))
@@ -196,14 +196,14 @@ class TestPinvarray(utn.TestCaseNumpy):
         self.assertArrayShape(m_bs_p.swapaxes(0, 1), now_expect)
         now_expect = expect[2::-1] + expect[3:]
         self.assertArrayShape(m_bs_p.swapaxes(0, 2), now_expect)
-        now_expect = trnsp(expect)
+        now_expect = utn.trnsp(expect)
         self.assertArrayShape(m_bs_p.swapaxes(-1, -2), now_expect)
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(b,a)', None))
     def test_pinvarray_in_functions(self, arrays):
         m_sb, high, m_bs = view_as(*arrays)
         hy.assume(hn.tall(m_bs))
-        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        # hy.assume(hn.all_full_rank(m_bs))
 
         self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
                                  gf.lstsq(m_bs, high))
@@ -294,8 +294,8 @@ class TestPinvarray(utn.TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
-        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        # hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        # hy.assume(hn.all_full_rank(m_bs))
+        # hy.assume(hn.all_full_rank(m_sb))
 
         self.assertArrayAllClose(la.lstsq(mini.inv, m_sb),
                                  la.matmul(mini, m_sb))
@@ -321,8 +321,8 @@ class TestPinvarray(utn.TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
-        # hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        # hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        # hy.assume(hn.all_full_rank(m_bs))
+        # hy.assume(hn.all_full_rank(m_sb))
 
         self.assertArrayAllClose(la.solve(m_ss.inv, m_bs.pinv),
                                  la.rlstsq(m_ss, m_bs))

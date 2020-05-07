@@ -11,9 +11,9 @@ import numpy_linalg as la
 import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, drop
+    from .test_gufunc import utn, hn, main
 else:
-    from test_gufunc import utn, hn, main, drop
+    from test_gufunc import utn, hn, main
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
@@ -25,24 +25,6 @@ __all__ = ['TestShape', 'TestValue']
 # =============================================================================
 # Shape helper
 # =============================================================================
-
-
-def trnsp(shape):
-    """Shape -> shape of transposed array"""
-    return shape[:-2] + shape[:-3:-1]
-
-
-def chop(shape, axis=-1):
-    """Shape -> shape with last axes reduced to square"""
-    return shape[:-2] + (min(shape[-2:]),) * 2
-
-
-def grow(shape, axis=-1):
-    """Shape -> shape with last axes expanded to square"""
-    return shape[:-2] + (max(shape[-2:]),) * 2
-
-
-# -----------------------------------------------------------------------------
 
 
 def tril(matrix):
@@ -61,7 +43,7 @@ class TestShape(utn.TestCaseNumpy):
     @hy.given(hyn.arrays('d', hyn.array_shapes(min_dims=2)))
     def test_functions_shape(self, array):
         shape = array.shape
-        self.assertArrayShape(la.transpose(array), trnsp(shape))
+        self.assertArrayShape(la.transpose(array), utn.trnsp(shape))
         self.assertArrayShape(la.row(array), shape[:-1] + (1,) + shape[-1:])
         self.assertArrayShape(la.col(array), shape + (1,))
         self.assertArrayShape(la.scalar(array), shape + (1, 1))
@@ -76,12 +58,12 @@ class TestShape(utn.TestCaseNumpy):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', tall, wide)
         self.assertArrayShape(la.matmul(m_bs, m_sb), expect)
         self.assertArrayShape(la.matmul(m_bs, v_s), tall[:-1])
-        self.assertArrayShape(la.matmul(v_b, m_bs), drop(tall))
+        self.assertArrayShape(la.matmul(v_b, m_bs), utn.drop(tall))
         self.assertArrayShape(la.matmul(v_s, v_s), ())
         # with self.subTest('rmatmul'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', wide, tall)
         self.assertArrayShape(lr.rmatmul(m_bs, m_sb), expect)
-        self.assertArrayShape(lr.rmatmul(m_sb, v_s), drop(wide))
+        self.assertArrayShape(lr.rmatmul(m_sb, v_s), utn.drop(wide))
         self.assertArrayShape(lr.rmatmul(v_b, m_sb), wide[:-1])
         self.assertArrayShape(lr.rmatmul(v_b, v_b), ())
 
@@ -112,7 +94,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.lstsq(m_bs, m_bb), expect)
         expect = gf.return_shape('(a,b),(a,c)->(b,c)', wide, smol)
         self.assertArrayShape(la.lstsq(m_sb, m_ss), expect)
-        self.assertArrayShape(la.lstsq(m_sb, v_s), drop(wide))
+        self.assertArrayShape(la.lstsq(m_sb, v_s), utn.drop(wide))
         self.assertArrayShape(la.lstsq(v_s, m_ss), smol[:-1])
         # with self.subTest('rlstsq'):
         expect = gf.return_shape('(a,b),(c,b)->(a,c)', smol, tall)
@@ -140,7 +122,7 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.matldiv(m_bs, m_bb), expect)
         expect = gf.return_shape('(a,b),(a,c)->(b,c)', wide, smol)
         self.assertArrayShape(la.matldiv(m_sb, m_ss), expect)
-        self.assertArrayShape(la.matldiv(m_sb, v_s), drop(wide))
+        self.assertArrayShape(la.matldiv(m_sb, v_s), utn.drop(wide))
         self.assertArrayShape(la.matldiv(v_s, m_ss), smol[:-1])
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
@@ -169,16 +151,22 @@ class TestShape(utn.TestCaseNumpy):
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.qr(m_bs, 'reduced'), (tall, chop(tall)))
-        self.assertArrayShapesAre(la.qr(m_sb, 'reduced'), (chop(wide), wide))
+        self.assertArrayShapesAre(la.qr(m_bs, 'reduced'),
+                                  (tall, utn.chop(tall)))
+        self.assertArrayShapesAre(la.qr(m_sb, 'reduced'),
+                                  (utn.chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.qr(m_bs, 'complete'), (grow(tall), tall))
-        self.assertArrayShapesAre(la.qr(m_sb, 'complete'), (chop(wide), wide))
+        self.assertArrayShapesAre(la.qr(m_bs, 'complete'),
+                                  (utn.grow(tall), tall))
+        self.assertArrayShapesAre(la.qr(m_sb, 'complete'),
+                                  (utn.chop(wide), wide))
         # with self.subTest("r/raw"):
-        self.assertArrayShape(la.qr(m_bs, 'r'), chop(tall))
+        self.assertArrayShape(la.qr(m_bs, 'r'), utn.chop(tall))
         self.assertArrayShape(la.qr(m_sb, 'r'), wide)
-        self.assertArrayShapesAre(la.qr(m_bs, 'raw'), (trnsp(tall), drop(tall)))
-        self.assertArrayShapesAre(la.qr(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(la.qr(m_bs, 'raw'),
+                                  (utn.trnsp(tall), utn.drop(tall)))
+        self.assertArrayShapesAre(la.qr(m_sb, 'raw'),
+                                  (utn.trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lq(self, arrays):
@@ -187,16 +175,22 @@ class TestShape(utn.TestCaseNumpy):
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.lq(m_bs, 'reduced'), (tall, chop(tall)))
-        self.assertArrayShapesAre(la.lq(m_sb, 'reduced'), (chop(wide), wide))
+        self.assertArrayShapesAre(la.lq(m_bs, 'reduced'),
+                                  (tall, utn.chop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'reduced'),
+                                  (utn.chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.lq(m_bs, 'complete'), (tall, chop(tall)))
-        self.assertArrayShapesAre(la.lq(m_sb, 'complete'), (wide, grow(wide)))
+        self.assertArrayShapesAre(la.lq(m_bs, 'complete'),
+                                  (tall, utn.chop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'complete'),
+                                  (wide, utn.grow(wide)))
         # with self.subTest("l/raw"):
         self.assertArrayShape(la.lq(m_bs, 'l'), tall)
-        self.assertArrayShape(la.lq(m_sb, 'l'), chop(wide))
-        self.assertArrayShapesAre(la.lq(m_bs, 'raw'), (trnsp(tall), drop(tall)))
-        self.assertArrayShapesAre(la.lq(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
+        self.assertArrayShape(la.lq(m_sb, 'l'), utn.chop(wide))
+        self.assertArrayShapesAre(la.lq(m_bs, 'raw'),
+                                  (utn.trnsp(tall), utn.drop(tall)))
+        self.assertArrayShapesAre(la.lq(m_sb, 'raw'),
+                                  (utn.trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', 'd'))
     def test_lqr(self, arrays):
@@ -205,18 +199,24 @@ class TestShape(utn.TestCaseNumpy):
         hy.assume(wide[-2] < wide[-1])
 
         # with self.subTest("reduced"):
-        self.assertArrayShapesAre(la.lqr(m_bs, 'reduced'), (tall, chop(tall)))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'reduced'), (chop(wide), wide))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'reduced'),
+                                  (tall, utn.chop(tall)))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'reduced'),
+                                  (utn.chop(wide), wide))
         # with self.subTest("complete"):
-        self.assertArrayShapesAre(la.lqr(m_bs, 'complete'), (grow(tall), tall))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'complete'), (wide, grow(wide)))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'complete'),
+                                  (utn.grow(tall), tall))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'complete'),
+                                  (wide, utn.grow(wide)))
         # with self.subTest("r/l/raw"):
-        self.assertArrayShape(la.lqr(m_bs, 'l'), chop(tall))
-        self.assertArrayShape(la.lqr(m_sb, 'l'), chop(wide))
-        self.assertArrayShape(la.lqr(m_bs, 'r'), chop(tall))
-        self.assertArrayShape(la.lqr(m_sb, 'r'), chop(wide))
-        self.assertArrayShapesAre(la.lqr(m_bs, 'raw'), (trnsp(tall), drop(tall)))
-        self.assertArrayShapesAre(la.lqr(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
+        self.assertArrayShape(la.lqr(m_bs, 'l'), utn.chop(tall))
+        self.assertArrayShape(la.lqr(m_sb, 'l'), utn.chop(wide))
+        self.assertArrayShape(la.lqr(m_bs, 'r'), utn.chop(tall))
+        self.assertArrayShape(la.lqr(m_sb, 'r'), utn.chop(wide))
+        self.assertArrayShapesAre(la.lqr(m_bs, 'raw'),
+                                  (utn.trnsp(tall), utn.drop(tall)))
+        self.assertArrayShapesAre(la.lqr(m_sb, 'raw'),
+                                  (utn.trnsp(wide), wide[:-1]))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', 'd'))
     def test_lu(self, arrays):
@@ -228,13 +228,15 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShapesAre(la.lu(m_ss, 'separate'),
                                   (smol, smol, smol[:-1]))
         self.assertArrayShapesAre(la.lu(m_bs, 'separate'),
-                                  (tall, chop(tall), drop(tall)))
+                                  (tall, utn.chop(tall), utn.drop(tall)))
         self.assertArrayShapesAre(la.lu(m_sb, 'separate'),
-                                  (chop(wide), wide, wide[:-1]))
+                                  (utn.chop(wide), wide, wide[:-1]))
         # with self.subTest("raw"):
         self.assertArrayShapesAre(la.lu(m_ss, 'raw'), (smol, smol[:-1]))
-        self.assertArrayShapesAre(la.lu(m_bs, 'raw'), (trnsp(tall), drop(tall)))
-        self.assertArrayShapesAre(la.lu(m_sb, 'raw'), (trnsp(wide), wide[:-1]))
+        self.assertArrayShapesAre(la.lu(m_bs, 'raw'),
+                                  (utn.trnsp(tall), utn.drop(tall)))
+        self.assertArrayShapesAre(la.lu(m_sb, 'raw'),
+                                  (utn.trnsp(wide), wide[:-1]))
 
 
 class TestValue(utn.TestCaseNumpy):

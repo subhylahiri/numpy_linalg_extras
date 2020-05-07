@@ -10,12 +10,10 @@ import numpy_linalg.gufuncs._gufuncs_blas as gfb
 from numpy_linalg import transpose, dagger, row, col, scalar
 from numpy_linalg.gufuncs import array_return_shape
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, vectors, drop, make_bad_broadcast, make_off_by_one
-    from .test_linalg import trnsp
+    from .test_gufunc import utn, hn, main, vectors, make_bad_broadcast, make_off_by_one
 else:
     # pylint: disable=import-error
-    from test_gufunc import utn, hn, main, vectors, drop, make_bad_broadcast, make_off_by_one
-    from test_linalg import trnsp
+    from test_gufunc import utn, hn, main, vectors, make_bad_broadcast, make_off_by_one
 # pylint: disable=missing-function-docstring
 # =============================================================================
 errstate = np.errstate(invalid='raise')
@@ -95,7 +93,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_lstsq_qr_returns_expected_shape_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         expect = array_return_shape('(m,n),(m,p)->(n,p),(n,m),()', m_bs, m_bb)
         tau = expect[2] + tau_len(m_bs, func)
@@ -109,7 +107,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_qr_lstsq_returns_expected_shape_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         _, x_f, tau = func(m_bs, m_bb)
         expect = array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_bb)
@@ -127,7 +125,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_lstsq_qr_returns_expected_shape_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         expect = array_return_shape('(m,n),(m,p)->(n,p),(n,m),()', m_sb, m_ss)
         tau = expect[2] + tau_len(m_sb, func)
@@ -141,7 +139,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_qr_lstsq_returns_expected_shape_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         _, x_f, tau = func(m_sb, m_ss)
         expect = array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_ss)
@@ -159,7 +157,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_shape_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         expect = array_return_shape('(m,n),(p,n)->(m,p),(n,p),()', m_ss, m_bs)
         tau = expect[2] + tau_len(m_bs, func)
@@ -173,7 +171,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_rqr_lstsq_returns_expected_shape_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         _, x_f, tau = func(m_ss, m_bs)
         expect = array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_bb)
@@ -191,7 +189,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_shape_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         expect = array_return_shape('(m,n),(p,n)->(m,p),(n,p),()', m_bb, m_sb)
         tau = expect[2] + tau_len(m_sb, func)
@@ -205,7 +203,7 @@ class TestLstsqShape(utn.TestCaseNumpy):
     def test_rqr_lstsq_returns_expected_shape_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         _, x_f, tau = func(m_bb, m_sb)
         expect = array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_ss)
@@ -231,8 +229,8 @@ class TestLstsqVectors(utn.TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
         off_b, y_one = make_off_by_one(m_sb, m_bs)
 
-        self.assertArrayShape(gfl.lstsq(m_bs, v_b), drop(tall))
-        self.assertArrayShape(gfl.lstsq(m_sb, v_s), drop(wide))
+        self.assertArrayShape(gfl.lstsq(m_bs, v_b), utn.drop(tall))
+        self.assertArrayShape(gfl.lstsq(m_sb, v_s), utn.drop(wide))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(m_sb, v_b)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -246,8 +244,8 @@ class TestLstsqVectors(utn.TestCaseNumpy):
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.nonsquare(m_sb))
 
-        self.assertArrayShape(gfl.lstsq(v_s, m_sb), drop(wide))
-        self.assertArrayShape(gfl.lstsq(v_b, m_bs), drop(tall))
+        self.assertArrayShape(gfl.lstsq(v_s, m_sb), utn.drop(wide))
+        self.assertArrayShape(gfl.lstsq(v_b, m_bs), utn.drop(tall))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(v_s, m_bs)
 
@@ -305,16 +303,16 @@ class TestLstsqQRVectors(utn.TestCaseNumpy):
         wide, tall = [arr.shape for arr in arrays[:-2]]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
         off_b, y_one = make_off_by_one(m_sb, m_bs)
 
         tau = m_bs.shape[:-2] + tau_len(m_bs, func)
         self.assertArrayShapesAre(func(m_bs, v_b),
-                                    (drop(tall), trnsp(tall), tau))
+                                    (utn.drop(tall), utn.trnsp(tall), tau))
         tau = m_sb.shape[:-2] + tau_len(m_sb, func)
         self.assertArrayShapesAre(func(m_sb, v_s),
-                                    (drop(wide), trnsp(wide), tau))
+                                    (utn.drop(wide), utn.trnsp(wide), tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_sb, v_b)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -329,7 +327,8 @@ class TestLstsqQRVectors(utn.TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         tau = m_sb.shape[:-2] + tau_len_vec(v_s, func)
-        self.assertArrayShapesAre(func(v_s, m_sb), (drop(wide), wide[:-1], tau))
+        self.assertArrayShapesAre(func(v_s, m_sb),
+                                  (utn.drop(wide), wide[:-1], tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(v_s, m_bs)
 
@@ -350,7 +349,8 @@ class TestLstsqQRVectors(utn.TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         tau = m_sb.shape[:-2] + tau_len_vec(v_b, func)
-        self.assertArrayShapesAre(func(m_sb, v_b), (wide[:-1], drop(wide), tau))
+        self.assertArrayShapesAre(func(m_sb, v_b),
+                                  (wide[:-1], utn.drop(wide), tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_bs, v_b)
 
@@ -360,16 +360,16 @@ class TestLstsqQRVectors(utn.TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_full_rank(m_bs))
         off_b, y_one = make_off_by_one(m_sb, m_bs)
 
         tau = m_sb.shape[:-2] + tau_len(m_sb, func)
         self.assertArrayShapesAre(func(v_b, m_sb),
-                                  (wide[:-1], trnsp(wide), tau))
+                                  (wide[:-1], utn.trnsp(wide), tau))
         tau = m_bs.shape[:-2] + tau_len(m_bs, func)
         self.assertArrayShapesAre(func(v_s, m_bs),
-                                  (tall[:-1], trnsp(tall), tau))
+                                  (tall[:-1], utn.trnsp(tall), tau))
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(v_b, m_bs)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -395,16 +395,16 @@ class TestQRLstsqVectors(utn.TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
         off_b, y_one = make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = func(m_bs, v_b)
-        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_b), drop(tall))
+        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_b), utn.drop(tall))
         self.assertArrayShape(gfl.rqr_lstsq(v_s, x_f, tau), tall[:-1])
 
         _, x_f, tau = func(m_sb, v_s)
-        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_s), drop(wide))
+        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_s), utn.drop(wide))
         self.assertArrayShape(gfl.rqr_lstsq(v_b, x_f, tau), wide[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(x_f, tau, v_b)
@@ -423,7 +423,7 @@ class TestQRLstsqVectors(utn.TestCaseNumpy):
 
 
         _, x_f, tau = func(v_s, m_sb)
-        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, m_sb), drop(wide))
+        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, m_sb), utn.drop(wide))
         expect = array_return_shape('(m,n),(n,p)->(m,p)', m_bs, m_sb)[:-1]
         self.assertArrayShape(gfl.rqr_lstsq(m_bs, x_f, tau), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -464,16 +464,16 @@ class TestQRLstsqVectors(utn.TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
         off_b, y_one = make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = func(v_s, m_bs)
-        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_b), drop(tall))
+        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_b), utn.drop(tall))
         self.assertArrayShape(gfl.rqr_lstsq(v_s, x_f, tau), tall[:-1])
 
         _, x_f, tau = func(v_b, m_sb)
-        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_s), drop(wide))
+        self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_s), utn.drop(wide))
         self.assertArrayShape(gfl.rqr_lstsq(v_b, x_f, tau), wide[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(v_s, x_f, tau)
@@ -523,7 +523,7 @@ class TestLstsqVal(utn.TestCaseNumpy):
     def test_lstsq_qr_returns_expected_values_with_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         suffix = func.__name__[-1] + ')'
         # overconstrained
@@ -545,7 +545,7 @@ class TestLstsqVal(utn.TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_values_with_wide(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(m_sb @ transpose(m_sb)))
+        hy.assume(hn.all_full_rank(m_sb))
 
         suffix = func.__name__[-1] + ')'
         # overconstrained
@@ -589,7 +589,7 @@ class TestLstsqVal(utn.TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_values_with_tall(self, arrays, func):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_non_singular(transpose(m_bs) @ m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
 
         suffix = func.__name__[-1] + ')'
         # underconstrained

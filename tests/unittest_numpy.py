@@ -222,101 +222,25 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
 
 
 # =============================================================================
-# Helpers for TestCaseNumpy methods
+# Helpers for shape checks
 # =============================================================================
 
 
-def loop_test(msg=None, attr_name='sctype', attr_inds=slice(None)):
-    """Return decorator to loop a test over a sequence attribute of a TestCase.
-
-    Decorated function must take ``attr_name`` as a keyword argument.
-
-    Note: This is not a decorator - it is a function that returns a decorator.
-    Even when there are no arguments, you must call it as ``@loop_test()``.
-
-    Parameters
-    ----------
-    msg: str, optional
-        message to pass to ``TestCase.subTest``.
-    attr_name: str, default:'sctype'
-        name of iterable, indexable attribute of ``TestCase`` to loop over.
-    attr_inds: int, slice, default:slice(None)
-        which elements of ``TestCase.attr_name`` to loop over.
-    """
-    def loop_dec(func):
-        @_ft.wraps(func)
-        def loop_func(self, *args, **kwds):
-            if isinstance(attr_name, str):
-                the_attr = getattr(self, attr_name)
-    #                __unittest = False
-                for val in the_attr[attr_inds]:
-                    opts = {attr_name: val}
-                    with self.subTest(msg=msg, **opts):
-                        func(self, *args, **opts, **kwds)
-            else:
-                the_attr = [getattr(self, nam)[attr_inds] for nam in attr_name]
-                for vals in zip(*the_attr):
-                    # opts = {name: val for name, val in zip(attr_name, vals)}
-                    opts = dict(zip(attr_name, vals))
-                    with self.subTest(msg=msg, **opts):
-                        func(self, *args, **opts, **kwds)
-        return loop_func
-    return loop_dec
+def trnsp(shape):
+    """Shape -> shape of transposed array"""
+    return shape[:-2] + shape[:-3:-1]
 
 
-CMPLX = {'b': 0, 'h': 0, 'i': 0, 'l': 0, 'p': 0, 'q': 0,
-         'f': 0, 'd': 0, 'g': 0, 'F': 1j, 'D': 1j, 'G': 1j}
+def drop(shape, axis=-2):
+    """Shape -> shape with one axis dropped"""
+    return shape[:axis] + shape[axis+1:]
 
 
-def asa(left, right, sctype):
-    """Convert left + iy to sctype
-
-    Parameters
-    ----------
-    left,right: ndarray[float]
-        real & imaginary parts, must broadcast
-    sctype
-        a numpy scalar type code, e.g. 'f,d,g,F,D,G'
-    """
-    imag = CMPLX.get(sctype, 0)
-    return (left + imag * right).astype(sctype)
+def chop(shape, axis=-1):
+    """Shape -> shape with last axes reduced to square"""
+    return shape[:-2] + (min(shape[-2:]),) * 2
 
 
-def randn_asa(shape, sctype):
-    """standard normal array with scalar type
-
-    Parameters
-    ----------
-    shape: tuple[int]
-        shape of arrray
-    sctype
-        a numpy scalar type code, e.g. 'f,d,g,F,D,G'
-    """
-    return asa(np.random.standard_normal(shape),
-               np.random.standard_normal(shape), sctype)
-
-
-def zeros_asa(shape, sctype):
-    """array of zeros with scalar type
-
-    Parameters
-    ----------
-    shape: tuple[int]
-        shape of arrray
-    sctype
-        a numpy scalar type code, e.g. 'f,d,g,F,D,G'
-    """
-    return asa(np.zeros(shape), np.zeros(shape), sctype)
-
-
-def ones_asa(shape, sctype):
-    """array of ones with scalar type
-
-    Parameters
-    ----------
-    shape: tuple[int]
-        shape of arrray
-    sctype
-        a numpy scalar type code, e.g. 'f,d,g,F,D,G'
-    """
-    return asa(np.ones(shape), np.zeros(shape), sctype)
+def grow(shape, axis=-1):
+    """Shape -> shape with last axes expanded to square"""
+    return shape[:-2] + (max(shape[-2:]),) * 2

@@ -40,9 +40,9 @@ The `lnarray` class also has properties for delayed matrix division:
 >>> z = x.pinv @ y
 >>> z = x @ y.pinv
 ```
-None of the above actually invert the matrices. They return `invarray/pinvarray`
-objects that call `solve/lstsq` behind the scenes, which is [faster and more
-accurate](https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/).
+None of the above actually invert the matrices. 
+They return `invarray/pinvarray` objects that call `solve/lstsq` behind the scenes, 
+which is [faster and more accurate][dont-invert-matrix].
 To get the actual inverse matrices you can explicitly call the objects:
 ```python
 >>> x = y.inv()
@@ -90,7 +90,7 @@ mathematical expression above.
 To do this, I reimplemented several `numpy` functions, some of them in `C`.
 In each case, this wheel reinvention was done for one of the following reasons:
 1. The `numpy` version doesn't broadcast (e.g. `lstsq`, `qr`).
-1. The `numpy` version doesn't work well with subclasses (e.g. `matmul`).
+1. The `numpy` version doesn't work well with subclasses (e.g. the old `matmul`).
 1. The underlying `gufunc` is not part of the public API, so I didn't want to
 rely on it.
 1. I needed a `gufunc` version of `lstsq` neither requires an `rcond` input
@@ -109,7 +109,7 @@ reasons:
 * [Numpy 1.16](https://numpy.org/doc/stable/index.html)
 * BLAS/Lapack distribution that was present when the binaries were built
 * [to build] C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
-(see [below](#building-the-cpython-modules))
+([see below](#building-the-cpython-modules))
 * [to build] [Setuptools v41.0](https://setuptools.readthedocs.io) (recommended).
 * [to test] [Hypothesis 5.8](https://hypothesis.readthedocs.io).
 
@@ -356,12 +356,10 @@ Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
 ```
-([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl)
-under Uninstalling MKL).
+([see here under Uninstalling MKL][uninstall-MKL]).
 
 If your BLAS/Lapack distribution is somewhere `numpy` isn't expecting, you can
-provide directions in a
-[site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
+provide directions in a [site.cfg file].
 
 Once you have all of the above, you can build the C modules in-place:
 ```
@@ -384,22 +382,23 @@ the C modules.
 ## Running unit tests
 
 You can test the build process and installation by running the unit tests (which require [the `hypothesis` package](https://hypothesis.readthedocs.io)).
-Execute this command in the folder containing this file:
+Execute any of the following commands in the folder containing this file:
 ```
+> python -m tests
 > python -m unittest
-```
-or
-```
 > python -m unittest discover -s <folder/containing/README.md>
 ```
-You can expect occassional failures when using single precision floats.
-The 'falsifying example' produced by `hypothesis` would have `dtype=numpy.float32` or `dtype=numpy.complex64`.
-The failure messages would have `sctype='f'` or `sctype='F'` in the titles and 
-the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
+You can customise which tests are run and how the results are displayed using 
+[the command line options for the `unittest` module][unittest-cli].
 
-You can customise which tests are run and how the results are displayed
-using [the command line options for the 
-`unittest` module](https://docs.python.org/3/library/unittest.html#command-line-interface).
+You can expect occassional failures when using single precision floats.
+The 'falsifying example' produced by `hypothesis` would have `dtype=numpy.float32` 
+or `dtype=numpy.complex64`, as would the failure message produced by `unittest`.
+The mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
+
+Because the underlying BLAS/LAPACK routines raise runtime warnings when passed 
+`inf` or `nan`, these values are excluded from tests. 
+Most of these functions return all `nan`s in such cases.
 
 ## To dos
 
@@ -414,3 +413,10 @@ using [the command line options for the
 1. This package previously used a custom `gufunc` for `matmul`, 
     but as of v1.16 `NumPy` does this so we use that instead.
 
+[dont-invert-matrix]: <https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/> "Blog post about matrix inversion."
+
+[uninstall-mkl]: <https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl> "Uninstall MKL to use OpenBLAS."
+
+[site.cfg file]: <https://github.com/numpy/numpy/blob/master/site.cfg.example> "Example site.cfg file."
+
+[unittest-cli]: <https://docs.python.org/3/library/unittest.html#command-line-interface> "Unittest command line options."

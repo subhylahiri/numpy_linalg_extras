@@ -6,16 +6,14 @@ import numpy as np
 import numpy.linalg as npl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
-from numpy_linalg.gufuncs import array_return_shape as return_shape
-if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, matrices
-else:
-    # pylint: disable=import-error
-    from test_gufunc import utn, hn, main, matrices
+import numpy_linalg.testing.unittest_numpy as utn
+import numpy_linalg.testing.hypothesis_numpy as hn
+from numpy_linalg.testing import main, TestCaseNumpy
+# =============================================================================
 # pylint: disable=missing-function-docstring
-hy.settings.register_profile("debug",
+hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-hy.settings.load_profile('debug')
+hy.settings.load_profile('slow')
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================
@@ -52,7 +50,7 @@ def insert(shape, axis=-1):
 # =============================================================================
 
 
-class TestArray(utn.TestCaseNumpy):
+class TestArray(TestCaseNumpy):
     """Testing lnarray"""
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(a,a),(b,b)', 'd'))
@@ -66,7 +64,8 @@ class TestArray(utn.TestCaseNumpy):
 
         self.assertIsInstance(m_sb @ m_bs, la.lnarray)
         self.assertIsInstance(m_sb_n @ m_bs, la.lnarray)
-        tw_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', m_bs, m_sb), 'd')
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_bs, m_sb)
+        tw_o = np.empty(expect, m_bs.dtype)
         tw_r = la.matmul(m_bs, m_sb_n, tw_o)
         self.assertIsInstance(tw_r, np.ndarray)
         self.assertIsInstance(tw_o, np.ndarray)
@@ -125,9 +124,8 @@ class TestArray(utn.TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(m_ss.ndim != 3)  # causes np..solve's broadcasting issue
         hy.assume(hn.all_non_singular(m_ss))
-
-        ts_o = np.empty(return_shape('(a,b),(b,c)->(a,c)', m_bs, m_ss),
-                        m_ss.dtype)
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_bs, m_ss)
+        ts_o = np.empty(expect, m_ss.dtype)
         ts_r = la.matmul(m_bs, m_ss, ts_o)
         self.assertArrayAllClose(ts_r, ts_o)
         self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
@@ -141,14 +139,13 @@ class TestArray(utn.TestCaseNumpy):
         # self.assertArrayAllClose(ts_r, m_bs)
 
 
-class TestPinvarray(utn.TestCaseNumpy):
+class TestPinvarray(TestCaseNumpy):
     """test pinvarray & invarray classes
     """
 
     @hy.given(hn.broadcastable('(a,a),(b,a)', ['d', 'D']))
     def test_pinvarray_attribute_types(self, arrays):
         m_ss, m_bs = view_as(*arrays)
-        hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
 
         self.assertIsInstance(m_ss.pinv, la.pinvarray)
@@ -173,10 +170,10 @@ class TestPinvarray(utn.TestCaseNumpy):
         with self.assertRaises(TypeError):
             m_ss.inv.pinv  # pylint: disable=pointless-statement
 
-    @hy.given(matrices)
+    @hy.given(hn.matrices_b)
     def test_pinvarray_shape_methods(self, array):
         m_bs = array.view(la.lnarray)
-        hy.assume(hn.tall(m_bs))
+        hy.assume(hn.nonsquare(m_bs))
         hy.assume(hn.all_full_rank(m_bs))
         m_bs_p = m_bs.pinv
         expect = utn.trnsp(m_bs.shape)
@@ -199,7 +196,7 @@ class TestPinvarray(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a),(b,a)', None))
     def test_pinvarray_in_functions(self, arrays):
         m_sb, high, m_bs = view_as(*arrays)
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         # hy.assume(hn.all_full_rank(m_bs))
 
         self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
@@ -231,7 +228,7 @@ class TestPinvarray(utn.TestCaseNumpy):
     def test_invarray_in_functions(self, arrays):
         m_ss, m_bs, m_sb = view_as(*arrays)
         mini = m_bs[..., :m_ss.shape[-1], :]
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
 
@@ -256,13 +253,14 @@ class TestPinvarray(utn.TestCaseNumpy):
                                  gf.solve(mini, m_ss))
         self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss),
                                  gf.rsolve(m_ss, mini))
-        self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss.inv).inv, mini @ m_ss)
+        self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss.inv).inv,
+                                 mini @ m_ss)
 
     @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
     def test_bad_p_invarray_combos_in_functions(self, arrays):
         m_ss, m_bs, m_sb = view_as(*arrays)
         mini = m_bs[..., :m_ss.shape[-1], :]
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
 
         with self.assertRaises(TypeError):
             la.solve(m_sb.pinv, mini)
@@ -289,7 +287,7 @@ class TestPinvarray(utn.TestCaseNumpy):
     def test_good_p_invarray_combos_in_lstsq(self, arrays):
         m_ss, m_bs, m_sb = view_as(*arrays)
         mini = m_bs[..., :m_ss.shape[-1], :]
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
         # hy.assume(hn.all_full_rank(m_bs))
@@ -316,9 +314,9 @@ class TestPinvarray(utn.TestCaseNumpy):
     def test_good_p_invarray_combos_in_solve(self, arrays):
         m_ss, m_bs, m_sb = view_as(*arrays)
         mini = m_bs[..., :m_ss.shape[-1], :]
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(mini))
+        # hy.assume(hn.all_non_singular(mini))
         # hy.assume(hn.all_full_rank(m_bs))
         # hy.assume(hn.all_full_rank(m_sb))
 

@@ -17,6 +17,10 @@ chop
     Modify a shape by setting the smaller of the last two entries to the larger.
 grow
     Modify a shape by setting the larger of the last two entries to the smaller.
+return_shape
+    Calculated broadcasted shape of output from input shapes and signature
+array_return_shape
+    Calculated broadcasted shape of output from input array and signature
 
 Constants
 ---------
@@ -32,8 +36,10 @@ invalid_err
 """
 import unittest as _ut
 import contextlib as _cx
-from typing import Tuple
+from typing import Tuple, Optional, Union, TypeVar
 import numpy as np
+Tvar = TypeVar('Tvar')
+OneOrTuple = Union[Tvar, Tuple[Tvar, ...]]
 # pylint: disable=invalid-name
 __all__ = [
     'TestCaseNumpy',
@@ -45,6 +51,8 @@ __all__ = [
     'drop',
     'chop',
     'grow',
+    'return_shape',
+    'array_return_shape',
 ]
 # =============================================================================
 # Error specs for assertRaisesRegex
@@ -104,11 +112,15 @@ class TestCaseNumpy(_ut.TestCase):
                 # single/double epsratio ~ 5.6e8
                 self.all_close_opts['rtol'] *= epsratio
                 self.all_close_opts['atol'] *= epsratio
+            elif np.issubdtype(array.dtype, np.integer):
+                self.all_close_opts['rtol'] = 0
+                self.all_close_opts['atol'] = 0.5
             yield
         finally:
             self.all_close_opts = old_opts
 
-    def assertArrayAllClose(self, actual, desired, msg=None):
+    def assertArrayAllClose(self, actual: np.ndarray, desired: np.ndarray,
+                            msg: Optional[str] = None):
         """Calls numpy.allclose and processes the results like a
         unittest.TestCase method.
 
@@ -123,7 +135,8 @@ class TestCaseNumpy(_ut.TestCase):
                 msg += miss_str(actual, desired, **self.all_close_opts)
                 self.fail(msg)
 
-    def assertArrayNotAllClose(self, actual, desired, msg=None):
+    def assertArrayNotAllClose(self, actual: np.ndarray, desired: np.ndarray,
+                               msg: Optional[str] = None):
         """Calls numpy.allclose (so it broadcasts, unlike
         numpy.testing.assert_allclose), negates and processes the results like
         a unittest.TestCase method.
@@ -133,10 +146,11 @@ class TestCaseNumpy(_ut.TestCase):
             if np.allclose(actual, desired, **self.all_close_opts):
                 msg = '' if msg is None else f'{msg}\n'
                 msg += miss_str(actual, desired, **self.all_close_opts)
-                msg.replace("Should be", "Shouldn't be")
+                msg.replace("not all close", "are all close")
                 self.fail(msg)
 
-    def assertArrayEqual(self, actual, desired, msg=None):
+    def assertArrayEqual(self, actual: np.ndarray, desired: np.ndarray,
+                         msg=None):
         """Calls numpy.all(numpy.equal(...)) and processes the results like a
         unittest.TestCase method.
         """
@@ -144,7 +158,8 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual != desired):
             self.fail(msg)
 
-    def assertArrayLess(self, actual, desired, msg=None):
+    def assertArrayLess(self, actual: np.ndarray, desired: np.ndarray,
+                        msg: Optional[str] = None):
         """Calls numpy.all(numpy.less(...)) and processes the results like a
         unittest.TestCase method.
         """
@@ -152,7 +167,8 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual >= desired):
             self.fail(msg)
 
-    def assertArrayGreater(self, actual, desired, msg=None):
+    def assertArrayGreater(self, actual: np.ndarray, desired: np.ndarray,
+                           msg: Optional[str] = None):
         """Calls numpy.all(numpy.greater(...)) and processes the results like a
         unittest.TestCase method.
         """
@@ -160,7 +176,8 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual <= desired):
             self.fail(msg)
 
-    def assertArrayNotEqual(self, actual, desired, msg=None):
+    def assertArrayNotEqual(self, actual: np.ndarray, desired: np.ndarray,
+                            msg: Optional[str] = None):
         """Calls numpy.all(numpy.not_equal(...)) and processes the results like
         a unittest.TestCase method.
         """
@@ -168,7 +185,8 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual == desired):
             self.fail(msg)
 
-    def assertArrayNotLess(self, actual, desired, msg=None):
+    def assertArrayNotLess(self, actual: np.ndarray, desired: np.ndarray,
+                           msg: Optional[str] = None):
         """Calls numpy.all(numpy.greater_equal(...)) and processes the results
         like a unittest.TestCase method.
         """
@@ -176,7 +194,8 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual < desired):
             self.fail(msg)
 
-    def assertArrayNotGreater(self, actual, desired, msg=None):
+    def assertArrayNotGreater(self, actual: np.ndarray, desired: np.ndarray,
+                              msg: Optional[str] = None):
         """Calls numpy.all(numpy.less_equal(...)) and processes the results
         like a unittest.TestCase method.
         """
@@ -184,13 +203,16 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual > desired):
             self.fail(msg)
 
-    def assertArrayShape(self, array, shape, msg=None):
+    def assertArrayShape(self, array: np.ndarray, shape: Tuple[int, ...],
+                         msg: Optional[str] = None):
         """Calls self.assertEqual(array.shape, shape).
         """
         # __unittest = True
         self.assertEqual(array.shape, shape, msg)
 
-    def assertArrayShapesAre(self, arrays, shapes, msg=None):
+    def assertArrayShapesAre(self, arrays: Tuple[np.ndarray, ...],
+                             shapes: Tuple[Tuple[int, ...], ...],
+                             msg: Optional[str] = None):
         """Calls self.assertEqual(array.shape, shape).
         """
         # __unittest = True
@@ -203,7 +225,8 @@ class TestCaseNumpy(_ut.TestCase):
 # =============================================================================
 
 
-def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
+def miss_str(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
+             rtol: float = 1e-5, equal_nan: bool = True) -> str:
     """Returns a string describing the maximum deviation of left and right
 
     Parameters
@@ -217,7 +240,8 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
     -------
     msg: str
         A string that looks lik the following with <> placeholders
-        'Should be zero: <maximum devation>
+        'Arrays not all close.
+        Largest mismatch: <maximum devation> with dtype=<scalar type>,
         or: <relative-max dev> = <tolerance> * <max dev relative to tolerance>'
     """
     shape = np.broadcast(left, right).shape
@@ -235,10 +259,12 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
     r_ind = np.unravel_index(argmax(mis_frac), mis_frac.shape)
 
     a_worst, r_worst = mismatch[a_ind], mismatch[r_ind]
-    thresh, mis_frac = thresh[r_ind], mis_frac[r_ind]
+    thresh, mis_f = thresh[r_ind], mis_frac[r_ind]
+    dtype = left.dtype
 
-    return f"""Should be zero: {a_worst:.2g} at {a_ind},
-    or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_frac:.1f} at {r_ind}."""
+    return f"""Arrays not all close.
+    Largest mismatch: {a_worst:.2g} at {a_ind} with dtype={dtype},
+    or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_f:.1f} at {r_ind}."""
 
 
 # =============================================================================
@@ -246,21 +272,121 @@ def miss_str(left, right, atol=1e-8, rtol=1e-5, equal_nan=True):
 # =============================================================================
 
 
-def trnsp(shape):
-    """Shape -> shape of transposed array"""
-    return shape[:-2] + shape[:-3:-1]
-
-
-def drop(shape, axis=-2):
+def drop(shape: Tuple[int, ...], axis: int = -2) -> Tuple[int, ...]:
     """Shape -> shape with one axis dropped"""
     return shape[:axis] + shape[axis+1:]
 
 
-def chop(shape, axis=-1):
+def trnsp(shape: Tuple[int, ...]) -> Tuple[int, ...]:
+    """Shape -> shape of transposed array"""
+    return shape[:-2] + shape[:-3:-1]
+
+
+def chop(shape: Tuple[int, ...]) -> Tuple[int, ...]:
     """Shape -> shape with last axes reduced to square"""
     return shape[:-2] + (min(shape[-2:]),) * 2
 
 
-def grow(shape, axis=-1):
+def grow(shape: Tuple[int, ...]) -> Tuple[int, ...]:
     """Shape -> shape with last axes expanded to square"""
     return shape[:-2] + (max(shape[-2:]),) * 2
+
+
+def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
+    """Convert text signature into tuples of axes size names
+
+    Parameters
+    ----------
+    signature : str
+        Text signature of matrix operation, without optional axes or spaces,
+
+    Returns
+    -------
+    axes_sizes : Tuple[Tuple[str, ...], ...]
+        Tuples of core axes sizes as string variablr names,
+        e.g. `(('a','b'),('b','c'),('a','c'))`
+    """
+    if '->' in signature:
+        inputs, outputs = signature.split('->')
+        return _split_signature(inputs), _split_signature(outputs)
+    signature = signature.lstrip('(').rstrip(')').replace('->', ',')
+    arrays = []
+    for array in signature.split('),('):
+        if array:
+            arrays.append(tuple(array.split(',')))
+        else:
+            arrays.append(())
+    return tuple(arrays)
+
+
+def return_shape(signature: str,
+                 *shapes: Tuple[int, ...]) -> OneOrTuple[Tuple[int, ...]]:
+    """Shape of result of broadcasted matrix operation
+
+    Parameters
+    ----------
+    signature : Tuple[str]
+        Signature of the operation, without optional axes or spaces,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    shapes : Tuple[int, ...]
+        Shapes of arguments of matrix operation.
+
+    Returns
+    -------
+    output_shape : Tuple[int]
+        Shape of result of broadcasted matrix operation.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    msg = (f'Shape: {shapes}. Signature: {signature}.')
+    sigs_in, sigs_out = _split_signature(signature)
+    dims = [len(sig) for sig in sigs_in]
+    broads, cores, sizes = [], [], {}
+    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
+        raise ValueError('Core array does not have enough dimensions: ' + msg)
+    for shape, dim in zip(shapes, dims):
+        if dim:
+            broads.append(shape[:-dim])
+            cores.append(shape[-dim:])
+        else:
+            broads.append(shape)
+            cores.append(())
+    for sig, core in zip(sigs_in, cores):
+        for name, siz in zip(sig, core):
+            sizes.setdefault(name, siz)
+            if sizes[name] != siz:
+                raise ValueError(f'Array mismatch in its core dimension: {msg}')
+    broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
+    shapes_out = []
+    for sig in sigs_out:
+        core = [sizes[name] for name in sig]
+        shapes_out.append(broad_out + tuple(core))
+    return shapes_out[0] if len(shapes_out) == 1 else tuple(shapes_out)
+
+
+def array_return_shape(signature: str,
+                       *arrays: np.ndarray) -> OneOrTuple[Tuple[int, ...]]:
+    """Shape of result of broadcasted matrix operation
+
+    Parameters
+    ----------
+    signature : str
+        Signature of the operation, without optional axes or spaces,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    arrays : np.ndarray
+        Arguments of matrix operation.
+
+    Returns
+    -------
+    output_shape : Tuple[int] or Tuple[Tuple[int, ...], ...]
+        Shape of result of broadcasted matrix operation.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    return return_shape(signature, *(array.shape for array in arrays))

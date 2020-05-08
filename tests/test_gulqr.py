@@ -1,24 +1,22 @@
 # -*- coding: utf-8 -*-
 """Test qr & lstsq families of gufuncs
 """
-import unittest
 import hypothesis as hy
 import numpy as np
+import numpy_linalg as la
 import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-from numpy_linalg import transpose, dagger, row, col, scalar
-if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main
-else:
-    # pylint: disable=import-error
-    from test_gufunc import utn, hn, main
+import numpy_linalg.testing.unittest_numpy as utn
+import numpy_linalg.testing.hypothesis_numpy as hn
+from numpy_linalg.testing import main, TestCaseNumpy
+# =============================================================================
 # pylint: disable=missing-function-docstring
 # pylint: disable=unsupported-assignment-operation
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
-hy.settings.register_profile("debug",
+hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-hy.settings.load_profile('debug')
+hy.settings.load_profile('slow')
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv']
 # =============================================================================
@@ -26,7 +24,7 @@ __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv']
 # =============================================================================
 
 
-class TestQRPinvShape(utn.TestCaseNumpy):
+class TestQRPinvShape(TestCaseNumpy):
     """Testing gufuncs_lapack.qr_*, lq_*, pinv, pinv_qr and qr_pinv
     """
 
@@ -102,7 +100,7 @@ class TestQRPinvShape(utn.TestCaseNumpy):
         self.assertArrayShape(gfl.qr_pinv(m_bs_f, m_bs_tau), utn.trnsp(tall))
 
 
-class TestQR(utn.TestCaseNumpy):
+class TestQR(TestCaseNumpy):
     """Testing gufuncs_lapack.qr_*
     """
 
@@ -112,8 +110,8 @@ class TestQR(utn.TestCaseNumpy):
 
         unitary, right = gfl.qr_m(m_sb)
         wide = unitary @ right
-        eye = dagger(unitary) @ unitary
-        eyet = unitary @ dagger(unitary)
+        eye = la.dagger(unitary) @ unitary
+        eyet = unitary @ la.dagger(unitary)
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='qr'):
         self.assertArrayAllClose(wide, m_sb)
@@ -128,7 +126,7 @@ class TestQR(utn.TestCaseNumpy):
 
         unitary, right = gfl.qr_n(m_bs)
         tall = unitary @ right
-        eye = dagger(unitary) @ unitary
+        eye = la.dagger(unitary) @ unitary
         id_s = np.identity(m_bs.shape[-1], m_bs.dtype)
         # with self.subTest(msg='qr'):
         self.assertArrayAllClose(tall, m_bs)
@@ -141,8 +139,8 @@ class TestQR(utn.TestCaseNumpy):
 
         unitary, right = gfl.qr_m(m_bs)
         tall = unitary @ right
-        eye = dagger(unitary) @ unitary
-        eyet = unitary @ dagger(unitary)
+        eye = la.dagger(unitary) @ unitary
+        eyet = unitary @ la.dagger(unitary)
         id_b = np.identity(m_bs.shape[-2], m_bs.dtype)
         # with self.subTest(msg='qr'):
         self.assertArrayAllClose(tall, m_bs)
@@ -172,17 +170,18 @@ class TestQR(utn.TestCaseNumpy):
         rrr = gfl.qr_m(m_sb)[1]
         num = rrr.shape[-2]
         ht_sb, tau = gfl.qr_rawm(m_sb)
-        h_sb = transpose(ht_sb)
+        h_sb = la.transpose(ht_sb)
         vecs = np.tril(h_sb, -1)
         vecs[(...,) + np.diag_indices(num)] = 1
-        vnorm = gfb.norm(row(tau) * vecs[..., :num], axis=-2)**2
+        vnorm = gfb.norm(la.row(tau) * vecs[..., :num], axis=-2)**2
         right = np.triu(h_sb)
         # with self.subTest(msg='raw_m'):
         self.assertArrayAllClose(right, rrr)
         self.assertArrayAllClose(vnorm, 2 * tau.real)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k]
-            right -= scalar(tau[..., -k-1]) * vvv * (dagger(vvv) @ right)
+            ttt = la.scalar(tau[..., -k-1])
+            right -= ttt * vvv * (la.dagger(vvv) @ right)
         # with self.subTest(msg='h_m'):
         self.assertArrayAllClose(right, m_sb)
 
@@ -193,22 +192,23 @@ class TestQR(utn.TestCaseNumpy):
         rrr = gfl.qr_n(m_bs)[1]
         num = rrr.shape[-1]
         ht_bs, tau = gfl.qr_rawn(m_bs)
-        h_bs = transpose(ht_bs)
+        h_bs = la.transpose(ht_bs)
         vecs = np.tril(h_bs, -1)
         vecs[(...,) + np.diag_indices(num)] = 1
-        vnorm = gfb.norm(row(tau) * vecs, axis=-2)**2
+        vnorm = gfb.norm(la.row(tau) * vecs, axis=-2)**2
         right = np.triu(h_bs)
         # with self.subTest(msg='raw_n'):
         self.assertArrayAllClose(right[..., :num, :], rrr)
         self.assertArrayAllClose(vnorm, 2 * tau.real)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k]
-            right -= scalar(tau[..., -k-1]) * vvv * (dagger(vvv) @ right)
+            ttt = la.scalar(tau[..., -k-1])
+            right -= ttt * vvv * (la.dagger(vvv) @ right)
         # with self.subTest(msg='h_n'):
         self.assertArrayAllClose(right, m_bs)
 
 
-class TestLQ(utn.TestCaseNumpy):
+class TestLQ(TestCaseNumpy):
     """Testing gufuncs_lapack.lq_*
     """
 
@@ -218,7 +218,7 @@ class TestLQ(utn.TestCaseNumpy):
 
         left, unitary = gfl.lq_m(m_sb)
         wide = left @ unitary
-        eye = unitary @ dagger(unitary)
+        eye = unitary @ la.dagger(unitary)
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='lq'):
         self.assertArrayAllClose(wide, m_sb)
@@ -231,8 +231,8 @@ class TestLQ(utn.TestCaseNumpy):
 
         left, unitary = gfl.lq_n(m_bs)
         tall = left @ unitary
-        eye = unitary @ dagger(unitary)
-        eyet = dagger(unitary) @ unitary
+        eye = unitary @ la.dagger(unitary)
+        eyet = la.dagger(unitary) @ unitary
         id_s = np.identity(m_bs.shape[-1], m_bs.dtype)
         # with self.subTest(msg='lq'):
         self.assertArrayAllClose(tall, m_bs)
@@ -247,8 +247,8 @@ class TestLQ(utn.TestCaseNumpy):
 
         left, unitary = gfl.lq_n(m_sb)
         wide = left @ unitary
-        eye = unitary @ dagger(unitary)
-        eyet = dagger(unitary) @ unitary
+        eye = unitary @ la.dagger(unitary)
+        eyet = la.dagger(unitary) @ unitary
         id_b = np.identity(m_sb.shape[-1], m_sb.dtype)
         # with self.subTest(msg='lq'):
         self.assertArrayAllClose(wide, m_sb)
@@ -278,10 +278,10 @@ class TestLQ(utn.TestCaseNumpy):
         llo = gfl.lq_m(m_sb)[0]
         num = llo.shape[-2]
         ht_sb, tau = gfl.lq_rawm(m_sb)
-        h_sb = transpose(ht_sb)
+        h_sb = la.transpose(ht_sb)
         vecs = np.triu(h_sb, 1)
         vecs[(...,) + np.diag_indices(num)] = 1
-        vnorm = gfb.norm(col(tau) * vecs, axis=-1)**2
+        vnorm = gfb.norm(la.col(tau) * vecs, axis=-1)**2
         left = np.tril(h_sb)
         # with self.subTest(msg='raw_m'):
         self.assertArrayAllClose(left[..., :num], llo)
@@ -289,7 +289,8 @@ class TestLQ(utn.TestCaseNumpy):
         self.assertArrayAllClose(vnorm, 2 * tau.real)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k, :]
-            left -= scalar(tau[..., -k-1].conj()) * (left @ dagger(vvv)) * vvv
+            ttt = la.scalar(tau[..., -k-1])
+            left -= ttt.conj() * (left @ la.dagger(vvv)) * vvv
         # with self.subTest(msg='h_m'):
         self.assertArrayAllClose(left, m_sb)
 
@@ -300,10 +301,10 @@ class TestLQ(utn.TestCaseNumpy):
         llo = gfl.lq_n(m_bs)[0]
         num = llo.shape[-1]
         ht_bs, tau = gfl.lq_rawn(m_bs)
-        h_bs = transpose(ht_bs)
+        h_bs = la.transpose(ht_bs)
         vecs = np.triu(h_bs, 1)
         vecs[(...,) + np.diag_indices(num)] = 1
-        vnorm = gfb.norm(col(tau) * vecs[..., :num, :], axis=-1)**2
+        vnorm = gfb.norm(la.col(tau) * vecs[..., :num, :], axis=-1)**2
         left = np.tril(h_bs)
         # with self.subTest(msg='raw_n'):
         self.assertArrayAllClose(left, llo)
@@ -311,12 +312,13 @@ class TestLQ(utn.TestCaseNumpy):
         self.assertArrayAllClose(vnorm, 2 * tau.real)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k, :]
-            left -= scalar(tau[..., -k-1].conj()) * (left @ dagger(vvv)) * vvv
+            ttt = la.scalar(tau[..., -k-1])
+            left -= ttt.conj() * (left @ la.dagger(vvv)) * vvv
         # with self.subTest(msg='h_n'):
         self.assertArrayAllClose(left, m_bs)
 
 
-class TestPinv(utn.TestCaseNumpy):
+class TestPinv(TestCaseNumpy):
     """Testing gufuncs_lapack.pinv, pinv_qr and qr_pinv
     """
     @hy.given(hn.broadcastable('(a,b)', None))
@@ -332,7 +334,7 @@ class TestPinv(utn.TestCaseNumpy):
         wide_pq, wide_f, wide_tau = gfl.pinv_qrm(m_sb)
         # actually want lq here
         qrf, tau = gfl.lq_rawm(m_sb)
-        # qrf = dagger(qrf)
+        # qrf = la.dagger(qrf)
         self.assertArrayAllClose(wide_pq, wide_p)
         self.assertArrayAllClose(wide_f, qrf)
         self.assertArrayAllClose(wide_tau, tau)

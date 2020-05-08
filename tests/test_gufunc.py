@@ -1,31 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Test C-loop and BLAS ufuncs + qr
+"""Test C-loop and BLAS ufuncs
 """
 import hypothesis as hy
-import hypothesis.extra.numpy as hyn
 import numpy as np
 import numpy_linalg.gufuncs._gufuncs_cloop as gfc
 import numpy_linalg.gufuncs._gufuncs_blas as gfb
-from numpy_linalg.gufuncs import array_return_shape
-if 'tests.' in __name__:
-    from . import unittest_numpy as utn
-    from . import hypothesis_numpy as hn
-    from .unittest_tweaks import main
-else:
-    # pylint: disable=import-error
-    import unittest_numpy as utn
-    import hypothesis_numpy as hn
-    from unittest_tweaks import main
-# pylint: disable=invalid-name
-# pylint: disable=missing-function-docstring
+import numpy_linalg.testing.unittest_numpy as utn
+import numpy_linalg.testing.hypothesis_numpy as hn
+from numpy_linalg.testing import main, TestCaseNumpy
 # =============================================================================
+# pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
-hy.settings.register_profile("debug",
+hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-hy.settings.load_profile('debug')
-matrices = hyn.arrays(dtype=np.float64,
-                      shape=hyn.array_shapes(min_dims=2),
-                      elements=hn.real_numbers())
+hy.settings.load_profile('slow')
 # =============================================================================
 __all__ = ['TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
@@ -50,14 +38,14 @@ def make_off_by_one(matrices, vectors):
 # =============================================================================
 
 
-class TestBlas(utn.TestCaseNumpy):
+class TestBlas(TestCaseNumpy):
     """Testing norm, matmul and rmatmul"""
 
     def setUp(self):
         super().setUp()
         self.gf = gfb
 
-    @hy.given(matrices)
+    @hy.given(hn.matrices_b)
     def test_norm_returns_expected_shapes(self, m_bs):
         v_s = m_bs[(0,) * (m_bs.ndim - 1)]
         tall = m_bs.shape
@@ -81,7 +69,7 @@ class TestBlas(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.nonsquare(m_bs))
 
-        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
         self.assertArrayShape(self.gf.matmul(m_sb, m_bs), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(m_bs, m_bs)
@@ -91,7 +79,7 @@ class TestBlas(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,c)', None))
     def test_matmul_returns_expected_values(self, arrays):
         m_sb, m_bs = arrays
-        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
 
         pout = np.empty(expect, m_sb.dtype)
         pres = self.gf.matmul(m_sb, m_bs, out=pout)
@@ -105,7 +93,7 @@ class TestBlas(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.nonsquare(m_bs))
 
-        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
         self.assertArrayShape(self.gf.rmatmul(m_bs, m_sb), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(m_bs, m_bs)
@@ -115,7 +103,7 @@ class TestBlas(utn.TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,c)', None))
     def test_rmatmul_returns_expected_values(self, arrays):
         m_sb, m_bs = arrays
-        expect = array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
+        expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_sb, m_bs)
 
         pout = np.empty(expect, m_sb.dtype)
         pres = self.gf.rmatmul(m_bs, m_sb, out=pout)
@@ -124,7 +112,7 @@ class TestBlas(utn.TestCaseNumpy):
         self.assertArrayAllClose(pout, prod)
 
 
-class TestBlasVectors(utn.TestCaseNumpy):
+class TestBlasVectors(TestCaseNumpy):
     """Testing matmul and rmatmul"""
 
     def setUp(self):
@@ -208,7 +196,7 @@ class TestCloop(TestBlas):
         a_bs, m_bs = arrays
 
         a_bs[np.abs(a_bs) < 1e-5] += 1.
-        expect = array_return_shape('(),()->()', a_bs, m_bs)
+        expect = utn.array_return_shape('(),()->()', a_bs, m_bs)
         self.assertArrayShape(self.gf.rtrue_divide(a_bs, m_bs), expect)
         with self.assertRaisesRegex(*utn.broadcast_err):
             self.gf.rtrue_divide(*make_bad_broadcast(m_bs, a_bs))
@@ -217,7 +205,7 @@ class TestCloop(TestBlas):
     def test_rtrue_divide_returns_expected_values(self, arrays):
         a_bs, m_bs = arrays
 
-        expect = array_return_shape('(),()->()', a_bs, m_bs)
+        expect = utn.array_return_shape('(),()->()', a_bs, m_bs)
         zout = np.empty(expect, m_bs.dtype)
         a_bs[np.abs(a_bs) < 1e-5] += 1.
         zres = self.gf.rtrue_divide(a_bs, m_bs, out=zout)

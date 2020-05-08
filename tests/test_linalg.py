@@ -3,23 +3,21 @@
 It has been established, in test_gu*.py, that the gufuncs return the correct
 values. We just check that the python wrappers call the correct ones.
 """
-import unittest
+from unittest import expectedFailure
 import hypothesis as hy
-import hypothesis.extra.numpy as hyn
 import numpy as np
 import numpy_linalg as la
-import numpy_linalg._linalg as lr
 import numpy_linalg.gufuncs as gf
-if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main
-else:
-    from test_gufunc import utn, hn, main
+import numpy_linalg.testing.unittest_numpy as utn
+import numpy_linalg.testing.hypothesis_numpy as hn
+from numpy_linalg.testing import main, TestCaseNumpy
+# =============================================================================
 # pylint: disable=missing-function-docstring
 # pylint: disable=invalid-sequence-index
 errstate = np.errstate(invalid='raise')
-hy.settings.register_profile("debug",
+hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-hy.settings.load_profile('debug')
+hy.settings.load_profile('slow')
 # =============================================================================
 __all__ = ['TestShape', 'TestValue']
 # =============================================================================
@@ -37,10 +35,10 @@ def tril(matrix):
 # =============================================================================
 
 
-class TestShape(utn.TestCaseNumpy):
+class TestShape(TestCaseNumpy):
     """Testing shapes returned by linalg functions"""
 
-    @hy.given(hyn.arrays('d', hyn.array_shapes(min_dims=2)))
+    @hy.given(hn.matrices_b)
     def test_functions_shape(self, array):
         shape = array.shape
         self.assertArrayShape(la.transpose(array), utn.trnsp(shape))
@@ -62,10 +60,10 @@ class TestShape(utn.TestCaseNumpy):
         self.assertArrayShape(la.matmul(v_s, v_s), ())
         # with self.subTest('rmatmul'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', wide, tall)
-        self.assertArrayShape(lr.rmatmul(m_bs, m_sb), expect)
-        self.assertArrayShape(lr.rmatmul(m_sb, v_s), utn.drop(wide))
-        self.assertArrayShape(lr.rmatmul(v_b, m_sb), wide[:-1])
-        self.assertArrayShape(lr.rmatmul(v_b, v_b), ())
+        self.assertArrayShape(gf.rmatmul(m_bs, m_sb), expect)
+        self.assertArrayShape(gf.rmatmul(m_sb, v_s), utn.drop(wide))
+        self.assertArrayShape(gf.rmatmul(v_b, m_sb), wide[:-1])
+        self.assertArrayShape(gf.rmatmul(v_b, v_b), ())
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
     def test_functions_solve(self, arrays):
@@ -111,7 +109,7 @@ class TestShape(utn.TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-1]]
         hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest('solve'):
         expect = gf.return_shape('(a,b),(a,c)->(b,c)', smol, wide)
@@ -131,7 +129,7 @@ class TestShape(utn.TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest('rsolve'):
         expect = gf.return_shape('(a,b),(c,b)->(a,c)', tall, smol)
@@ -148,7 +146,7 @@ class TestShape(utn.TestCaseNumpy):
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         self.assertArrayShapesAre(la.qr(m_bs, 'reduced'),
@@ -172,7 +170,7 @@ class TestShape(utn.TestCaseNumpy):
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         self.assertArrayShapesAre(la.lq(m_bs, 'reduced'),
@@ -196,7 +194,7 @@ class TestShape(utn.TestCaseNumpy):
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
-        hy.assume(wide[-2] < wide[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         self.assertArrayShapesAre(la.lqr(m_bs, 'reduced'),
@@ -239,7 +237,7 @@ class TestShape(utn.TestCaseNumpy):
                                   (utn.trnsp(wide), wide[:-1]))
 
 
-class TestValue(utn.TestCaseNumpy):
+class TestValue(TestCaseNumpy):
     """Testing values returned by linalg functions"""
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
@@ -249,7 +247,7 @@ class TestValue(utn.TestCaseNumpy):
         # with self.subTest('matmul'):
         self.assertArrayAllClose(la.matmul(m_bs, m_sb), gf.matmul(m_bs, m_sb))
         # with self.subTest('rmatmul'):
-        self.assertArrayAllClose(lr.rmatmul(m_bs, m_sb), gf.rmatmul(m_bs, m_sb))
+        self.assertArrayAllClose(gf.rmatmul(m_bs, m_sb), gf.rmatmul(m_bs, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_functions_solve(self, arrays):
@@ -258,7 +256,7 @@ class TestValue(utn.TestCaseNumpy):
 
         # with self.subTest('solve'):
         self.assertArrayAllClose(la.solve(m_ss, m_sb), gf.solve(m_ss, m_sb))
-        slv_sh = gf.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
+        slv_sh = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         slv_out = np.empty(slv_sh, m_ss.dtype)
         slv_r = la.solve(m_ss, m_sb, out=slv_out)
         self.assertArrayAllClose(slv_out, slv_r)
@@ -269,12 +267,12 @@ class TestValue(utn.TestCaseNumpy):
     def test_functions_lstsq(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_b = hn.core_only(arrays[-1], dims=1)
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest('lstsq'):
         self.assertArrayAllClose(la.lstsq(m_bs, m_bb), gf.lstsq(m_bs, m_bb))
         self.assertArrayAllClose(la.lstsq(m_sb, m_ss), gf.lstsq(m_sb, m_ss))
-        lsq_sh = gf.array_return_shape('(a,b),(a,c)->(b,c)', m_bs, m_bb)
+        lsq_sh = utn.array_return_shape('(a,b),(a,c)->(b,c)', m_bs, m_bb)
         lsq_out = np.empty(lsq_sh, m_bs.dtype)
         lsq_r = la.lstsq(m_bs, m_bb, out=lsq_out)
         self.assertArrayAllClose(lsq_out, lsq_r)
@@ -286,11 +284,11 @@ class TestValue(utn.TestCaseNumpy):
     def test_functions_matldiv(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest('solve'):
         self.assertArrayAllClose(la.matldiv(m_ss, m_sb), gf.solve(m_ss, m_sb))
-        slv_sh = gf.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
+        slv_sh = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         slv_out = np.empty(slv_sh, m_ss.dtype)
         slv_r = la.matldiv(m_ss, m_sb, out=slv_out)
         self.assertArrayAllClose(slv_out, slv_r)
@@ -303,7 +301,7 @@ class TestValue(utn.TestCaseNumpy):
         m_ss, m_sb, m_bs = arrays[:-1]
         v_b = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest('rsolve'):
         self.assertArrayAllClose(la.matrdiv(m_bs, m_ss), gf.rsolve(m_bs, m_ss))
@@ -315,7 +313,7 @@ class TestValue(utn.TestCaseNumpy):
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         unitary, right = la.qr(m_bs, 'reduced')
@@ -339,7 +337,7 @@ class TestValue(utn.TestCaseNumpy):
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2]]
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         left, unitary = la.lq(m_bs, 'reduced')
@@ -363,7 +361,7 @@ class TestValue(utn.TestCaseNumpy):
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("reduced"):
         unitary, right = la.lqr(m_bs, 'reduced')
@@ -387,7 +385,7 @@ class TestValue(utn.TestCaseNumpy):
     def test_lu(self, arrays):
         m_ss, m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
-        hy.assume(m_sb.shape[-2] < m_sb.shape[-1])
+        hy.assume(hn.wide(m_sb))
 
         # with self.subTest("square"):
         lower, upper, piv = la.lu(m_ss, 'separate')
@@ -409,7 +407,7 @@ class TestValue(utn.TestCaseNumpy):
         self.assertArrayAllClose(tril(lower), tril(luf)[box[:-1]])
         self.assertArrayAllClose(upper, np.triu(luf))
 
-    @unittest.expectedFailure
+    @expectedFailure
     @errstate
     @hy.given(hn.constant('(a,a)', ['d', 'D'], min_side=2))
     def test_low_rank(self, ones_ss):

@@ -20,6 +20,12 @@ broadcastable
 constant
     Generate a single array with all elements equal, with a generated `dtype`
     and a `shape` that broadcasts with a given signature.
+matrices_b
+    Generate broadcasting matrices (ndim >= 2) with float entries.
+matrices_c
+    Generate core-only matrices (ndim == 2) with float entries.
+vectors
+    Generate vectors (ndim == 1) with float entries.
 
 Functions
 ---------
@@ -56,6 +62,9 @@ __all__ = [
     'signature_shapes',
     'broadcastable',
     'constant',
+    'matrices_b',
+    'matrices_c',
+    'vectors',
     'core_only',
     'non_singular',
     'all_non_singular',
@@ -293,6 +302,16 @@ def constant(draw: st.DataObject,
     fill = draw(elements)
     return np.full(shapes[0], fill, dtype)
 
+
+matrices_b = hyn.arrays(dtype=np.float64,
+                        shape=hyn.array_shapes(min_dims=2),
+                        elements=real_numbers())
+matrices_c = hyn.arrays(dtype=np.float64,
+                        shape=hyn.array_shapes(min_dims=2, max_dims=2),
+                        elements=real_numbers())
+vectors = hyn.arrays(dtype=np.float64,
+                     shape=hyn.array_shapes(min_dims=1, max_dims=1),
+                     elements=real_numbers())
 
 # =============================================================================
 # Helpers for TestCaseNumpy with Hypothesis

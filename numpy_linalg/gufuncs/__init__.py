@@ -94,13 +94,14 @@ from . import _gufuncs_lu_solve
 from . import _gufuncs_qr_lstsq
 # In _families we choose which versions of matmul, rmatmul, norm to use.
 from ._families import (matmul, rmatmul, norm, rtrue_divide)
-from ._gufuncs_lu_solve import (lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot,
-                                solve, rsolve, solve_lu, rsolve_lu, lu_solve,
-                                rlu_solve, inv, inv_lu, lu_inv)
+from ._gufuncs_lu_solve import (
+    lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv,
+    solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve)
 from ._gufuncs_qr_lstsq import (
-    qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn, lq_m, lq_n, lq_lm, lq_ln,
-    lq_rawm, lq_rawn, lstsq, rlstsq, lstsq_qrm, lstsq_qrn, rlstsq_qrm,
-    rlstsq_qrn, qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv)
+    qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
+    lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,
+    lstsq, rlstsq, lstsq_qrm, lstsq_qrn, rlstsq_qrm, rlstsq_qrn,
+    qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv)
 
 from . import _families as fam
 from ._util import make_errobj, unbroadcast_factors
@@ -116,9 +117,10 @@ __version__ = _version("0.2.0", _gufuncs_blas, _gufuncs_cloop,
 assert any((norm, rtrue_divide, matmul, rmatmul))
 assert any((make_errobj, unbroadcast_factors))
 assert any((MatmulOperatorsMixin, LNArrayOperatorsMixin))
-assert any((lu_m, lu_n, lu_rawm, lu_rawn, solve, rsolve, solve_lu, rsolve_lu,
-            lu_solve, rlu_solve, pivot, rpivot, inv, inv_lu, lu_inv))
+assert any((lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv,
+            solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve))
 assert any((
-    qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn, lq_m, lq_n, lq_lm, lq_ln,
-    lq_rawm, lq_rawn, lstsq, rlstsq, lstsq_qrm, lstsq_qrn, rlstsq_qrm,
-    rlstsq_qrn, qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv))
+    qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
+    lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,
+    lstsq, rlstsq, lstsq_qrm, lstsq_qrn, rlstsq_qrm, rlstsq_qrn,
+    qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv))

@@ -1,22 +1,24 @@
 # -*- coding: utf-8 -*-
 """Test solve & lu families of gufuncs
 """
-import unittest
+from unittest import expectedFailure
 import hypothesis as hy
 import numpy as np
+import numpy_linalg as la
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
-from numpy_linalg import transpose
-from numpy_linalg.gufuncs import array_return_shape
+import numpy_linalg.testing.unittest_numpy as utn
+import numpy_linalg.testing.hypothesis_numpy as hn
+from numpy_linalg.testing import main, TestCaseNumpy
 if 'tests.' in __name__:
-    from .test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
+    from .test_gufunc import make_bad_broadcast, make_off_by_one
 else:
-    from test_gufunc import utn, hn, main, make_bad_broadcast, make_off_by_one
-# pylint: disable=missing-function-docstring
+    from test_gufunc import make_bad_broadcast, make_off_by_one
 # =============================================================================
+# pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
-hy.settings.register_profile("debug",
+hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-hy.settings.load_profile('debug')
+hy.settings.load_profile('slow')
 # =============================================================================
 __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
 # =============================================================================
@@ -24,7 +26,7 @@ __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
 # =============================================================================
 
 
-class TestLU(utn.TestCaseNumpy):
+class TestLU(TestCaseNumpy):
     """Testing LU decomposition"""
 
     @hy.given(hn.broadcastable('(a,b),(b,b),(b,a)', 'd'))
@@ -119,7 +121,7 @@ class TestLU(utn.TestCaseNumpy):
     def test_lu_raw_returns_expected_values_square(self, m_bb):
         sq_l, sq_u, sq_ip0 = gfl.lu_m(m_bb)
         sq_f, sq_ip = gfl.lu_rawm(m_bb)
-        sq_f = transpose(sq_f)
+        sq_f = la.transpose(sq_f)
         linds = (...,) + np.tril_indices(m_bb.shape[-1], -1)
         uinds = (...,) + np.triu_indices(m_bb.shape[-1], 0)
         # with self.subTest(msg="square"):
@@ -134,7 +136,7 @@ class TestLU(utn.TestCaseNumpy):
 
         wd_l, wd_u, wd_ip0 = gfl.lu_m(m_sb)
         wd_f, wd_ip = gfl.lu_rawm(m_sb)
-        wd_f = transpose(wd_f)
+        wd_f = la.transpose(wd_f)
         linds = (...,) + np.tril_indices(wide[-2], -1, wide[-1])
         uinds = (...,) + np.triu_indices(wide[-2], 0, wide[-1])
         # with self.subTest(msg="wide"):
@@ -149,7 +151,7 @@ class TestLU(utn.TestCaseNumpy):
 
         tl_l, tl_u, tl_ip0 = gfl.lu_n(m_bs)
         tl_f, tl_ip = gfl.lu_rawn(m_bs)
-        tl_f = transpose(tl_f)
+        tl_f = la.transpose(tl_f)
         linds = (...,) + np.tril_indices(tall[-2], -1, tall[-1])
         uinds = (...,) + np.triu_indices(tall[-2], 0, tall[-1])
         # with self.subTest(msg="tall"):
@@ -195,7 +197,7 @@ class TestLU(utn.TestCaseNumpy):
 # =============================================================================
 
 
-class TestSolveShape(utn.TestCaseNumpy):
+class TestSolveShape(TestCaseNumpy):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
@@ -204,7 +206,7 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
 
-        expect = array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
+        expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         self.assertArrayShape(gfl.solve(m_ss, m_sb), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(m_bb, m_sb)
@@ -219,7 +221,7 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_bb))
 
-        expect = array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
+        expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
         self.assertArrayShape(gfl.rsolve(m_sb, m_bb), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve(m_bs, m_bb)
@@ -234,7 +236,7 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
 
-        expect = array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
+        expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         expect_f = expect[:-2] + 2 * m_ss.shape[-1:]
         self.assertArrayShapesAre(gfl.solve_lu(m_ss, m_sb),
                                   (expect, expect_f, expect_f[:-1]))
@@ -252,9 +254,9 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.all_non_singular(m_ss))
 
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
-        expect = array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
+        expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         self.assertArrayShape(gfl.lu_solve(x_f, i_p, m_sb), expect)
-        expect = array_return_shape('(a,b),(b,b)->(a,b)', m_bs, x_f)
+        expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_bs, x_f)
         self.assertArrayShape(gfl.rlu_solve(m_bs, x_f, i_p), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lu_solve(x_f, i_p, m_bb)
@@ -270,7 +272,7 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_bb))
 
-        expect = array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
+        expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
         expect_f = expect[:-2] + m_bb.shape[-2:]
         self.assertArrayShapesAre(gfl.rsolve_lu(m_sb, m_bb),
                                   (expect, expect_f, expect_f[:-1]))
@@ -288,9 +290,9 @@ class TestSolveShape(utn.TestCaseNumpy):
         hy.assume(hn.all_non_singular(m_bb))
 
         _, x_f, i_p = gfl.rsolve_lu(m_sb, m_bb)
-        expect = array_return_shape('(a,b),(b,b)->(a,b)', m_sb, x_f)
+        expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, x_f)
         self.assertArrayShape(gfl.rlu_solve(m_sb, x_f, i_p), expect)
-        expect = array_return_shape('(a,a),(a,b)->(a,b)', x_f, m_bs)
+        expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', x_f, m_bs)
         self.assertArrayShape(gfl.lu_solve(x_f, i_p, m_bs), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlu_solve(m_ss, x_f, i_p)
@@ -301,7 +303,7 @@ class TestSolveShape(utn.TestCaseNumpy):
             gfl.rlu_solve(*make_bad_broadcast(m_sb, x_f), i_p)
 
 
-class TestSolveVectors(utn.TestCaseNumpy):
+class TestSolveVectors(TestCaseNumpy):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve with vectors"""
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
@@ -418,7 +420,7 @@ class TestSolveVectors(utn.TestCaseNumpy):
             gfl.lu_solve(x_f, i_p, v_b)
 
 
-class TestSolveVal(utn.TestCaseNumpy):
+class TestSolveVal(TestCaseNumpy):
     """Testing (r)solve, (r)solve_lu and (r)lu_solve"""
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
@@ -465,7 +467,7 @@ class TestSolveVal(utn.TestCaseNumpy):
         # with self.subTest('solve(rlu)'):
         self.assertArrayAllClose(m_ss @ x_sb, m_sb)
 
-    @unittest.expectedFailure
+    @expectedFailure
     @errstate
     @hy.given(hn.constant('(a,a)', None, min_side=2))
     def test_solve_raises_with_low_rank(self, ones_ss):

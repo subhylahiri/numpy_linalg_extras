@@ -531,7 +531,9 @@ class pinvarray(NDArrayOperatorsMixin):
         obj = _who_chooses(self, ufunc, inputs, pinv_in)
         if obj is None:
             return NotImplemented
-        ufunc, args, pinv_out = obj._choose_ufunc(ufunc, args, pinv_in)
+        if obj is not self:
+            return obj.__array_ufunc__(ufunc, method, *inputs, **kwds)
+        ufunc, args, pinv_out = self._choose_ufunc(ufunc, args, pinv_in)
         if ufunc is None:
             return NotImplemented
         outputs, pinv_out = cv.conv_loop_in_attr(
@@ -540,7 +542,7 @@ class pinvarray(NDArrayOperatorsMixin):
         return cv.conv_loop_out_init(self, results, outputs, pinv_out)
 
     def _choose_ufunc(self, ufunc, args, pinv_in):
-        """Choose which ufunc to use, etc"""
+        """Choose which ufunc to use, swap args if needed, convert result?"""
         pinv_out = [False] * ufunc.nout  # which outputs need converting back?
         if ufunc in gf.fam.inverse_arguments.keys():
             # _who_chooses -> correct choice across families
@@ -586,27 +588,23 @@ class pinvarray(NDArrayOperatorsMixin):
             The (pseudo)inverse of the `lnarray` whose `(p)inv` this object is.
         """
         # Can't know if self._to_invert has been modified, so:
-        self._invert()
-        out = self._inverted
-        self._inverted = None
-        return out
+        return self._invert()
         # If self._to_invert has not been (pseudo)inverted, it will compute the
         # (pseudo)inverse first. Otherwise, it will use the stored value.
         # if self._inverted is None:
-        #     self._invert()
+        #     self._inverted = self._invert()
         # return self._inverted
 
-    def _invert(self):
+    def _invert(self) -> lnarray:
         """Actually perform (pseudo)inverse
         """
         if self.ndim < 2:
             # scalar or vector
-            self._inverted = self._to_invert / gf.norm(self._to_invert)**2
-        elif self.ndim >= 2:
+            return self._to_invert / gf.norm(self._to_invert)**2
+        if self.ndim >= 2:
             # pinv broadcasts
-            self._inverted = gf.pinv(self._to_invert)
-        else:
-            raise ValueError('Nothing to invert? ' + str(self._to_invert))
+            return gf.pinv(self._to_invert)
+        raise ValueError('Nothing to invert? ' + str(self._to_invert))
 
     def __len__(self):
         return self.shape[0]
@@ -644,33 +642,28 @@ class pinvarray(NDArrayOperatorsMixin):
 
     @property
     def shape(self) -> Tuple[int, ...]:
-        """Effective shape of pinvarray in matmul etc.
-        """
+        """Effective shape of pinvarray in matmul etc."""
         # Matrix operations are allowed with x.inv when allowed for x.t
         return self._to_invert.t.shape
 
     @property
     def ndim(self) -> int:
-        """Number of dimensions
-        """
+        """Number of dimensions."""
         return self._to_invert.ndim
 
     @property
     def size(self) -> int:
-        """Number of elements
-        """
+        """Number of elements."""
         return self._to_invert.size
 
     @property
     def dtype(self) -> np.dtype:
-        """Data type of array elements.
-        """
+        """Data type of array elements."""
         return self._to_invert.dtype
 
     @property
     def pinv(self) -> lnarray:
-        """Uninverted matrix.
-        """
+        """Uninverted matrix."""
         return self._to_invert
 
     @property
@@ -793,21 +786,17 @@ class invarray(pinvarray):
 
     @property
     def pinv(self) -> lnarray:
-        """Uninverted matrix
-        """
+        """Uninverted matrix."""
         raise TypeError('This is an invarray, not a pinvarray!')
 
     @property
     def inv(self) -> lnarray:
-        """Uninverted matrix
-        """
+        """Uninverted matrix."""
         return self._to_invert
 
-    def _invert(self):
-        """Actually perform inverse
-        """
+    def _invert(self) -> lnarray:
+        """Actually perform inverse."""
         if self.ndim >= 2 and self.shape[-2] == self.shape[-1]:
             # square
-            self._inverted = gf.inv(self._to_invert)
-        else:
-            raise ValueError('Nothing to invert? ' + str(self._to_invert))
+            return gf.inv(self._to_invert)
+        raise ValueError('Cannot be inverted? ' + str(self._to_invert))

@@ -31,26 +31,19 @@ conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
 scalars in a way that fits with `numpy.linalg` broadcasting rules (`t,h` only
 transpose the last two indices, `r,c,s` add singleton axes so that linear
 algebra routines treat them as arrays of vectors/scalars rather than matrices,
-and `ur,uc,us` undo the effects of `r,c,s`).<sup>[1]</sup>
-
-The `lnarray` class also has properties for delayed matrix division:
 ```python
->>> z = x.inv @ y
 >>> z = x @ y.inv
 >>> z = x.pinv @ y
 >>> z = x @ y.pinv
 ```
-None of the above actually invert the matrices. They return `invarray/pinvarray`
-objects that call `solve/lstsq` behind the scenes, which is [faster and more
-accurate](https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/).
+None of the above actually invert the matrices. 
+They return `invarray/pinvarray` objects that call `solve/lstsq` behind the scenes, 
+which is [faster and more accurate][dont-invert-matrix].
 To get the actual inverse matrices you can explicitly call the objects:
 ```python
 >>> x = y.inv()
 >>> x = y.pinv()
 ```
-
-[1]: <> "There used to be a custom `gufunc` for `matmul`, but 
-    `NumPy` v1.16 uses a `matmul` `gufunc` so we use that instead."
 
 
 ## Rationale
@@ -72,12 +65,14 @@ A = np.linalg.solve(Zi.T, xi).T.dot(Q).dot(np.linalg.solve(Zi, w))
 ```
 Things do get better in Python 3.5 and Numpy 1.10:
 ```python
+Zi = ev @ xi - W
 A = np.linalg.solve(Zi.T, xi).T @ Q @ np.linalg.solve(Zi, w)
 ```
 If I want it to broadcast I'd also have to replace `T` with `swapaxes(-2, -1)`.
 
-Using this package, I can write it as
+Using this package, however, I can write it as
 ```python
+Zi = ev @ xi - W
 A = xi @ Zi.inv @ Q @ (Zi.inv @ w)
 # or even
 Z = (ev @ xi - W).inv
@@ -106,12 +101,15 @@ reasons:
 
 ## Requirements
 
-* Python 3.7
-* Numpy 1.16
-* C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
-(see [below](#building-the-cpython-modules))
+* [Python 3.7](https://docs.python.org/3/)
+* [Numpy 1.16](https://numpy.org/doc/stable/index.html)
 * BLAS/Lapack distribution that was present when the binaries were built
+* [to build] C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
+([see below](#building-the-cpython-modules))
+* [to build] [Setuptools v41.0](https://setuptools.readthedocs.io) (recommended).
+* [to test] [Hypothesis 5.8](https://hypothesis.readthedocs.io).
 
+The version numbers above are minimum requirements only.
 Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability.
 
 ## Classes
@@ -122,20 +120,22 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
     for dealing with stacks of vectors and scalars.
 * `invarray`:
     Performs exact matrix division when it is matrix multiplied (@).
-    Returned by `lnarray.inv`. It calls `solve` behind the scenes.
-    Does not actually invert the matrix unless it is explicitly called.
+    Returned by `lnarray.inv`.
+    Does not actually invert the matrix unless it is explicitly called,
+    it calls `solve` behind the scenes instead.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of an `invarray`
-    object will affect the original `lnarray` object and vice-versa.
+    object will affect the original `lnarray` object, and *vice versa*.
     I think it is best not to store these objects in variables, and call on
     `lnarray.inv` on the rhs instead.
 * `pinvarray`:
     Performs least-squares matrix division when it is matrix multiplied (@).
-    Returned by `lnarray.pinv`. It calls `lstsq` behind the scenes.
-    Does not actually pseudoinvert the matrix unless it is explicitly called.
+    Returned by `lnarray.pinv`. 
+    Does not actually pseudoinvert the matrix unless it is explicitly called,
+    it calls `lstsq` behind the scenes instead.
     Other operations, such as addition are not defined. This object contains a
     reference to the original array, so in place modifications of a `pinvarray`
-    object will affect the original `lnarray` object and vice-versa.
+    object will affect the original `lnarray` object, and *vice versa*.
     I think it is best not to store these objects in variables, and call on
     `lnarray.pinv` on the rhs instead.
 
@@ -143,7 +143,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.<sup>[1]</sup>
+    Alias for `numpy.matmul`.[^1](#footnotes)
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
@@ -237,7 +237,7 @@ The following are not defined:
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    This is an alias for `numpy.matmul`
+    This is an alias for `numpy.matmul`.[^1](#footnotes)
 * `gufuncs.solve`:
     These are literally the same as the function above.
 * `gufuncs.rsolve`:
@@ -352,12 +352,10 @@ Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
 ```
-([see here](https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl)
-under Uninstalling MKL).
+([see here under Uninstalling MKL][uninstall-MKL]).
 
 If your BLAS/Lapack distribution is somewhere `numpy` isn't expecting, you can
-provide directions in a
-[site.cfg file](https://github.com/numpy/numpy/blob/master/site.cfg.example).
+provide directions in a [site.cfg file].
 
 Once you have all of the above, you can build the C modules in-place:
 ```
@@ -374,30 +372,49 @@ If you have `setuptools`, you can also do:
 this builds it in-place and creates an `.egg-link` file to make it available
 system-wide.
 
-Note: if you update to a new version of `numpy`, you might need to rebuild
+Note: if you update to a new version of `python` or `numpy`, you might need to rebuild
 the C modules.
 
 ## Running unit tests
 
-You can test the build process and installation by running the unit tests.
-Execute this command in the folder containing this file:
+You can test the build process and installation by running the unit tests 
+(which require [the `hypothesis` package](https://hypothesis.readthedocs.io)).
+Execute any of the following commands in the folder containing this file:
 ```
+> python -m tests
 > python -m unittest
-```
-or
-```
 > python -m unittest discover -s <folder/containing/README.md>
 ```
-You can expect occassional failures when using single precision floats.
-The failure messages would have `sctype='f'` or `sctype='F'` in the titles and 
-the mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
+You can customise which tests are run and how the results are displayed using 
+[the command line options for the `unittest` module][unittest-cli].
 
-You can customise which tests are run and how the results are displayed
-using the command line options for the 
-[unittest module](https://docs.python.org/3/library/unittest.html#command-line-interface).
+You can expect occassional failures when using single precision floats.
+The 'falsifying example' produced by `hypothesis` would have `dtype=numpy.float32` 
+or `dtype=numpy.complex64`. The mismatch displayed by `unittest` should be small, 
+e.g. `Largest mismatch: 2.1e-5 at (2, 7) with dtype=float32`.
+
+Because the underlying BLAS/LAPACK routines raise runtime warnings when passed 
+`inf` or `nan`, these values are excluded from tests. 
+Most of these functions return all `nan`s in such cases.
 
 ## To dos
 
 * SVD based versions of `lstsq_qr` and `qr_lstsq`
 (and a QR based version of `lstsq` for completeness).
-* Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors.
+* Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
+* Write an `__array_function__` method.
+
+#
+
+### Footnotes
+
+1. This package previously used a custom `gufunc` for `matmul`, 
+    but as of v1.16 `NumPy` does this so we use that instead.
+
+[dont-invert-matrix]: <https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/> "Blog post about matrix inversion."
+
+[uninstall-mkl]: <https://docs.continuum.io/mkl-optimizations/#uninstalling-mkl> "Uninstall MKL to use OpenBLAS."
+
+[site.cfg file]: <https://github.com/numpy/numpy/blob/master/site.cfg.example> "Example site.cfg file."
+
+[unittest-cli]: <https://docs.python.org/3/library/unittest.html#command-line-interface> "Unittest command line options."

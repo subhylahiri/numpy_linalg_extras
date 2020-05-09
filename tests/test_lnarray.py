@@ -14,6 +14,7 @@ from numpy_linalg.testing import main, TestCaseNumpy
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
+np.set_printoptions(precision=2, threshold=50, edgeitems=2)
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================
@@ -224,10 +225,9 @@ class TestPinvarray(TestCaseNumpy):
         with self.assertRaises(TypeError):
             gf.rsolve(m_sb, m_bs.pinv)
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a)', None))
     def test_invarray_in_functions(self, arrays):
-        m_ss, m_bs, m_sb = view_as(*arrays)
-        mini = m_bs[..., :m_ss.shape[-1], :]
+        m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
@@ -256,10 +256,9 @@ class TestPinvarray(TestCaseNumpy):
         self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss.inv).inv,
                                  mini @ m_ss)
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a)', None))
     def test_bad_p_invarray_combos_in_functions(self, arrays):
-        m_ss, m_bs, m_sb = view_as(*arrays)
-        mini = m_bs[..., :m_ss.shape[-1], :]
+        m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
 
         with self.assertRaises(TypeError):
@@ -283,10 +282,9 @@ class TestPinvarray(TestCaseNumpy):
         with self.assertRaises(TypeError):
             la.rsolve(mini.inv, m_sb.pinv)
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a)', None))
     def test_good_p_invarray_combos_in_lstsq(self, arrays):
-        m_ss, m_bs, m_sb = view_as(*arrays)
-        mini = m_bs[..., :m_ss.shape[-1], :]
+        m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
@@ -310,13 +308,12 @@ class TestPinvarray(TestCaseNumpy):
         self.assertArrayAllClose(la.rlstsq(m_sb.pinv, m_ss.inv),
                                  la.lstsq(m_sb, m_ss))
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b)', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a)', None))
     def test_good_p_invarray_combos_in_solve(self, arrays):
-        m_ss, m_bs, m_sb = view_as(*arrays)
-        mini = m_bs[..., :m_ss.shape[-1], :]
+        m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
-        # hy.assume(hn.all_non_singular(mini))
+        hy.assume(hn.all_non_singular(mini))
         # hy.assume(hn.all_full_rank(m_bs))
         # hy.assume(hn.all_full_rank(m_sb))
 
@@ -330,7 +327,7 @@ class TestPinvarray(TestCaseNumpy):
         m_sb, high, m_bs, scal = view_as(*arrays)
         scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_full_rank(m_bs))
 
         self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high))
@@ -357,13 +354,12 @@ class TestPinvarray(TestCaseNumpy):
         m_bs_p *= 2
         self.assertArrayAllClose(m_bs, told / 2)
 
-    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),()', None))
+    @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a),()', None))
     def test_invarray_operators(self, arrays):
-        m_ss, m_bs, m_sb, scal = view_as(*arrays)
+        m_ss, m_bs, m_sb, mini, scal = view_as(*arrays)
         scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
-        mini = m_bs[..., :m_ss.shape[-1], :]
-        hy.assume(hn.tall(m_bs))
+        # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
 

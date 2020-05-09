@@ -17,6 +17,7 @@ errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
+np.set_printoptions(precision=2, threshold=50, edgeitems=2)
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv']
 # =============================================================================

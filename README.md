@@ -381,7 +381,8 @@ the C modules.
 
 ## Running unit tests
 
-You can test the build process and installation by running the unit tests (which require [the `hypothesis` package](https://hypothesis.readthedocs.io)).
+You can test the build process and installation by running the unit tests 
+(which require [the `hypothesis` package](https://hypothesis.readthedocs.io)).
 Execute any of the following commands in the folder containing this file:
 ```
 > python -m tests
@@ -393,8 +394,8 @@ You can customise which tests are run and how the results are displayed using
 
 You can expect occassional failures when using single precision floats.
 The 'falsifying example' produced by `hypothesis` would have `dtype=numpy.float32` 
-or `dtype=numpy.complex64`, as would the failure message produced by `unittest`.
-The mismatch displayed should be small, e.g. `Should be zero: 2.1e-5 at (2, 7)`.
+or `dtype=numpy.complex64`. The mismatch displayed by `unittest` should be small, 
+e.g. `Largest mismatch: 2.1e-5 at (2, 7) with dtype=float32`.
 
 Because the underlying BLAS/LAPACK routines raise runtime warnings when passed 
 `inf` or `nan`, these values are excluded from tests. 
@@ -404,7 +405,8 @@ Most of these functions return all `nan`s in such cases.
 
 * SVD based versions of `lstsq_qr` and `qr_lstsq`
 (and a QR based version of `lstsq` for completeness).
-* Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors.
+* Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
+* Write an `__array_function__` method.
 
 #
 

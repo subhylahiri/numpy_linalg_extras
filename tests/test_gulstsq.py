@@ -22,6 +22,7 @@ hy.settings.register_profile("slow",
 hy.settings.load_profile('slow')
 qr_funcs = hy.strategies.sampled_from([gfl.lstsq_qrm, gfl.lstsq_qrn])
 rqr_funcs = hy.strategies.sampled_from([gfl.rlstsq_qrm, gfl.rlstsq_qrn])
+np.set_printoptions(precision=2, threshold=50, edgeitems=2)
 # =============================================================================
 __all__ = ['TestLstsqShape', 'TestLstsqVectors', 'TestLstsqVal']
 # =============================================================================

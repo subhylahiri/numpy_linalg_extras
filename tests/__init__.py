@@ -3,10 +3,10 @@
 """
 import os
 from numpy_linalg.testing import load_tests_helper
-from . import (test_gufunc, test_gusolve, test_gulstsq, test_gulqr,
+from . import (test_gufunc, test_gulusolve, test_guqrlqpinv, test_guqrlstsq,
                test_linalg, test_lnarray)
 
-assert any((True, test_gufunc, test_gusolve, test_gulstsq, test_gulqr,
+assert any((True, test_gufunc, test_gulusolve, test_guqrlqpinv, test_guqrlstsq,
             test_linalg, test_lnarray))
 
 

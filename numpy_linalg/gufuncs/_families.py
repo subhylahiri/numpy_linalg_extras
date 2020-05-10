@@ -33,6 +33,7 @@ __all__ = [
     'qr_lstsq_family',
     'truediv_family',
 ]
+from typing import List, Tuple, Dict, Set, Optional
 import itertools as _it
 import numpy as _np
 from numpy import matmul
@@ -42,6 +43,9 @@ from . import _gufuncs_lu_solve as _gls
 from . import _gufuncs_qr_lstsq as _gql
 
 assert norm
+UFMap = Tuple[Tuple[Optional[_np.ufunc], _np.ufunc],
+              Tuple[_np.ufunc, Optional[_np.ufunc]]]
+InvUFMap = Dict[_np.ufunc, Tuple[bool, bool]]
 # =============================================================================
 # Categories of binary operators
 # =============================================================================
@@ -49,20 +53,20 @@ assert norm
 # maps Tuple[bool] (left, right) -> gufunc
 # if left, 1st argument of gufunc is 'inverted'
 # if right, 2nd argument of gufunc is 'inverted'
-solve_family = ((matmul, _gls.rsolve), (_gls.solve, rmatmul))
-solve_lu_family = ((matmul, _gls.rsolve_lu), (_gls.solve_lu, rmatmul))
-lu_solve_family = ((matmul, _gls.rlu_solve), (_gls.lu_solve, rmatmul))
-lstsq_family = ((matmul, _gql.rlstsq), (_gql.lstsq, None))
-lstsq_qrm_family = ((matmul, _gql.rlstsq_qrm), (_gql.lstsq_qrm, None))
-lstsq_qrn_family = ((matmul, _gql.rlstsq_qrn), (_gql.lstsq_qrn, None))
-qr_lstsq_family = ((matmul, _gql.rqr_lstsq), (_gql.qr_lstsq, None))
+solve_family: UFMap = ((matmul, _gls.rsolve), (_gls.solve, rmatmul))
+solve_lu_family: UFMap = ((matmul, _gls.rsolve_lu), (_gls.solve_lu, rmatmul))
+lu_solve_family: UFMap = ((matmul, _gls.rlu_solve), (_gls.lu_solve, rmatmul))
+lstsq_family: UFMap = ((matmul, _gql.rlstsq), (_gql.lstsq, None))
+lstsq_qrm_family: UFMap = ((matmul, _gql.rlstsq_qrm), (_gql.lstsq_qrm, None))
+lstsq_qrn_family: UFMap = ((matmul, _gql.rlstsq_qrn), (_gql.lstsq_qrn, None))
+qr_lstsq_family: UFMap = ((matmul, _gql.rqr_lstsq), (_gql.qr_lstsq, None))
 
-_solve_families = [
+_solve_families: List[UFMap] = [
     solve_family,
     solve_lu_family,
     lu_solve_family,
 ]
-_lstsq_families = [
+_lstsq_families: List[UFMap] = [
     lstsq_family,
     lstsq_qrm_family,
     lstsq_qrn_family,
@@ -72,18 +76,18 @@ _lstsq_families = [
 # maps gufunc -> (left, right) Tuple[bool]
 # if left, 1st argument of gufunc is 'inverted'
 # if right, 2nd argument of gufunc is 'inverted'
-inverse_arguments = {}
-super_families = {}
+inverse_arguments: InvUFMap = {}
+super_families: Dict[str, Set[_np.ufunc]] = {}
 
 # backwards maps Tuple[bool] (left, right) -> ufunc
 # if left, *2nd* argument of ufunc is a *numerator*
 # if right, *1st* argument of ufunc is a *numerator*
-truediv_family = ((None, _np.true_divide), (rtrue_divide, _np.multiply))
+truediv_family: UFMap = ((None, _np.true_divide), (rtrue_divide, _np.multiply))
 # backwards maps ufunc -> (left, right) Tuple[bool]
-inverse_scalar_arguments = {}
+inverse_scalar_arguments: InvUFMap = {}
 
 
-def _add_family(inv_arg_dict, family):
+def _add_family(inv_arg_dict: InvUFMap, family: UFMap):
     """Add a new family to inverse-argument dict
     """
     bools = (False, True)
@@ -94,7 +98,8 @@ def _add_family(inv_arg_dict, family):
     # NOTE: rmatmul doesn't fit the pattern, needs special handling
 
 
-def _add_family_set(inv_arg_dict, func_set, *families):
+def _add_family_set(inv_arg_dict: InvUFMap, func_set: Set[_np.ufunc],
+                    *families: UFMap):
     """create a set of families
     """
     for family in families:
@@ -102,7 +107,7 @@ def _add_family_set(inv_arg_dict, func_set, *families):
         func_set.update(y for x in family for y in x)
 
 
-def add_to_super_family(name, *families):
+def add_to_super_family(name: str, *families: UFMap):
     """Add a gufunc family to a super-family
 
     For special handling by (p)invarrays
@@ -110,20 +115,20 @@ def add_to_super_family(name, *families):
     _add_family_set(inverse_arguments, super_families[name], *families)
 
 
-def add_new_super_family(name, *families):
+def add_new_super_family(name: str, *families: UFMap):
     """Create a new super-family of gufunc families
     """
     super_families[name] = set()
     add_to_super_family(name, *families)
 
 
-def same_family(ufunc_in, ufunc_out) -> bool:
+def same_family(ufunc_in: _np.ufunc, ufunc_out: _np.ufunc) -> bool:
     """Are the two ufuncs from the same super-family?
     """
     return any({ufunc_in, ufunc_out} <= x for x in super_families.values())
 
 
-def add_scalar_family(*families):
+def add_scalar_family(*families: UFMap):
     """Add a scalar ufunc family
 
     For special handling by (p)invarrays

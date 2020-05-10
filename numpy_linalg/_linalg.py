@@ -131,7 +131,7 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     return expand_dims(expand_dims(arr, axes_sort[0]), *axes_sort[1:])
 
 
-def transpose(a: np.ndarray) -> np.ndarray:
+def transpose(arr: np.ndarray) -> np.ndarray:
     """Transpose last two indices.
 
     Transposing last two indices fits better with `np.linalg`'s broadcasting,
@@ -139,18 +139,18 @@ def transpose(a: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    a : np.ndarray, (..., M, N)
+    arr : np.ndarray, (..., M, N)
 
     Returns
     -------
     transposed : np.ndarray, (..., N, M)
     """
-    if a.ndim < 2:
-        return a
-    return nla.transpose(a)
+    if arr.ndim < 2:
+        return arr
+    return nla.transpose(arr)
 
 
-def dagger(a: np.ndarray) -> np.ndarray:
+def dagger(arr: np.ndarray) -> np.ndarray:
     """Hermitian conjugate over last two indices.
 
     Transposing last two indices fits better with `np.linalg`'s broadcasting,
@@ -158,13 +158,13 @@ def dagger(a: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    a : np.ndarray, (..., M, N)
+    arr : np.ndarray, (..., M, N)
 
     Returns
     -------
     conjugated : np.ndarray, (..., N, M)
     """
-    return transpose(a.conj())
+    return transpose(arr.conj())
 
 
 def col(arr: np.ndarray) -> np.ndarray:
@@ -230,86 +230,86 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # rlstsq = gf.vec.vec_wrap(gf.rlstsq)
 
 
-def matldiv(x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:
+def matldiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
     """Matrix division from left.
 
-    Computes :math:`z = x \\ y = x^{-1} y` for invertible `x`, or :math:`x^+ y`
-    for non-invertible `x`.
+    Computes :math:`result = lft \\ rgt = lft^{-1} rgt` for invertible `lft`,
+    or :math:`lft^+ rgt` for non-invertible `lft`.
     Pseudo-inverse version uses `lstsq`.
     Full inverse version uses `solve`.
     Both versions broadcast using gufunc machinery.
 
     Parameters
     ----------
-    x : (..., M, N) array_like
+    lft : (..., M, N) array_like
         Divisor or Denominator.
-    y : {(M,), (..., M, K)} array_like
+    rgt : {(M,), (..., M, K)} array_like
         Dividend or Numerator.
     out : {(N,), (..., N, K)} np.ndarray
         array to store the output in.
 
     Returns
     -------
-    z : {(N,), (..., N, K)} np.ndarray
-        Quotient. It has the same type as `x` or `y`.
+    result : {(N,), (..., N, K)} np.ndarray
+        Quotient. It has the same type as `lft` or `rgt`.
 
     Raises
     ------
     LinAlgError
-        If `x` is not invertible and `lstsq` doesn't converge.
+        If `lft` is not invertible and `lstsq` doesn't converge.
 
     See also
     --------
     `np.linalg.solve` : performs exact matrix division.
     `np.linalg.lstsq` : performs least-square matrix division.
     """
-    if x.ndim > 1 and x.shape[-1] == x.shape[-2]:
+    if lft.ndim > 1 and lft.shape[-1] == lft.shape[-2]:
         try:
-            return solve(x, y, *args, **kwargs)
+            return solve(lft, rgt, *args, **kwargs)
         except (np.linalg.LinAlgError, ValueError):
             pass
-    return lstsq(x, y, *args, **kwargs)
+    return lstsq(lft, rgt, *args, **kwargs)
 
 
-def matrdiv(x: np.ndarray, y: np.ndarray, *args, **kwargs) -> np.ndarray:
+def matrdiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
     """Matrix division from right.
 
-    Computes :math:`z = x / y = x y^{-1}` for invertible `y`, or :math:`x y^+`
-    for non-invertible `y`.
+    Computes :math:`result = lft / rgt = lft rgt^{-1}` for invertible `rgt`,
+    or :math:`lft rgt^+` for non-invertible `rgt`.
     Pseudo-inverse version uses `rlstsq`.
     Full inverse version uses `rsolve`.
     Both versions broadcast using gufunc machinery.
 
     Parameters
     ----------
-    x : {(M,), (..., K, M)} array_like
+    lft : {(M,), (..., K, M)} array_like
         Dividend or Numerator.
-    y : (..., N, M) array_like
+    rgt : (..., N, M) array_like
         Divisor or Denominator.
     out : {(N,), (..., K, N)} np.ndarray
         array to store the output in.
 
     Returns
     -------
-    z : {(N,), (..., K, N)} np.ndarray
-        Quotient. It has the same type as `x` or `y`.
+    result : {(N,), (..., K, N)} np.ndarray
+        Quotient. It has the same type as `lft` or `rgt`.
 
     Raises
     ------
     LinAlgError
-        If `x` is not invertible and `lstsq` doesn't converge.
+        If `lft` is not invertible and `lstsq` doesn't converge.
 
     See also
     --------
     `np.linalg.solve` : performs exact matrix division.
     `np.linalg.lstsq` : performs least-square matrix division.
     """
-    if y.ndim > 1 and y.shape[-1] == y.shape[-2]:
+    if rgt.ndim > 1 and rgt.shape[-1] == rgt.shape[-2]:
         try:
-            return rsolve(x, y, *args, **kwargs)
+            return rsolve(lft, rgt, *args, **kwargs)
         except (np.linalg.LinAlgError, ValueError):
             pass
-    return rlstsq(x, y, *args, **kwargs)
+    return rlstsq(lft, rgt, *args, **kwargs)
 
 
 # =============================================================================
@@ -323,7 +323,7 @@ qr_modes = {'reduced': (gf.qr_m, gf.qr_n),
             'raw': (gf.qr_rawm, gf.qr_rawn)}
 
 
-def qr(x: np.ndarray, mode: str = 'reduced', *args,
+def qr(arr: np.ndarray, mode: str = 'reduced', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """QR decomposition.
 
@@ -358,9 +358,9 @@ def qr(x: np.ndarray, mode: str = 'reduced', *args,
     if mode.lower() not in qr_modes.keys():
         raise ValueError('Modes known to qr: reduced, complete, r, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = qr_modes[mode.lower()][x.shape[-2] > x.shape[-1]]
+    ufunc = qr_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
     gf.make_errobj("QR failed: rank deficient?", kwds)
-    return ufunc(x, *args, **kwds)
+    return ufunc(arr, *args, **kwds)
 
 
 lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
@@ -369,7 +369,7 @@ lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
             'raw': (gf.lq_rawm, gf.lq_rawn)}
 
 
-def lq(x: np.ndarray, mode: str = 'reduced', *args,
+def lq(arr: np.ndarray, mode: str = 'reduced', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ decomposition.
 
@@ -404,12 +404,12 @@ def lq(x: np.ndarray, mode: str = 'reduced', *args,
     if mode.lower() not in lq_modes.keys():
         raise ValueError('Modes known to lq: reduced, complete, l, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = lq_modes[mode.lower()][x.shape[-2] > x.shape[-1]]
+    ufunc = lq_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
     gf.make_errobj("LQ failed: rank deficient?", kwds)
-    return ufunc(x, *args, **kwds)
+    return ufunc(arr, *args, **kwds)
 
 
-def lqr(x: np.ndarray, mode: str = 'reduced', *args,
+def lqr(arr: np.ndarray, mode: str = 'reduced', *args,
         **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ/QR decomposition.
 
@@ -445,20 +445,20 @@ def lqr(x: np.ndarray, mode: str = 'reduced', *args,
         Scaling factors for Householder reflectors. The unit normal to the
         reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
     """
-    if x.shape[-2] < x.shape[-1]:
+    if arr.shape[-2] < arr.shape[-1]:
         if mode.lower() == 'r':
-            return lq(x, 'l', *args, **kwds)
-        return lq(x, mode, *args, **kwds)
+            return lq(arr, 'l', *args, **kwds)
+        return lq(arr, mode, *args, **kwds)
     if mode.lower() == 'l':
-        return qr(x, 'r', *args, **kwds)
-    return qr(x, mode, *args, **kwds)
+        return qr(arr, 'r', *args, **kwds)
+    return qr(arr, mode, *args, **kwds)
 
 
 lu_modes = {'separate': (gf.lu_m, gf.lu_n),
             'raw': (gf.lu_rawm, gf.lu_rawn)}
 
 
-def lu(x: np.ndarray, mode: str = 'separate', *args,
+def lu(arr: np.ndarray, mode: str = 'separate', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LU decomposition.
 
@@ -491,6 +491,6 @@ def lu(x: np.ndarray, mode: str = 'separate', *args,
     if mode not in lu_modes.keys():
         raise ValueError('Modes known to lu: separate, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = lu_modes[mode][x.shape[-2] > x.shape[-1]]
+    ufunc = lu_modes[mode][arr.shape[-2] > arr.shape[-1]]
     gf.make_errobj("LU failed: rank deficient?", kwds)
-    return ufunc(x, *args, **kwds)
+    return ufunc(arr, *args, **kwds)

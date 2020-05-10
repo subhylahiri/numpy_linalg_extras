@@ -24,7 +24,7 @@ LNArrayOperatorsMixin
     Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
     from here to define @ operators. Deprecated.
 """
-from typing import Tuple
+from typing import Tuple, Optional, Dict, Any
 import numpy as np
 import numpy.lib.mixins as mix
 from numpy.lib.mixins import _numeric_methods
@@ -37,20 +37,20 @@ with np.errstate(invalid='call'):
     _ERROBJ = np.geterrobj()[:2]
 
 
-def make_errobj(msg, kwdict=None):
+def make_errobj(msg: str, kwdict: Optional[Dict[str, Any]] = None):
     """Create an error handler list
 
     Parameters
     ----------
-    msg: str
+    msg : str
         Message for ``LinAlgError``
-    kwdict: Optional[Dict[str, Any]]
+    kwdict : Optional[Dict[str, Any]]
         Dictionary of nameword arguments to which we add ``extobj``.
         If it already has an extobj, it is left unchanged.
 
     Returns
     -------
-    extobj
+    extobj : List
         List of [buffer size, error mask, error handler].
         Error mask corresponds to ``invalid='raise'``.
         Error handler raises ``LinAlgError`` with message ``msg``.
@@ -62,8 +62,8 @@ def make_errobj(msg, kwdict=None):
         raise np.linalg.LinAlgError(msg)
 
     extobj.append(callback)
-    if kwdict is not None and not kwdict.get('extobj'):
-        kwdict['extobj'] = extobj
+    if kwdict is not None:
+        kwdict.setdefault('extobj', extobj)
     return extobj
 
 
@@ -84,8 +84,8 @@ def unbroadcast_factors(original, *factors):
         broadcast dimensions).
     *factors : np.ndarray
         Matrix factors returned by gufunc. Assumes that last two axes of
-        `factors[0]` are cores dimensions (unless `original` is one-dimensional,
-        in which case only the last axis is assumed cores) and any earlier axes
+        `factors[0]` are core dimensions (unless `original` is one-dimensional,
+        in which case only the last axis is assumed core) and any earlier axes
         are broadcast dimensions. All subsequent factors are assumed to have
         the same broadcast dimensions.
     Returns
@@ -207,7 +207,7 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
         for name, siz in zip(sig, core):
             sizes.setdefault(name, siz)
             if sizes[name] != siz:
-                raise ValueError(f'Array mismatch in its core dimension: {msg}')
+                raise ValueError('Array mismatch in its core dimension: ' + msg)
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:

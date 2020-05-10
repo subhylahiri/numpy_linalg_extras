@@ -118,8 +118,8 @@ assert any((True, norm, rtrue_divide, matmul, rmatmul))
 assert any((True, make_errobj, unbroadcast_factors))
 assert any((True, MatmulOperatorsMixin, LNArrayOperatorsMixin))
 assert any((True, return_shape, array_return_shape))
-assert any((lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv,
-            solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve))
+assert any((True, solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve,
+            lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv))
 assert any((
     True, qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
     lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,

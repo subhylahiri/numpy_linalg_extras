@@ -1,7 +1,7 @@
 from numpy import ufunc
 
 lu_m: ufunc
-lu_m.__doc__ = """LU decomposition.
+"""LU decomposition.
 
 Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,
 `L` is lower triangular with ones on the diagonal and
@@ -29,7 +29,7 @@ You will merely waste memory for the unused elements of `L`, `U`, and `IP`.
 """
 
 lu_n: ufunc
-lu_n.__doc__ = """LU decomposition.
+"""LU decomposition.
 
 Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,
 `L` is lower triangular with ones on the diagonal and
@@ -57,7 +57,7 @@ You will merely waste memory for the unused elements of `L`, `U`, and `IP`.
 """
 
 lu_rawm: ufunc
-lu_rawm.__doc__ = """LU decomposition.
+"""LU decomposition.
 
 Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,
 `L` is lower triangular with ones on the diagonal and
@@ -87,7 +87,7 @@ You will merely waste memory from keeping unused elements of `IP`.
 """
 
 lu_rawn: ufunc
-lu_rawn.__doc__ = """LU decomposition.
+"""LU decomposition.
 
 Write matrix `A` as `A = PLU`, where  `P` is a permutation matrix,
 `L` is lower triangular with ones on the diagonal and
@@ -117,7 +117,7 @@ You will merely waste memory from keeping unused elements of `IP`.
 """
 
 pivot: ufunc
-pivot.__doc__ = """Perform row pivoting.
+"""Perform row pivoting.
 
 Permute the rows of `A` according to pivot indices, `IP`.
 If `IP[I] = J`, rows `I` and `J` will be swapped,
@@ -137,7 +137,7 @@ AP: ndarray (...,M,N)
 """
 
 rpivot: ufunc
-rpivot.__doc__ = """Undo row pivoting.
+"""Undo row pivoting.
 
 Permute the rows of `A` according to pivot indices, `IP`.
 If `IP[I] = J`, rows `I` and `J` will be swapped,
@@ -157,7 +157,7 @@ A: ndarray (...,M,N)
 """
 
 inv: ufunc
-inv.__doc__ = """Matrix inverse.
+"""Matrix inverse.
 
 Find the matrix multiplicative inverse of `A`.
 
@@ -173,7 +173,7 @@ AI: ndarray (...,N,M)
 """
 
 inv_lu: ufunc
-inv_lu.__doc__ = """Matrix inverse.
+"""Matrix inverse.
 
 Find the matrix multiplicative inverse of `A`.
 This version returns the LU factors of `A` for future use.
@@ -201,7 +201,7 @@ lu in 'raw' mode.
 """
 
 lu_inv: ufunc
-lu_inv.__doc__ = """Matrix inverse.
+"""Matrix inverse.
 
 Find the matrix multiplicative inverse of `A`.
 This version uses the LU factors of `A` from previous use of `inv_lu`
@@ -228,7 +228,7 @@ lu in 'raw' mode."
 """
 
 solve: ufunc
-solve.__doc__ = """Solve linear system.
+"""Solve linear system.
 
 Solve the equation `AX = B` for `X`.
 
@@ -249,7 +249,7 @@ X: ndarray (...,N,NRHS) or (N,)
 """
 
 rsolve: ufunc
-rsolve.__doc__ = """Solve reversed linear system.
+"""Solve reversed linear system.
 
 Solve the equation `A = XB` for `X`.
 
@@ -270,7 +270,7 @@ X: ndarray (...,NRHS,N) or (N,)
 """
 
 solve_lu: ufunc
-solve_lu.__doc__ = """Solve linear system.
+"""Solve linear system.
 
 Solve  equation `AX = B` for `X`.
 This version also returns the LU factors of `A` for future use.
@@ -300,7 +300,7 @@ lu in 'raw' mode.
 """
 
 rsolve_lu: ufunc
-rsolve_lu.__doc__ = """Solve reversed linear system.
+"""Solve reversed linear system.
 
 Solve the equation `A = XB` for `X`.
 This version also returns the LU factors of `B` for future use.
@@ -330,7 +330,7 @@ lu in 'raw' mode.
 """
 
 lu_solve: ufunc
-lu_solve.__doc__ = """Solve linear system.
+"""Solve linear system.
 
 Solve  equation `AX = B` for `X`.
 This version uses the LU factors of `A` from earlier use of `(r)solve_lu`.
@@ -358,7 +358,7 @@ lu in 'raw' mode.
 """
 
 rlu_solve: ufunc
-rlu_solve.__doc__ = """Solve reversed linear system.
+"""Solve reversed linear system.
 
 Solve the equation `A = XB` for `X`.
 This version uses the LU factors of `B` from earlier use of `(r)solve_lu`.
@@ -384,4 +384,3 @@ See Also
 --------
 lu in 'raw' mode.
 """
-

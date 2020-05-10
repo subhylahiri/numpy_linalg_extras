@@ -114,13 +114,14 @@ __version__ = _version("0.2.0", _gufuncs_blas, _gufuncs_cloop,
                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
 
 # fool pyflakes
-assert any((norm, rtrue_divide, matmul, rmatmul))
-assert any((make_errobj, unbroadcast_factors))
-assert any((MatmulOperatorsMixin, LNArrayOperatorsMixin))
+assert any((True, norm, rtrue_divide, matmul, rmatmul))
+assert any((True, make_errobj, unbroadcast_factors))
+assert any((True, MatmulOperatorsMixin, LNArrayOperatorsMixin))
+assert any((True, return_shape, array_return_shape))
 assert any((lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv,
             solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve))
 assert any((
-    qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
+    True, qr_m, qr_n, qr_rm, qr_rn, qr_rawm, qr_rawn,
     lq_m, lq_n, lq_lm, lq_ln, lq_rawm, lq_rawn,
     lstsq, rlstsq, lstsq_qrm, lstsq_qrn, rlstsq_qrm, rlstsq_qrn,
     qr_lstsq, rqr_lstsq, pinv, pinv_qrm, pinv_qrn, qr_pinv))

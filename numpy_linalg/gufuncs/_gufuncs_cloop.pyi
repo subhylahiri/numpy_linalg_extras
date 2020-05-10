@@ -1,7 +1,7 @@
 from numpy import ufunc
 
 matmul: ufunc
-matmul.__doc__ = """Matrix-matrix product.
+matmul__doc__ = """Matrix-matrix product.
 
 .. deprecated:: 0.2.0
     This `gufunc` is no longer needed as NumPy switched to a gufunc in v1.16.
@@ -24,7 +24,7 @@ Z: ndarray (...,M,P), (...,M), (...,P) or ()
 """
 
 rmatmul: ufunc
-rmatmul.__doc__ = """Reversed matrix-matrix product.
+rmatmul__doc__ = """Reversed matrix-matrix product.
 
 Uses BLAS routine `_gemm` for acceleration.
 Does matrix-matrix, matrix-vector, vector-matrix and vector-vector versions,
@@ -44,7 +44,7 @@ Z: ndarray (...,M,P), (...,M), (...,P) or ()
 """
 
 norm: ufunc
-norm.__doc__ = """Euclidean norm of a vector.
+norm__doc__ = """Euclidean norm of a vector.
 
 Unlike `numpy.linalg.norm`, it only computes the vector 2-norm.
 
@@ -60,7 +60,7 @@ Z: float
 """
 
 rtrue_divide: ufunc
-rtrue_divide.__doc__ = """Reversed division Z = X \\ Y.
+rtrue_divide__doc__ = """Reversed division Z = X \\ Y.
 
 Parameters
 -----------
@@ -74,4 +74,3 @@ Returns
 Z: ndarray (...)
     Result of division.");
 """
-

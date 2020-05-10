@@ -1,7 +1,7 @@
 from numpy import ufunc
 
 qr_m: ufunc
-qr_m.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 `K` = `M` or `N`, depending on which of `qr_m` or `qr_n` was called.
@@ -21,7 +21,7 @@ R: ndarray (...,K,N)
 """
 
 qr_n: ufunc
-qr_n.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 `K` = `M` or `N`, depending on which of `qr_m` or `qr_n` was called.
@@ -41,7 +41,7 @@ R: ndarray (...,K,N)
 """
 
 qr_rm: ufunc
-qr_rm.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 This version only returns `R`.
@@ -60,7 +60,7 @@ R: ndarray (...,K,N)
 """
 
 qr_rn: ufunc
-qr_rn.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 This version only returns `R`.
@@ -79,7 +79,7 @@ R: ndarray (...,K,N)
 """
 
 qr_rawm: ufunc
-qr_rawm.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 This version returns `R`, the Householder reflectors, `v`,
@@ -106,7 +106,7 @@ You will merely waste memory from keeping unused elements of `TAU`.
 """
 
 qr_rawn: ufunc
-qr_rawn.__doc__ = """QR decomposition.
+"""QR decomposition.
 
 Factor a matrix as `A = QR` with `Q` orthogonal and `R` upper-triangular.
 This version returns `R`, the Householder reflectors, `v`,
@@ -133,7 +133,7 @@ You will merely waste memory from keeping unused elements of `TAU`.
 """
 
 lq_m: ufunc
-lq_m.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 `K` = `M` or `N`, depending on which of `lq_m` or `lq_n` was called.
@@ -153,7 +153,7 @@ Q: ndarray (...,K,N)
 """
 
 lq_n: ufunc
-lq_n.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 `K` = `M` or `N`, depending on which of `lq_m` or `lq_n` was called.
@@ -173,7 +173,7 @@ Q: ndarray (...,K,N)
 """
 
 lq_lm: ufunc
-lq_lm.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 This version only returns `L`.
@@ -192,7 +192,7 @@ L: ndarray (...,M,K)
 """
 
 lq_ln: ufunc
-lq_ln.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 This version only returns `L`.
@@ -211,7 +211,7 @@ L: ndarray (...,M,K)
 """
 
 lq_rawm: ufunc
-lq_rawm.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 This version returns `L`, the Householder reflectors, `v`,
@@ -239,7 +239,7 @@ You will merely waste memory from keeping unused elements of `TAU`.
 """
 
 lq_rawn: ufunc
-lq_rawn.__doc__ = """LQ decomposition.
+"""LQ decomposition.
 
 Factor a matrix as `A = LQ` with `Q` orthogonal and `L` upper-triangular.
 This version returns `L`, the Householder reflectors, `v`,
@@ -267,7 +267,7 @@ You will merely waste memory from keeping unused elements of `TAU`.
 """
 
 lstsq: ufunc
-lstsq.__doc__ = """Least-square solution of linear system.
+"""Least-square solution of linear system.
 
 Find the least-square solution of the equation `AX = B` for `X`.
 Unlike `numpy.linalg.lstsq`, this version does not return `residuals`,
@@ -290,7 +290,7 @@ X: ndarray (...,N,NRHS), (...,N), (...,NRHS) or ()
 """
 
 rlstsq: ufunc
-rlstsq.__doc__ = """Least-square solution of reversed linear system.
+"""Least-square solution of reversed linear system.
 
 Find the least-square solution of the equation `A = XB` for `X`.
 Unlike `numpy.linalg.lstsq`, this version does not return `residuals`,
@@ -313,7 +313,7 @@ X: ndarray (...,NRHS,N), (...,N), (...,NRHS) or ()
 """
 
 lstsq_qrm: ufunc
-lstsq_qrm.__doc__ = """Least-square solution of linear system.
+"""Least-square solution of linear system.
 
 Find the least-square solution of the equation `AX = B` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -353,7 +353,7 @@ lq in 'raw' mode.
 """
 
 lstsq_qrn: ufunc
-lstsq_qrn.__doc__ = """Least-square solution of linear system.
+"""Least-square solution of linear system.
 
 Find the least-square solution of the equation `AX = B` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -393,7 +393,7 @@ lq in 'raw' mode.
 """
 
 rlstsq_qrm: ufunc
-rlstsq_qrm.__doc__ = """Least-square solution of reversed linear system.
+"""Least-square solution of reversed linear system.
 
 Find the least-square solution of the equation `A = XB` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -433,7 +433,7 @@ lq in 'raw' mode.
 """
 
 rlstsq_qrn: ufunc
-rlstsq_qrn.__doc__ = """Least-square solution of reversed linear system.
+"""Least-square solution of reversed linear system.
 
 Find the least-square solution of the equation `A = XB` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -473,7 +473,7 @@ lq in 'raw' mode.
 """
 
 qr_lstsq: ufunc
-qr_lstsq.__doc__ = """Least-square solution of linear system.
+"""Least-square solution of linear system.
 
 Find the least-square solution of the equation `AX = B` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -512,7 +512,7 @@ lq in 'raw' mode.
 """
 
 rqr_lstsq: ufunc
-rqr_lstsq.__doc__ = """Least-square solution of reversed linear system.
+"""Least-square solution of reversed linear system.
 
 Find the least-square solution of the equation `A = XB` for `X`.
 Unlike `numpy.linalg.lstsq`, this version uses QR instead of SVD, so it does
@@ -549,7 +549,7 @@ lq in 'raw' mode.
 """
 
 pinv: ufunc
-pinv.__doc__ = """Moore-Penrose pseudoinverse.
+"""Moore-Penrose pseudoinverse.
 
 Find the inverse of `A` in the space orthogonal to its null-space.
 Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does
@@ -567,7 +567,7 @@ AP: ndarray (...,N,M)
 """
 
 pinv_qrm: ufunc
-pinv_qrm.__doc__ = """Moore-Penrose pseudoinverse.
+"""Moore-Penrose pseudoinverse.
 
 Find the inverse of `A` in the space orthogonal to its null-space.
 Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does
@@ -600,7 +600,7 @@ qr in 'raw' mode.
 """
 
 pinv_qrn: ufunc
-pinv_qrn.__doc__ = """Moore-Penrose pseudoinverse.
+"""Moore-Penrose pseudoinverse.
 
 Find the inverse of `A` in the space orthogonal to its null-space.
 Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does
@@ -633,7 +633,7 @@ qr in 'raw' mode.
 """
 
 qr_pinv: ufunc
-qr_pinv.__doc__ = """Moore-Penrose pseudoinverse.
+"""Moore-Penrose pseudoinverse.
 
 Find the inverse of `A` in the space orthogonal to its null-space.
 Unlike `numpy.linalg.pinv`, this version uses QR instead of SVD, so it does
@@ -662,4 +662,3 @@ See Also
 --------
 qr in 'raw' mode.
 """
-

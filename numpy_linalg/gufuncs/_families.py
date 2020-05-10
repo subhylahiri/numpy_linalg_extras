@@ -58,15 +58,15 @@ lstsq_qrn_family = ((matmul, _gql.rlstsq_qrn), (_gql.lstsq_qrn, None))
 qr_lstsq_family = ((matmul, _gql.rqr_lstsq), (_gql.qr_lstsq, None))
 
 _solve_families = [
-        solve_family,
-        solve_lu_family,
-        lu_solve_family,
+    solve_family,
+    solve_lu_family,
+    lu_solve_family,
 ]
 _lstsq_families = [
-        lstsq_family,
-        lstsq_qrm_family,
-        lstsq_qrn_family,
-        qr_lstsq_family,
+    lstsq_family,
+    lstsq_qrm_family,
+    lstsq_qrn_family,
+    qr_lstsq_family,
 ]
 
 # maps gufunc -> (left, right) Tuple[bool]

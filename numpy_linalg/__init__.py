@@ -66,6 +66,8 @@ wrappers
     Module with functions that change function return types to `lnarray`.
 version
     Module with tools for dealing with version numbering.
+testing
+    Module with tools for writing unit tests.
 
 Examples
 --------

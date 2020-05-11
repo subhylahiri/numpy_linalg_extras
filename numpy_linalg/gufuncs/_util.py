@@ -18,6 +18,10 @@ make_errobj
     create an error handler object for use as ``extobj`` gufunc parameter.
 return_shape_mat
     Shape of result of broadcasted matrix multiplication.
+return_shape
+    Shape of result of broadcasted matrix multiplication, from shapes.
+array_return_shape
+    Shape of result of broadcasted matrix multiplication, from arrays.
 MatmulOperatorsMixin
     Mixin class that uses `matmul` from here to define @ operators. Deprecated.
 LNArrayOperatorsMixin

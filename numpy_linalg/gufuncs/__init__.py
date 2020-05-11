@@ -75,10 +75,12 @@ unbroadcast_factors
     Undo broadcasting in factors returned by gufuncs.
 make_errobj
     create an error handler object for use as ``extobj`` gufunc parameter.
-return_shape_mat
-    Shape of result of broadcasted matrix multiplication
+return_shape
+    Shape of result of broadcasted matrix operation, from shapes.
+array_return_shape
+    Shape of result of broadcasted matrix operation, from arrays.
 fam
-    Module with variables for determining the behaviour of 1D arrays,
+    Module with variables for determining the behaviour of
     `pinvarrays` and `invarrays` in linear algebraic functions:
 MatmulOperatorsMixin
     Mixin class that uses `matmul` from here to define @ operators. Deprecated.

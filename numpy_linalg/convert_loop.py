@@ -4,15 +4,37 @@
 Routine Listings
 ----------------
 conv_loop_in_attr
-    Process inputs in an __array_ufunc__ method using an attribute.
+    Process inputs in an `__array_ufunc__` method using an attribute.
 conv_loop_in_view
-    Process inputs in an __array_ufunc__ method using view method.
+    Process inputs in an `__array_ufunc__` method using a view method.
 conv_loop_out_attr
-    Process outputs in an __array_ufunc__ method using an attribute.
+    Process outputs in an `__array_ufunc__` method using an attribute.
 conv_loop_out_init
-    Process outputs in an __array_ufunc__ method using a constructor.
+    Process outputs in an `__array_ufunc__` method using a constructor.
 conv_loop_out_view
-    Process outputs in an __array_ufunc__ method using a view method.
+    Process outputs in an `__array_ufunc__` method using a view method.
+
+Converters that take a callback function as a parameter:
+
+conv_loop_input
+    Process inputs to a `ufunc`.
+conv_loop_in_out
+    Process `out` argument of a `ufunc`.
+conv_loop_out
+    Process outputs from a `ufunc`.
+
+Creators of allback functions to convert a single iput/output:
+
+prepare_via_attr
+    Create a callback to process inputs using an attribute.
+prepare_via_view
+    Create a callback to process inputs using a view method.
+restore_via_attr
+    Create a callback to process an output using an attribute.
+restore_via_init
+    Create a callback to process an output using a constructor.
+restore_via_view
+    Create a callback to process an output using a view method.
 
 Example
 -------

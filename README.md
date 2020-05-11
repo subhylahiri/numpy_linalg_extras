@@ -232,7 +232,6 @@ The following are not defined:
 >>> rsolve(invarray, pinvarray)
 ```
 
-
 ## GUfuncs
 
 The following can be found in `numpy_linalg.gufuncs`:
@@ -307,6 +306,7 @@ The following can be found in `numpy_linalg.gufuncs`:
 
 ## Wrappers
 
+These can be found in `numpy_linalg.wrappers`:
 * `wrappers.wrap_one`:
     Create version of `numpy` function with single `lnarray` output.
 * `wrappers.wrap_several`:
@@ -323,6 +323,53 @@ The following can be found in `numpy_linalg.gufuncs`:
 * `wrappers.wrap_subsome`:
     Create version of `numpy` function with some `lnarray` outputs, some
     non-array outputs, passing through subclasses.
+
+## Testing
+
+Tools for writing unit tests.
+They can be found in `numpy_linalg.testing`:
+* `testing.main`:
+    Runs unit tests when called. By default it does not sort the tests.
+* `testing.load_tests_helper`:
+    Implements the `load_tests` protocol to load tests in order of definition.
+* `testing.TestCaseNumpy`:
+    A subclass of `unittest.TestCase` with methods for testing arrays.
+    It can be used as a base class for your test cases.
+* `testing.unittest_tweaks`:
+    Module with classes related to `main` and `load_tests_helper`.
+* `testing.unittest_numpy`:
+    Module with tools for testing arrays.
+* `testing.hypothesis_numpy`:
+    Module with tools for `hypothesis` to generate examples for unit tests.
+
+## Converters
+
+Helpers for writing `__array_ufunc__` methods.
+They can be found in `numpy_linalg.convert_loop`:
+* `convert_loop.conv_loop_in_attr`:
+    Process inputs to an `__array_ufunc__` method using an attribute.
+* `convert_loop.conv_loop_in_view`:
+    Process inputs to an `__array_ufunc__` method using view method.
+* `convert_loop.conv_loop_out_attr`:
+    Process outputs to an `__array_ufunc__` method using an attribute.
+* `convert_loop.conv_loop_out_init`:
+    Process outputs from an `__array_ufunc__` method using a constructor.
+* `convert_loop.conv_loop_out_view`:
+    Process outputs from an `__array_ufunc__` method using a view method.
+
+
+## Other utilities
+
+These can be found in `numpy_linalg.gufuncs`:
+* `gufuncs.unbroadcast_factors`:
+    Undo broadcasting in factors returned by gufuncs.
+* `gufuncs.make_errobj`:
+    create an error handler object for use as ``extobj`` gufunc parameter.
+* `gufuncs.return_shape_mat`:
+    Shape of result of broadcasted matrix operation, from shapes.
+* `gufuncs.array_return_shape_mat`:
+    Shape of result of broadcasted matrix operation, from arrays.
+
 
 ## Examples
 

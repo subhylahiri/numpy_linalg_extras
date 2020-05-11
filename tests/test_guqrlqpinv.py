@@ -17,7 +17,7 @@ errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
-np.set_printoptions(precision=2, threshold=50, edgeitems=2)
+np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestQRPinvShape', 'TestQR', 'TestLQ', 'TestPinv']
 # =============================================================================
@@ -92,7 +92,8 @@ class TestQRPinvShape(TestCaseNumpy):
             gfl.pinv_qrm(m_sb), (utn.trnsp(wide), utn.trnsp(wide), wide[:-1]))
         # with self.subTest(msg='tall,+qr'):
         self.assertArrayShapesAre(
-            gfl.pinv_qrn(m_bs), (utn.trnsp(tall), utn.trnsp(tall), utn.drop(tall)))
+            gfl.pinv_qrn(m_bs),
+            (utn.trnsp(tall), utn.trnsp(tall), utn.drop(tall)))
         # with self.subTest(msg='wide,-qr'):
         _, m_sb_f, m_sb_tau = gfl.pinv_qrm(m_sb)
         self.assertArrayShape(gfl.qr_pinv(m_sb_f, m_sb_tau), utn.trnsp(wide))

@@ -190,12 +190,12 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
     ValueError
         If `arrays.shape`s do not match signatures.
     """
-    msg = (f'Shape: {shapes}. Signature: {signature}.')
+    msg = (f'dimensions: Shape: {shapes}. Signature: {signature}.')
     sigs_in, sigs_out = _split_signature(signature)
     dims = [len(sig) for sig in sigs_in]
     broads, cores, sizes = [], [], {}
     if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
-        raise ValueError('Core array does not have enough dimensions: ' + msg)
+        raise ValueError('Core array does not have enough ' + msg)
     for shape, dim in zip(shapes, dims):
         if dim:
             broads.append(shape[:-dim])
@@ -207,7 +207,7 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
         for name, siz in zip(sig, core):
             sizes.setdefault(name, siz)
             if sizes[name] != siz:
-                raise ValueError('Array mismatch in its core dimension: ' + msg)
+                raise ValueError('Array mismatch in its core ' + msg)
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:

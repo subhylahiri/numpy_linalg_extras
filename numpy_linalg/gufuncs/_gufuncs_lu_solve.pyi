@@ -294,9 +294,16 @@ AF: ndarray (...,N,N)
 IP: ndarray[int] (...,N)
     Pivot indices from LU factoring.
 
+Notes
+-----
+`B` can cause `AF` to broadcast to have more/larger dimensions than `A`.
+This can be avoided using the `unbroadcast_factors` function
+
+
 See Also
 --------
 lu in 'raw' mode.
+unbroadcast_factors
 """
 
 rsolve_lu: ufunc
@@ -324,9 +331,15 @@ BF: ndarray (...,N,N)
 IP: ndarray[int] (...,N)
     Pivot indices from LU factoring.
 
+Notes
+-----
+`A` can cause `BF` to broadcast to have more/larger dimensions than `B`.
+This can be avoided using the `unbroadcast_factors` function
+
 See Also
 --------
 lu in 'raw' mode.
+unbroadcast_factors
 """
 
 lu_solve: ufunc

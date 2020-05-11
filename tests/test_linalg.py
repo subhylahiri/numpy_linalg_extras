@@ -18,7 +18,7 @@ errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
-np.set_printoptions(precision=2, threshold=50, edgeitems=2)
+np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestShape', 'TestValue']
 # =============================================================================
@@ -75,7 +75,7 @@ class TestShape(TestCaseNumpy):
 
         # with self.subTest('solve'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', smol, wide)
-        self.assertArrayShape(la.solve(m_ss, m_sb),expect)
+        self.assertArrayShape(la.solve(m_ss, m_sb), expect)
         self.assertArrayShape(la.solve(m_ss, v_s), smol[:-1])
         # with self.subTest('rsolve'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', tall, smol)
@@ -248,7 +248,8 @@ class TestValue(TestCaseNumpy):
         # with self.subTest('matmul'):
         self.assertArrayAllClose(la.matmul(m_bs, m_sb), gf.matmul(m_bs, m_sb))
         # with self.subTest('rmatmul'):
-        self.assertArrayAllClose(gf.rmatmul(m_bs, m_sb), gf.rmatmul(m_bs, m_sb))
+        self.assertArrayAllClose(gf.rmatmul(m_bs, m_sb),
+                                 gf.matmul(m_sb, m_bs))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_functions_solve(self, arrays):
@@ -417,7 +418,7 @@ class TestValue(TestCaseNumpy):
         lower, upper, _ = la.lu(ones_ss)
         self.assertArrayAllClose(lower @ upper, ones_ss)
         with self.assertRaisesRegex(*utn.invalid_err):
-            la.solve(ones_ss, ones_ss[...,:2])
+            la.solve(ones_ss, ones_ss[..., :2])
 
 
 # =============================================================================

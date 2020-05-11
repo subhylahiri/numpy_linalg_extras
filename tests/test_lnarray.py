@@ -3,7 +3,7 @@
 """
 import hypothesis as hy
 import numpy as np
-import numpy.linalg as npl
+import numpy.linalg as nl
 import numpy_linalg as la
 import numpy_linalg.gufuncs as gf
 import numpy_linalg.testing.unittest_numpy as utn
@@ -14,7 +14,7 @@ from numpy_linalg.testing import main, TestCaseNumpy
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
-np.set_printoptions(precision=2, threshold=50, edgeitems=2)
+np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestArray', 'TestPinvarray']
 # =============================================================================
@@ -72,9 +72,9 @@ class TestArray(TestCaseNumpy):
         self.assertIsInstance(tw_o, np.ndarray)
         self.assertIsInstance(np.matmul(m_bs, m_sb_n), np.ndarray)
         self.assertIsInstance(la.solve(m_ss, m_sb_n), la.lnarray)
-        self.assertIsInstance(npl.solve(m_ss, m_sb_n), np.ndarray)
+        self.assertIsInstance(nl.solve(m_ss, m_sb_n), np.ndarray)
         self.assertIsInstance(la.lstsq(m_bs, m_bb), la.lnarray)
-        self.assertIsInstance(npl.lstsq(m_bs_m, m_bb_m, rcond=None)[0],
+        self.assertIsInstance(nl.lstsq(m_bs_m, m_bb_m, rcond=None)[0],
                               np.ndarray)
         self.assertIsInstance(la.lu(m_ss)[0], la.lnarray)
         self.assertIsInstance(la.lu(m_bs_n)[0], np.ndarray)
@@ -84,7 +84,7 @@ class TestArray(TestCaseNumpy):
         self.assertIsInstance(la.lq(m_bs_n)[0], np.ndarray)
         self.assertIsInstance(la.lqr(m_ss)[0], la.lnarray)
         self.assertIsInstance(la.lqr(m_bs_n)[0], np.ndarray)
-        self.assertIsInstance(npl.qr(m_ss_m)[0], np.ndarray)
+        self.assertIsInstance(nl.qr(m_ss_m)[0], np.ndarray)
 
     @hy.given(hn.broadcastable('(a,b),(b,b)', 'D'))
     def test_lnarray_shape_methods(self, arrays):
@@ -132,9 +132,9 @@ class TestArray(TestCaseNumpy):
         self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
         self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
         self.assertArrayAllClose(m_bs @ vec, np.matmul(m_bs, vec))
-        self.assertArrayAllClose(gf.solve(m_ss, vec), npl.solve(m_ss, vec.c).uc)
+        self.assertArrayAllClose(gf.solve(m_ss, vec), nl.solve(m_ss, vec.c).uc)
         self.assertArrayAllClose(gf.lstsq(m_bs_m.t, vec),
-                                 npl.lstsq(m_bs_m.t, vec, rcond=None)[0])
+                                 nl.lstsq(m_bs_m.t, vec, rcond=None)[0])
         self.assertArrayAllClose(gf.rmatmul(m_ss, m_bs), np.matmul(m_bs, m_ss))
         # m_bs @= m_ss
         # self.assertArrayAllClose(ts_r, m_bs)
@@ -236,7 +236,8 @@ class TestPinvarray(TestCaseNumpy):
                                  gf.solve(m_ss, m_sb))
         self.assertArrayAllClose(gf.matmul(m_bs, m_ss.inv),
                                  gf.rsolve(m_bs, m_ss))
-        self.assertArrayAllClose(gf.matmul(m_ss.inv, mini.inv).inv, mini @ m_ss)
+        self.assertArrayAllClose(gf.matmul(m_ss.inv, mini.inv).inv,
+                                 mini @ m_ss)
         self.assertArrayAllClose(gf.solve(m_ss.inv, m_sb),
                                  gf.matmul(m_ss, m_sb))
         self.assertArrayAllClose(gf.solve(mini, m_ss.inv).inv,

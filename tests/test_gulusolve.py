@@ -6,6 +6,7 @@ import hypothesis as hy
 import numpy as np
 import numpy_linalg as la
 import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
+from numpy_linalg.gufuncs import unbroadcast_factors
 import numpy_linalg.testing.unittest_numpy as utn
 import numpy_linalg.testing.hypothesis_numpy as hn
 from numpy_linalg.testing import main, TestCaseNumpy
@@ -235,8 +236,10 @@ class TestSolveShape(TestCaseNumpy):
 
         expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         expect_f = expect[:-2] + 2 * m_ss.shape[-1:]
-        self.assertArrayShapesAre(gfl.solve_lu(m_ss, m_sb),
-                                  (expect, expect_f, expect_f[:-1]))
+        result = gfl.solve_lu(m_ss, m_sb)
+        self.assertArrayShapesAre(result, (expect, expect_f, expect_f[:-1]))
+        self.assertArrayShapesAre(unbroadcast_factors(m_ss, *result[1:]),
+                                  (m_ss.shape, m_ss.shape[:-1]))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve_lu(m_bb, m_sb)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -262,6 +265,9 @@ class TestSolveShape(TestCaseNumpy):
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
             gfl.lu_solve(x_f, *utn.make_bad_broadcast(i_p, m_sb, (1, 2)))
+        x_f, i_p = unbroadcast_factors(m_ss, x_f, i_p)
+        expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_bs, m_ss)
+        self.assertArrayShape(gfl.rlu_solve(m_bs, x_f, i_p), expect)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rsolve_lu_returns_expected_shapes(self, arrays):
@@ -271,8 +277,10 @@ class TestSolveShape(TestCaseNumpy):
 
         expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
         expect_f = expect[:-2] + m_bb.shape[-2:]
-        self.assertArrayShapesAre(gfl.rsolve_lu(m_sb, m_bb),
-                                  (expect, expect_f, expect_f[:-1]))
+        result = gfl.rsolve_lu(m_sb, m_bb)
+        self.assertArrayShapesAre(result, (expect, expect_f, expect_f[:-1]))
+        self.assertArrayShapesAre(unbroadcast_factors(m_bb, *result[1:]),
+                                  (m_bb.shape, m_bb.shape[:-1]))
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve_lu(m_bs, m_bb)
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -298,6 +306,9 @@ class TestSolveShape(TestCaseNumpy):
         _, x_f, i_p = gfl.rsolve_lu(m_sb, m_bb)
         with self.assertRaisesRegex(*utn.broadcast_err):
             gfl.rlu_solve(*utn.make_bad_broadcast(m_sb, x_f), i_p)
+        x_f, i_p = unbroadcast_factors(m_bb, x_f, i_p)
+        expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_bb, m_bs)
+        self.assertArrayShape(gfl.lu_solve(x_f, i_p, m_bs), expect)
 
 
 class TestSolveVectors(TestCaseNumpy):

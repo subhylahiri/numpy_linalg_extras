@@ -346,10 +346,15 @@ Notes
 Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`.
 You will merely waste memory from keeping unused elements of `TAU`.
 
+`B` can cause `AF` to broadcast to have more/larger dimensions than `A`.
+If `A` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.
+This can be avoided using the `unbroadcast_factors` function.
+
 See Also
 --------
 qr in 'raw' mode.
 lq in 'raw' mode.
+unbroadcast_factors
 """
 
 lstsq_qrn: ufunc
@@ -386,10 +391,15 @@ Notes
 Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`.
 You will merely waste memory from keeping unused elements of `TAU`.
 
+`B` can cause `AF` to broadcast to have more/larger dimensions than `A`.
+If `A` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.
+This can be avoided using the `unbroadcast_factors` function.
+
 See Also
 --------
 qr in 'raw' mode.
 lq in 'raw' mode.
+unbroadcast_factors
 """
 
 rlstsq_qrm: ufunc
@@ -426,10 +436,15 @@ Notes
 Nothing will fail if you make the wrong choice of `rlstsq_qrm` or `rlstsq_qrn`.
 You will merely waste memory from keeping unused elements of `TAU`.
 
+`A` can cause `BF` to broadcast to have more/larger dimensions than `B`.
+If `B` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.
+This can be avoided using the `unbroadcast_factors` function.
+
 See Also
 --------
 qr in 'raw' mode.
 lq in 'raw' mode.
+unbroadcast_factors
 """
 
 rlstsq_qrn: ufunc
@@ -466,10 +481,15 @@ Notes
 Nothing will fail if you make the wrong choice of `rlstsq_qrm` or `rlstsq_qrn`.
 You will merely waste memory from keeping unused elements of `TAU`.
 
+`A` can cause `BF` to broadcast to have more/larger dimensions than `B`.
+If `B` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.
+This can be avoided using the `unbroadcast_factors` function.
+
 See Also
 --------
 qr in 'raw' mode.
 lq in 'raw' mode.
+unbroadcast_factors
 """
 
 qr_lstsq: ufunc

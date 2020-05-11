@@ -244,9 +244,13 @@ PyDoc_STRVAR(lstsq_qr__doc__,
 "\nNotes\n-----\n"
 "Nothing will fail if you make the wrong choice of `lstsq_qrm` or `lstsq_qrn`.\n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
+"\n`B` can cause `AF` to broadcast to have more/larger dimensions than `A`.\n"
+"If `A` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.\n"
+"This can be avoided using the `unbroadcast_factors` function.\n"
 "\nSee Also\n--------\n"
 "qr in 'raw' mode.\n"
 "lq in 'raw' mode.\n"
+"unbroadcast_factors"
 );
 
 PyDoc_STRVAR(rlstsq_qr__doc__,
@@ -274,9 +278,13 @@ PyDoc_STRVAR(rlstsq_qr__doc__,
 "\nNotes\n-----\n"
 "Nothing will fail if you make the wrong choice of `rlstsq_qrm` or `rlstsq_qrn`.\n"
 "You will merely waste memory from keeping unused elements of `TAU`.\n"
+"\n`A` can cause `BF` to broadcast to have more/larger dimensions than `B`.\n"
+"If `B` is a vector, this can cause core dimension-errors in `(r)qr_lstq`.\n"
+"This can be avoided using the `unbroadcast_factors` function.\n"
 "\nSee Also\n--------\n"
 "qr in 'raw' mode.\n"
 "lq in 'raw' mode.\n"
+"unbroadcast_factors"
 );
 
 /*************************

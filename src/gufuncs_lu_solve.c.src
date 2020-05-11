@@ -194,8 +194,12 @@ PyDoc_STRVAR(solve_lu__doc__,
 "    LU factors of `A`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
+"\nNotes\n-----\n"
+"`B` can cause `AF` to broadcast to have more/larger dimensions than `A`.\n"
+"This can be avoided using the `unbroadcast_factors` function.\n"
 "\nSee Also\n--------\n"
-"lu in 'raw' mode."
+"lu in 'raw' mode.\n"
+"unbroadcast_factors"
 );
 
 PyDoc_STRVAR(rsolve_lu__doc__,
@@ -217,8 +221,12 @@ PyDoc_STRVAR(rsolve_lu__doc__,
 "    LU factors of `B`.\n"
 "IP: ndarray[int] (...,N)\n"
 "    Pivot indices from LU factoring.\n"
+"\nNotes\n-----\n"
+"`A` can cause `BF` to broadcast to have more/larger dimensions than `B`.\n"
+"This can be avoided using the `unbroadcast_factors` function.\n"
 "\nSee Also\n--------\n"
-"lu in 'raw' mode."
+"lu in 'raw' mode.\n"
+"unbroadcast_factors"
 );
 
 

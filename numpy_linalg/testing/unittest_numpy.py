@@ -10,17 +10,17 @@ TestCaseNumpy
 Functions
 ---------
 trnsp
-    Modify a shape (tuple of ints) by swapping last two entries.
+    Modify a shape (tuple of ints) by swapping last two axes.
 drop
-    Modify a shape by removing an entry.
+    Modify a shape by removing an axis.
 chop
-    Modify a shape by setting the smaller of the last two entries to the larger.
+    Modify a shape by setting the smaller of the last two axes to the larger.
 grow
-    Modify a shape by setting the larger of the last two entries to the smaller.
+    Modify a shape by setting the larger of the last two axes to the smaller.
 return_shape
-    Calculated broadcasted shape of output from input shapes and signature
+    Calculated broadcasted shape of output from input shapes and signature.
 array_return_shape
-    Calculated broadcasted shape of output from input array and signature
+    Calculated broadcasted shape of output from input array and signature.
 
 Constants
 ---------
@@ -34,10 +34,12 @@ num_dim_err
 invalid_err
     Tuple of arguments to match a numerical error.
 """
-import unittest as _ut
 import contextlib as _cx
-from typing import Tuple, Optional, Union, TypeVar
+import unittest as _ut
+from typing import Optional, Tuple, TypeVar, Union
+
 import numpy as np
+
 Tvar = TypeVar('Tvar')
 OneOrTuple = Union[Tvar, Tuple[Tvar, ...]]
 # pylint: disable=invalid-name
@@ -99,7 +101,9 @@ class TestCaseNumpy(_ut.TestCase):
 
     def setUp(self):
         # testing ndarray values (relative to np.float64's eps)
-        self.all_close_opts = {'atol': 1e-10, 'rtol': 1e-10, 'equal_nan': False}
+        self.all_close_opts = {'atol': 1e-10,
+                               'rtol': 1e-10,
+                               'equal_nan': False}
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 
     @_cx.contextmanager
@@ -292,6 +296,20 @@ def grow(shape: Tuple[int, ...]) -> Tuple[int, ...]:
     return shape[:-2] + (max(shape[-2:]),) * 2
 
 
+def make_bad_broadcast(left, right, cores=(2, 2)):
+    """Stack arrays so they no longer broadcast"""
+    axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
+    new_left = np.stack((left,) * 3)[np.s_[:, ] + (None,) * (-axis)]
+    new_right = np.stack((right,) * 2)[np.s_[:, ] + (None,) * axis]
+    return new_left, new_right
+
+
+def make_off_by_one(matrices, vectors):
+    """Arrange so that matrices.ndim = vectors.ndim + 1"""
+    off_by_one = matrices.ndim - vectors.ndim - 1
+    return (None,)*(-off_by_one), (None,)*off_by_one
+
+
 def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
     """Convert text signature into tuples of axes size names
 
@@ -341,12 +359,12 @@ def return_shape(signature: str,
     ValueError
         If `arrays.shape`s do not match signatures.
     """
-    msg = (f'Shape: {shapes}. Signature: {signature}.')
+    msg = (f'dimensions: Shape: {shapes}. Signature: {signature}.')
     sigs_in, sigs_out = _split_signature(signature)
     dims = [len(sig) for sig in sigs_in]
     broads, cores, sizes = [], [], {}
     if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
-        raise ValueError('Core array does not have enough dimensions: ' + msg)
+        raise ValueError('Core array does not have enough ' + msg)
     for shape, dim in zip(shapes, dims):
         if dim:
             broads.append(shape[:-dim])
@@ -358,7 +376,7 @@ def return_shape(signature: str,
         for name, siz in zip(sig, core):
             sizes.setdefault(name, siz)
             if sizes[name] != siz:
-                raise ValueError(f'Array mismatch in its core dimension: {msg}')
+                raise ValueError('Array mismatch in its core ' + msg)
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:

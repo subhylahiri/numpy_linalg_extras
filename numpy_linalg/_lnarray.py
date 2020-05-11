@@ -21,9 +21,6 @@ invarray
     Provides interface for matrix division when it is matrix multiplied (@).
     Does not actually invert the matrix. It will raise if you try to do
     anything other than matrix multiplication or multiplication by scalars.
-lnmatrix
-    Subclass of `lnarray` with swapped elementwise/matrix multiplication and
-    division.
 
 Examples
 --------
@@ -37,12 +34,16 @@ Examples
 >>> v = (x.r @ y.t).ur
 """
 from __future__ import annotations
-from typing import Optional, Tuple, List, Sequence, Union, Set
+
+from typing import List, Optional, Sequence, Set, Tuple, Union
+
 import numpy as np
 from numpy.lib.mixins import NDArrayOperatorsMixin
+
 from . import _linalg as la
-from . import gufuncs as gf
 from . import convert_loop as cv
+from . import gufuncs as gf
+
 # pylint: disable=invalid-name
 # =============================================================================
 # Export functions

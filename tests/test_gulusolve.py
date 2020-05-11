@@ -9,17 +9,13 @@ import numpy_linalg.gufuncs._gufuncs_lu_solve as gfl
 import numpy_linalg.testing.unittest_numpy as utn
 import numpy_linalg.testing.hypothesis_numpy as hn
 from numpy_linalg.testing import main, TestCaseNumpy
-if 'tests.' in __name__:
-    from .test_gufunc import make_bad_broadcast, make_off_by_one
-else:
-    from test_gufunc import make_bad_broadcast, make_off_by_one
 # =============================================================================
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
-np.set_printoptions(precision=2, threshold=50, edgeitems=2)
+np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestLU', 'TestSolveShape', 'TestSolveVectors', 'TestSolveVal']
 # =============================================================================
@@ -214,7 +210,7 @@ class TestSolveShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.solve(*make_bad_broadcast(m_ss, m_sb))
+            gfl.solve(*utn.make_bad_broadcast(m_ss, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rsolve_returns_expected_shapes(self, arrays):
@@ -229,7 +225,7 @@ class TestSolveShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rsolve(*make_bad_broadcast(m_bs, m_ss))
+            gfl.rsolve(*utn.make_bad_broadcast(m_bs, m_ss))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_solve_lu_returns_expected_shapes(self, arrays):
@@ -246,7 +242,7 @@ class TestSolveShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve_lu(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.solve_lu(*make_bad_broadcast(m_ss, m_sb))
+            gfl.solve_lu(*utn.make_bad_broadcast(m_ss, m_sb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_lu_solve_returns_expected_shapes(self, arrays):
@@ -265,7 +261,7 @@ class TestSolveShape(TestCaseNumpy):
             gfl.rlu_solve(m_sb, x_f, i_p)
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.lu_solve(x_f, *make_bad_broadcast(i_p, m_sb, (1, 2)))
+            gfl.lu_solve(x_f, *utn.make_bad_broadcast(i_p, m_sb, (1, 2)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rsolve_lu_returns_expected_shapes(self, arrays):
@@ -282,7 +278,7 @@ class TestSolveShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve_lu(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rsolve_lu(*make_bad_broadcast(m_bs, m_ss))
+            gfl.rsolve_lu(*utn.make_bad_broadcast(m_bs, m_ss))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
     def test_rlu_solve_returns_expected_shapes(self, arrays):
@@ -301,7 +297,7 @@ class TestSolveShape(TestCaseNumpy):
             gfl.lu_solve(x_f, i_p, m_sb)
         _, x_f, i_p = gfl.rsolve_lu(m_sb, m_bb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rlu_solve(*make_bad_broadcast(m_sb, x_f), i_p)
+            gfl.rlu_solve(*utn.make_bad_broadcast(m_sb, x_f), i_p)
 
 
 class TestSolveVectors(TestCaseNumpy):
@@ -313,7 +309,7 @@ class TestSolveVectors(TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_bb, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_bb, m_sb)
 
         # with self.subTest('solve'):
         self.assertArrayShape(gfl.solve(m_ss, v_s), m_ss.shape[:-1])
@@ -322,7 +318,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve(m_bs, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as Mv:
+            # This would succeed/broadcast error if interpreted as Mv:
             gfl.solve(m_bb[off_b], m_sb[y_one])
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
@@ -331,7 +327,7 @@ class TestSolveVectors(TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_bb, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_bb, m_sb)
 
         # with self.subTest('solve_lu'):
         self.assertArrayShapesAre(
@@ -342,7 +338,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.solve_lu(m_bs, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as Mv:
+            # This would succeed/broadcast error if interpreted as Mv:
             gfl.solve_lu(m_bb[off_b], m_sb[y_one])
 
     @hy.given(hn.broadcastable('(a,a),(a),(b)', 'd'))
@@ -368,7 +364,7 @@ class TestSolveVectors(TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_ss, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve'):
         self.assertArrayShape(gfl.rsolve(v_s, m_ss), m_ss.shape[:-1])
@@ -377,7 +373,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve(v_s, m_sb)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as vM:
+            # This would succeed/broadcast error if interpreted as vM:
             gfl.rsolve(m_sb[y_one], m_ss[off_b])
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
@@ -386,7 +382,7 @@ class TestSolveVectors(TestCaseNumpy):
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_ss, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve_lu'):
         self.assertArrayShapesAre(
@@ -397,7 +393,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rsolve_lu(v_s, m_sb)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as vM:
+            # This would succeed/broadcast error if interpreted as vM:
             gfl.rsolve_lu(m_sb, m_ss)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
@@ -406,7 +402,7 @@ class TestSolveVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_non_singular(m_ss))
-        off_b, y_one = make_off_by_one(m_ss, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rlu_solve'):
         _, x_f, i_p = gfl.rsolve_lu(v_s, m_ss)
@@ -414,7 +410,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlu_solve(v_b, x_f, i_p)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as vM:
+            # This would succeed/broadcast error if interpreted as vM:
             gfl.rlu_solve(m_sb[y_one], x_f[off_b], i_p[off_b])
         self.assertArrayShape(gfl.lu_solve(x_f, i_p, v_s),  m_ss.shape[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
@@ -473,7 +469,7 @@ class TestSolveVal(TestCaseNumpy):
     @hy.given(hn.constant('(a,a)', None, min_side=2))
     def test_solve_raises_with_low_rank(self, ones_ss):
         with self.assertRaisesRegex(*utn.invalid_err):
-            gfl.solve(ones_ss, ones_ss[...,:2])
+            gfl.solve(ones_ss, ones_ss[..., :2])
 
 
 # =============================================================================

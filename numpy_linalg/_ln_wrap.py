@@ -31,7 +31,9 @@ wrap_subsome
 """
 from functools import wraps as _wraps
 from typing import List as _List
+
 import numpy as _np
+
 from ._lnarray import lnarray as _array
 
 # =============================================================================

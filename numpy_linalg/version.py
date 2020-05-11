@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """Tools for dealing with version numbering
 """
+from types import ModuleType as Module
+from typing import Union
+
 import packaging.version as _pkv
 
 
-def _decode(str_like):
+def _decode(str_like: Union[str, bytes]) -> str:
     """Convert to string from bytes/str/...
     """
     if isinstance(str_like, bytes):
@@ -12,7 +15,7 @@ def _decode(str_like):
     return str(str_like)
 
 
-def get_version(arg):
+def get_version(arg: Union[_pkv.Version, str, bytes, Module]) -> _pkv.Version:
     """Get version from module/string
 
     Given a module, version string or `packaging.version.Version` object
@@ -30,7 +33,7 @@ def get_version(arg):
     return _pkv.parse('0')
 
 
-def max_version(*modules):
+def max_version(*modules: Module) -> str:
     """Maximum version number of a sequence of modules/version strings
 
     See `get_version` for how version numbers are extracted. They are compared
@@ -39,7 +42,7 @@ def max_version(*modules):
     return str(max(get_version(x) for x in modules))
 
 
-def min_version(*modules):
+def min_version(*modules: Module) -> str:
     """Minimum version number of a sequence of modules/version strings
 
     See `get_version` for how version numbers are extracted. They are compared

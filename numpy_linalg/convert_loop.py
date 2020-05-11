@@ -33,7 +33,9 @@ import numpy_linalg.convert_loop as cv
 """
 import itertools as _itertools
 import typing as _ty
+
 import numpy as _np
+
 MyArray = _ty.TypeVar('MyArray')
 OutTuple = _ty.Tuple[_ty.Optional[_np.ndarray], ...]
 ArrayTuple = _ty.Tuple[_np.ndarray, ...]

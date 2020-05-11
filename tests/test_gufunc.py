@@ -14,26 +14,10 @@ errstate = np.errstate(invalid='raise')
 hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
-np.set_printoptions(precision=2, threshold=50, edgeitems=2)
+np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestBlas', 'TestBlasVectors', 'TestCloop']
 # =============================================================================
-
-
-def make_bad_broadcast(left, right, cores=(2, 2)):
-    """Stack arrays so they no longer broadcast"""
-    axis = (left.ndim - cores[0]) - (right.ndim - cores[1])
-    new_left = np.stack((left,) * 3)[np.s_[:,] + (None,) * (-axis)]
-    new_right = np.stack((right,) * 2)[np.s_[:,] + (None,) * axis]
-    return new_left, new_right
-
-
-def make_off_by_one(matrices, vectors):
-    """Arrange so that matrices.ndim = vectors.ndim + 1"""
-    off_by_one = matrices.ndim - vectors.ndim - 1
-    return (None,)*(-off_by_one), (None,)*off_by_one
-
-
 # =============================================================================
 # Test BLAS ufuncs
 # =============================================================================
@@ -75,7 +59,7 @@ class TestBlas(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(m_bs, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.matmul(*make_bad_broadcast(m_sb, m_bs))
+            self.gf.matmul(*utn.make_bad_broadcast(m_sb, m_bs))
 
     @hy.given(hn.broadcastable('(a,b),(b,c)', None))
     def test_matmul_returns_expected_values(self, arrays):
@@ -99,7 +83,7 @@ class TestBlas(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(m_bs, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.rmatmul(*make_bad_broadcast(m_bs, m_sb))
+            self.gf.rmatmul(*utn.make_bad_broadcast(m_bs, m_sb))
 
     @hy.given(hn.broadcastable('(a,b),(b,c)', None))
     def test_rmatmul_returns_expected_values(self, arrays):
@@ -126,7 +110,7 @@ class TestBlasVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.nonsquare(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_sb)
 
         # with self.subTest('matrix-vector'):
         self.assertArrayShape(self.gf.matmul(m_sb, v_b), wide[:-1])
@@ -134,7 +118,7 @@ class TestBlasVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(m_sb, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as Mv:
+            # This would succeed/broadcast error if interpreted as Mv:
             self.gf.matmul(m_sb[off_b], m_sb[y_one])
         # with self.subTest('vector-matrix'):
         self.assertArrayShape(self.gf.matmul(v_s, m_ss), smol[:-1])
@@ -142,7 +126,7 @@ class TestBlasVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.matmul(v_b, m_sb)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as vM:
+            # This would succeed/broadcast error if interpreted as vM:
             self.gf.matmul(m_sb[y_one], m_sb[off_b])
         # with self.subTest('vector-vector'):
         self.assertArrayShape(self.gf.matmul(v_s, v_s), ())
@@ -155,7 +139,7 @@ class TestBlasVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.nonsquare(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_sb)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_sb)
 
         # with self.subTest('matrix-vector'):
         self.assertArrayShape(self.gf.rmatmul(v_s, m_bs), tall[:-1])
@@ -163,7 +147,7 @@ class TestBlasVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(v_b, m_bs)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as Mv:
+            # This would succeed/broadcast error if interpreted as Mv:
             self.gf.rmatmul(m_sb[y_one], m_sb[off_b])
         # w\ith self.subTest('vector-matrix'):
         self.assertArrayShape(self.gf.rmatmul(m_ss, v_s), smol[:-1])
@@ -171,7 +155,7 @@ class TestBlasVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             self.gf.rmatmul(m_bs, v_s)
         with self.assertRaisesRegex(*utn.core_dim_err):
-            # This would succed/broadcast error if interpreted as vM:
+            # This would succeed/broadcast error if interpreted as vM:
             self.gf.rmatmul(m_sb[off_b], m_sb[y_one])
         # with self.subTest('vector-vector'):
         self.assertArrayShape(self.gf.rmatmul(v_b, v_b), ())
@@ -200,7 +184,7 @@ class TestCloop(TestBlas):
         expect = utn.array_return_shape('(),()->()', a_bs, m_bs)
         self.assertArrayShape(self.gf.rtrue_divide(a_bs, m_bs), expect)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            self.gf.rtrue_divide(*make_bad_broadcast(m_bs, a_bs))
+            self.gf.rtrue_divide(*utn.make_bad_broadcast(m_bs, a_bs))
 
     @hy.given(hn.broadcastable('(a,b),(a,b)', None))
     def test_rtrue_divide_returns_expected_values(self, arrays):

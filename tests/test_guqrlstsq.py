@@ -9,11 +9,6 @@ import numpy_linalg.gufuncs._gufuncs_qr_lstsq as gfl
 import numpy_linalg.testing.unittest_numpy as utn
 import numpy_linalg.testing.hypothesis_numpy as hn
 from numpy_linalg.testing import main, TestCaseNumpy
-if 'tests.' in __name__:
-    from .test_gufunc import make_bad_broadcast, make_off_by_one
-else:
-    # pylint: disable=import-error
-    from test_gufunc import make_bad_broadcast, make_off_by_one
 # =============================================================================
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='raise')
@@ -60,14 +55,14 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.lstsq(*make_bad_broadcast(m_bs, m_bb))
+            gfl.lstsq(*utn.make_bad_broadcast(m_bs, m_bb))
         # with self.subTest('underconstrained'):
         expect = utn.array_return_shape('(m,n),(m,p)->(n,p)', m_sb, m_ss)
         self.assertArrayShape(gfl.lstsq(m_sb, m_ss), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lstsq(m_sb, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.lstsq(*make_bad_broadcast(m_sb, m_ss))
+            gfl.lstsq(*utn.make_bad_broadcast(m_sb, m_ss))
 
     @errstate
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'))
@@ -81,14 +76,14 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlstsq(m_sb, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rlstsq(*make_bad_broadcast(m_ss, la.transpose(m_sb)))
+            gfl.rlstsq(*utn.make_bad_broadcast(m_ss, la.transpose(m_sb)))
         # with self.subTest('overconstrained'):
         expect = utn.array_return_shape('(m,n),(p,n)->(m,p)', m_bb, m_sb)
         self.assertArrayShape(gfl.rlstsq(m_bb, m_sb), expect)
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlstsq(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.rlstsq(*make_bad_broadcast(m_bb, la.transpose(m_bs)))
+            gfl.rlstsq(*utn.make_bad_broadcast(m_bb, la.transpose(m_bs)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
     def test_lstsq_qr_returns_expected_shape_tall(self, arrays, func):
@@ -102,7 +97,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            func(*make_bad_broadcast(m_bs, m_bb))
+            fun(*utn.make_bad_broadcast(m_bs, m_bb))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
     def test_qr_lstsq_returns_expected_shape_tall(self, arrays, func):
@@ -120,7 +115,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(m_sb, x_f, tau)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.qr_lstsq(x_f, *make_bad_broadcast(tau, m_bb, (1, 2)))
+            gfl.qr_lstsq(x_f, *utn.make_bad_broadcast(tau, m_bb, (1, 2)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
     def test_lstsq_qr_returns_expected_shape_wide(self, arrays, func):
@@ -134,7 +129,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_sb, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            func(*make_bad_broadcast(m_sb, m_ss))
+            fun(*utn.make_bad_broadcast(m_sb, m_ss))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
     def test_qr_lstsq_returns_expected_shape_wide(self, arrays, func):
@@ -152,7 +147,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(m_ss, x_f, tau)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.qr_lstsq(x_f, *make_bad_broadcast(tau, m_ss, (1, 2)))
+            gfl.qr_lstsq(x_f, *utn.make_bad_broadcast(tau, m_ss, (1, 2)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
     def test_rlstsq_qr_returns_expected_shape_tall(self, arrays, func):
@@ -166,7 +161,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_sb, m_bs)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            func(*make_bad_broadcast(m_ss, la.transpose(m_sb)))
+            fun(*utn.make_bad_broadcast(m_ss, la.transpose(m_sb)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
     def test_rqr_lstsq_returns_expected_shape_tall(self, arrays, func):
@@ -184,7 +179,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(m_sb, x_f, tau)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.qr_lstsq(x_f, *make_bad_broadcast(tau, m_bb, (1, 2)))
+            gfl.qr_lstsq(x_f, *utn.make_bad_broadcast(tau, m_bb, (1, 2)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
     def test_rlstsq_qr_returns_expected_shape_wide(self, arrays, func):
@@ -198,7 +193,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             func(m_bs, m_sb)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            func(*make_bad_broadcast(m_bb, la.transpose(m_bs)))
+            fun(*utn.make_bad_broadcast(m_bb, la.transpose(m_bs)))
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
     def test_rqr_lstsq_returns_expected_shape_wide(self, arrays, func):
@@ -216,7 +211,7 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(m_bs, x_f, tau)
         with self.assertRaisesRegex(*utn.broadcast_err):
-            gfl.qr_lstsq(x_f, *make_bad_broadcast(tau, m_ss, (1, 2)))
+            gfl.qr_lstsq(x_f, *utn.make_bad_broadcast(tau, m_ss, (1, 2)))
 
 
 class TestLstsqVectors(TestCaseNumpy):
@@ -228,7 +223,7 @@ class TestLstsqVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         self.assertArrayShape(gfl.lstsq(m_bs, v_b), utn.drop(tall))
         self.assertArrayShape(gfl.lstsq(m_sb, v_s), utn.drop(wide))
@@ -276,7 +271,7 @@ class TestLstsqVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         self.assertArrayShape(gfl.rlstsq(v_b, m_sb), wide[:-1])
         self.assertArrayShape(gfl.rlstsq(v_s, m_bs), tall[:-1])
@@ -306,7 +301,7 @@ class TestLstsqQRVectors(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_bs))
         hy.assume(hn.all_full_rank(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         tau = m_bs.shape[:-2] + tau_len(m_bs, func)
         self.assertArrayShapesAre(func(m_bs, v_b),
@@ -363,7 +358,7 @@ class TestLstsqQRVectors(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_sb))
         hy.assume(hn.all_full_rank(m_bs))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         tau = m_sb.shape[:-2] + tau_len(m_sb, func)
         self.assertArrayShapesAre(func(v_b, m_sb),
@@ -398,7 +393,7 @@ class TestQRLstsqVectors(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_bs))
         hy.assume(hn.all_full_rank(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = func(m_bs, v_b)
         self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_b), utn.drop(tall))
@@ -420,8 +415,7 @@ class TestQRLstsqVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        off_b, y_one = make_off_by_one(m_sb, m_bs)
-
+        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = func(v_s, m_sb)
         self.assertArrayShape(gfl.qr_lstsq(x_f, tau, m_sb), utn.drop(wide))

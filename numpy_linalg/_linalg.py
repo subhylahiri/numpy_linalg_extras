@@ -38,10 +38,12 @@ lqr
     For wide matrices LQ decomposition, otherwise QR decomposition.
 """
 import typing as ty
+
 import numpy as np
 import numpy.linalg.linalg as nla
+
 from . import gufuncs as gf
-from .gufuncs import matmul, rmatmul, solve, rsolve, lstsq, rlstsq
+from .gufuncs import lstsq, matmul, rlstsq, rmatmul, rsolve, solve
 
 __all__ = [
     'flattish',
@@ -73,7 +75,7 @@ __all__ = [
 def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     """Partial flattening.
 
-    Flattens those axes in the range [start:stop)
+    Flattens those axes in the range [start:stop).
 
     Parameters
     ----------
@@ -446,11 +448,9 @@ def lqr(arr: np.ndarray, mode: str = 'reduced', *args,
         reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
     """
     if arr.shape[-2] < arr.shape[-1]:
-        if mode.lower() == 'r':
-            return lq(arr, 'l', *args, **kwds)
+        mode = 'l' if mode.lower() == 'r' else mode
         return lq(arr, mode, *args, **kwds)
-    if mode.lower() == 'l':
-        return qr(arr, 'r', *args, **kwds)
+    mode = 'r' if mode.lower() == 'l' else mode
     return qr(arr, mode, *args, **kwds)
 
 

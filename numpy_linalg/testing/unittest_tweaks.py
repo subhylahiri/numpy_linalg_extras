@@ -5,7 +5,8 @@ It also allows you to halt the tracebacks from failed tests right before any of
 your functions. This is useful if you write your own `assert...` methods.
 
 If you import `main` from here, and use in place of `unittest.main`, everything
-else follows. If you want to customise test discovery, you need tu use the `load_tests` protocol. You can do this by including the following function:
+else follows. If you want to customise test discovery, you need tu use the
+`load_tests` protocol. You can do this by including the following function:
 
 ```
 def load_tests(loader, standard_tests, pattern):
@@ -36,11 +37,12 @@ dir_nosort
     Similar to the built in function `dir`, except entries appear in the order
     they were added to the class/module dictionary.
 """
-import unittest as _ut
 import functools as _ft
-from typing import Tuple, List, Dict, Optional, Type
-from types import TracebackType, ModuleType
+import unittest as _ut
 from fnmatch import fnmatchcase
+from types import ModuleType, TracebackType
+from typing import ClassVar, Dict, List, Optional, Tuple, Type
+
 Error = Tuple[Type[Exception], Exception, TracebackType]
 __all__ = [
     'NosortTestLoader',
@@ -124,17 +126,16 @@ class NosortTestLoader(_ut.TestLoader):
 
         Extends `unittest.TestLoader.loadTestsFromModule`.
         """
-        tests = super().loadTestsFromModule(self, module, *args,
-                                            pattern=pattern, **kws)
-        all_names = getattr(module, '__all__', None)
-        if all_names is not None and not hasattr(module, 'load_tests'):
-            tests = []
-            for name in all_names:
-                obj = getattr(module, name, None)
-                if isinstance(obj, type) and issubclass(obj, _ut.TestCase):
-                    tests.append(self.loadTestsFromTestCase(obj))
-            tests = self.suiteClass(tests)
-        return tests
+        if hasattr(module, 'load_tests'):
+            return super().loadTestsFromModule(self, module, *args,
+                                               pattern=pattern, **kws)
+        tests = []
+        all_names = getattr(module, '__all__', dir_nosort(module))
+        for name in all_names:
+            obj = getattr(module, name, None)
+            if isinstance(obj, type) and issubclass(obj, _ut.TestCase):
+                tests.append(self.loadTestsFromTestCase(obj))
+        return self.suiteClass(tests)
 
     def copy_from(self, other: _ut.TestLoader):
         """Copy instance attributes from other loader"""
@@ -161,9 +162,11 @@ class TestResultStopTB(_ut.TextTestResult):
     and if that variable evaluates as True. Only the last variable satisfying
     the first criterion is tested for the second, with locals added after
     globals and otherwise appearing in the order they were added to the dicts.
+
+    You can modify `TestResultStopTB`
     """
     # names of variables that tell us if this traceback level should be dropped
-    stoppers: list = ["__unittest"]
+    stoppers: ClassVar[List[str]] = ["__unittest"]
 
     def addSubTest(self, test: _ut.TestCase, subtest: _ut.TestCase,
                    err: Optional[Error]):

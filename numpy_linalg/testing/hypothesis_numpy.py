@@ -1,4 +1,4 @@
-"""Hypothesis strategies for numpy arrays, and some tools for the generated data
+"""Hypothesis strategies for numpy arrays, and tools for the generated data
 
 Strategies
 ----------
@@ -31,15 +31,17 @@ Functions
 ---------
 core_only
     Romove non-core dimensions from arrays for functions that do not broadcast.
+For `hypothesis.assume`:
+
 non_singular
-    Check if individual matrices in an array have finite nonzero determinant.
-    For `hypothesis.assume`.
+Check if e
+ach matrix in an array has finite nonzero determinant.
 all_non_singular
     Check if every matrix in some arrays has finite nonzero determinant.
 full_rank
-    Check if individual matrices in an array have maximum rank given dimensions.
+    Check if each matrix in an array has the maximum rank given its shape.
 all_full_rank
-    Check if every matrix in some arrays has maximum rank given dimensions.
+    Check if every matrix in some arrays has the maximum rank given its shape.
 wide
     Check if a matrix has more columns than rows.
 tall
@@ -49,9 +51,10 @@ nonsquare
 """
 import collections.abc
 from numbers import Number
-from typing import Tuple, Union, Sequence
-import hypothesis.strategies as st
+from typing import Sequence, Tuple, Union
+
 import hypothesis.extra.numpy as hyn
+import hypothesis.strategies as st
 import numpy as np
 
 __all__ = [
@@ -119,7 +122,7 @@ def integers(**kwds) -> st.SearchStrategy[float]:
 def real_numbers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
-    This is a wrapper for `hypothesis.strategies.floats` with different defaults
+    This is a wrapper for `hypothesis.strategies.floats` with changed defaults
 
     See Also
     --------
@@ -252,7 +255,7 @@ def broadcastable(draw: st.DataObject,
         or `None` to choose from {'f','d','F','D'} or a custom strategy.
         By default: `None`.
     Also takes any keyword arguments for `hypothesis.strategies.floats` or
-    `hypothesis.extra.numpy.mutually_broadcastable_shapes`, except `num_shapes`.
+    `hypothesis.extra.numpy.mutually_broadcastable_shapes` except `num_shapes`.
 
     Returns
     -------
@@ -286,7 +289,7 @@ def constant(draw: st.DataObject,
         or `None` to choose from {'f','d','F','D'} or a custom strategy.
         By default: `None`.
     Also takes any keyword arguments for `hypothesis.strategies.floats` or
-    `hypothesis.extra.numpy.mutually_broadcastable_shapes`, except `num_shapes`.
+    `hypothesis.extra.numpy.mutually_broadcastable_shapes` except `num_shapes`.
 
     Returns
     -------
@@ -433,6 +436,7 @@ def wide(array: np.ndarray) -> bool:
     """
     return array.shape[-2] < array.shape[-1]
 
+
 def tall(array: np.ndarray) -> bool:
     """Check if it is an array of tall matrices.
 
@@ -449,6 +453,7 @@ def tall(array: np.ndarray) -> bool:
         Is it a tall (array of) matrix?
     """
     return array.shape[-2] > array.shape[-1]
+
 
 def nonsquare(array: np.ndarray) -> bool:
     """Check if it is an array of non-square matrices.

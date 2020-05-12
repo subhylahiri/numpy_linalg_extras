@@ -143,7 +143,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.[^1](#footnotes)
+    Alias for `numpy.matmul`.[1](#footnotes)
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
@@ -236,7 +236,7 @@ The following are not defined:
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    This is an alias for `numpy.matmul`.[^1](#footnotes)
+    This is an alias for `numpy.matmul`.[1](#footnotes)
 * `gufuncs.solve`:
     These are literally the same as the function above.
 * `gufuncs.rsolve`:
@@ -399,7 +399,7 @@ Another option is [OpenBLAS](https://www.openblas.net/)
 ```
 > conda install openblas -c conda-forge
 ```
-([see here under Uninstalling MKL][uninstall-MKL]).
+([see here under "Uninstalling MKL"][uninstall-MKL]).
 
 If your BLAS/Lapack distribution is somewhere `numpy` isn't expecting, you can
 provide directions in a [site.cfg file].
@@ -450,6 +450,8 @@ Most of these functions return all `nan`s in such cases.
 (and a QR based version of `lstsq` for completeness).
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
 * Write an `__array_function__` method.
+* Write other norms.
+* update random.
 
 #
 

@@ -60,7 +60,7 @@ squeeze = _wr.wrap_one(np.squeeze)
 asfarray = _wr.wrap_one(np.asfarray)
 asfortranarray = _wr.wrap_one(np.asfortranarray)
 asarray_chkfinite = _wr.wrap_one(np.asarray_chkfinite)
-require = _wr.wrap_one(np.require)
+require = _wr.wrap_sub(np.require)
 # =============================================================================
 # Joining arrays
 # =============================================================================

@@ -121,11 +121,7 @@ class lnarray(np.ndarray):
         # Finally, we must return the newly created object:
         return obj
 
-#    def __array_finalize__(self, obj):
-#        # We are not adding any attributes
-#        pass
     # Last thing not implemented by ndarray:
-
     def __imatmul__(self, other: np.ndarray) -> lnarray:
         """In-place matrix multiplication
 

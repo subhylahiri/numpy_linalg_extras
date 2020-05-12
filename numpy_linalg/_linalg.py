@@ -38,6 +38,7 @@ lqr
     For wide matrices LQ decomposition, otherwise QR decomposition.
 """
 import typing as ty
+from warnings import warn
 
 import numpy as np
 import numpy.linalg.linalg as nla
@@ -109,9 +110,13 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     ----------
     arr : np.ndarray (...,L,M,N,...,P,Q,...)
         Array to be expanded.
-    *axis : int
+    *axis : int, Tuple[int]
         Positions where new axes are inserted. Negative numbers are allowed.
         Numbers are with respect to the final shape.
+        .. deprecated:: 0.3.0
+            Passing multiple axis arguments rather than a tuple of them is
+            deprecated to match the behaviour in NumPy 1.18. This function
+            will be replaced by a wrapped version of  `numpy.expand_dims`.
 
     Returns
     -------
@@ -126,10 +131,15 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
         return arr
     if len(axis) == 1:
         return np.expand_dims(arr, axis[0]).view(type(arr))
+    warn("Pass a tuple of ints to expand_dims rather than multiple arguments.",
+         DeprecationWarning)
+    new_dim = arr.ndim + len(axis)
+    if any(axs >= new_dim or arr < -new_dim for axs in axis):
+        raise ValueError(f'Axes out of range for {new_dim}-array: {axis}')
     axes_sort = tuple(np.sort(np.mod(axis, arr.ndim + len(axis))))
     axes_same = np.flatnonzero(np.diff(axes_sort) == 0)
     if axes_same.size > 0:
-        raise ValueError('repeated axes, arguments: {}'.format(axes_same))
+        raise ValueError(f'repeated axis, arguments: {axes_same}')
     return expand_dims(expand_dims(arr, axes_sort[0]), *axes_sort[1:])
 
 
@@ -218,7 +228,7 @@ def scalar(arr: np.ndarray) -> np.ndarray:
     -------
     expanded : np.ndarray, (..., 1, 1)
     """
-    return expand_dims(arr, -2, -1)
+    return expand_dims(arr, (-2, -1))
 
 
 # =============================================================================

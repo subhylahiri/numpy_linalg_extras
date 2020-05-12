@@ -70,7 +70,7 @@ arange = _wr.wrap_one(np.arange)
 linspace = _wr.wrap_one(np.linspace)
 logspace = _wr.wrap_one(np.logspace)
 geomspace = _wr.wrap_one(np.geomspace)
-meshgrid = _wr.wrap_one(np.meshgrid)
+meshgrid = _wr.wrap_several(np.meshgrid)
 
 
 # =============================================================================

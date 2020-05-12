@@ -108,11 +108,11 @@ class TestArray(TestCaseNumpy):
 
         # expect = smol[:1] + (1,) + smol[1:2] + (1,) + smol[2:]
         expect = insert(insert(smol, 2), 1)
-        self.assertArrayShape(m_ss.expand_dims(1, 3), expect)
+        self.assertArrayShape(m_ss.expand_dims((1, 3)), expect)
         expect = tall[:1] + (np.prod(tall[1:4]),) + tall[4:]
         self.assertArrayShape(m_bs.flattish(1, 4), expect)
-        with self.assertRaisesRegex(ValueError, "repeated axes"):
-            m_bs.expand_dims(m_bs.ndim - 1, -3)
+        with self.assertRaisesRegex(ValueError, "repeated axis"):
+            m_bs.expand_dims((m_bs.ndim - 1, -3))
         half = (m_bs.ndim + 2) // 2 + 1
         with self.assertRaises(ValueError):
             (m_bs.s).flattish(half, -half)

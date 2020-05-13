@@ -16,14 +16,14 @@ To use some other array class, change the second import statement.
 import numpy as np
 from . import _ln_wrap as _wr
 
-__all__ = ['empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like',
-           'zeros', 'zeros_like', 'full', 'full_like',
-           'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'copy',
-           'frombuffer', 'fromfile', 'fromfunction', 'fromiter', 'fromstring',
-           'loadtxt',
-           'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
-           'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander'
-           ]
+__all__ = [
+    'empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like',
+    'zeros', 'zeros_like', 'full', 'full_like',
+    'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'copy', 'loadtxt',
+    'frombuffer', 'fromfile', 'fromfunction', 'fromiter', 'fromstring',
+    'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
+    'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander'
+]
 
 
 # =============================================================================
@@ -32,14 +32,15 @@ __all__ = ['empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like',
 
 
 empty = _wr.wrap_one(np.empty)
-empty_like = _wr.wrap_sub(np.empty_like)
 eye = _wr.wrap_one(np.eye)
 identity = _wr.wrap_one(np.identity)
 ones = _wr.wrap_one(np.ones)
-ones_like = _wr.wrap_sub(np.ones_like)
 zeros = _wr.wrap_one(np.zeros)
-zeros_like = _wr.wrap_sub(np.zeros_like)
 full = _wr.wrap_one(np.full)
+# existing arrrays
+empty_like = _wr.wrap_sub(np.empty_like)
+ones_like = _wr.wrap_sub(np.ones_like)
+zeros_like = _wr.wrap_sub(np.zeros_like)
 full_like = _wr.wrap_sub(np.full_like)
 
 
@@ -78,6 +79,7 @@ meshgrid = _wr.wrap_several(np.meshgrid)
 # =============================================================================
 
 
+# existing arrrays
 diag = _wr.wrap_one(np.diag)
 diagflat = _wr.wrap_one(np.diagflat)
 tri = _wr.wrap_one(np.tri)

@@ -196,20 +196,19 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
         To be written after docstring, before imports & functions.
     """
     with open(file_name + '.py', 'w') as f:
-        f.write('"""Wrapped version of module ' + parent + '\n')
+        f.write(f'"""Wrapped version of module {parent}\n')
         f.write('"""\n')
         f.write(imps + '\n')
-        f.write('import ' + parent + ' as _pr\n')
+        f.write(f'import {parent} as _pr\n')
         if internal:
             f.write('from . ')
         f.write('import _ln_wrap as _wr\n\n')
         f.write('__all__ = [\n')
         for fn in funcs:
-            f.write("    '" + fn + "',\n")
-        f.write('          ]\n\n')
+            f.write(f"    '{fn}',\n")
+        f.write(']\n\n')
         for fn in funcs:
-            f.write(fn + " = _wr." + wrapper + "(_pr." + fn + ")\n")
-        f.write('\n')
+            f.write(f"{fn} = _wr.{wrapper}(_pr.{fn})\n")
 
 
 # =============================================================================
@@ -224,21 +223,16 @@ def _converter(a: _np.ndarray) -> _array:
 def _converter_check(a):
     if isinstance(a, _np.ndarray):
         return _converter(a)
-    else:
-        return a
+    return a
 
 
 def _converter_sub(a):
     if isinstance(a, _array):
         return a
-    else:
-        return _converter(a)
+    return _converter(a)
 
 
 def _converter_subcheck(a):
-    if isinstance(a, _array):
-        return a
-    elif isinstance(a, _np.ndarray):
+    if isinstance(a, _np.ndarray) and not isinstance(a, _array):
         return _converter(a)
-    else:
-        return a
+    return a

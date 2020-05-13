@@ -19,6 +19,7 @@ __all__ = [
     'indices',
 ]
 
+# new arrays
 ravel_multi_index = _wr.wrap_several(_pr.ravel_multi_index)
 unravel_index = _wr.wrap_several(_pr.unravel_index)
 ix_ = _wr.wrap_several(_pr.ix_)

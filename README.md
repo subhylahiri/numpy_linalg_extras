@@ -345,16 +345,16 @@ They can be found in `numpy_linalg.testing`:
 ## Converters
 
 Helpers for writing `__array_ufunc__` methods.
-They can be found in `numpy_linalg.convert_loop`:
-* `convert_loop.conv_loop_in_attr`:
+They can be found in `numpy_linalg.convert`:
+* `convert.conv_in_attr`:
     Process inputs to an `__array_ufunc__` method using an attribute.
-* `convert_loop.conv_loop_in_view`:
+* `convert.conv_in_view`:
     Process inputs to an `__array_ufunc__` method using view method.
-* `convert_loop.conv_loop_out_attr`:
+* `convert.conv_out_attr`:
     Process outputs to an `__array_ufunc__` method using an attribute.
-* `convert_loop.conv_loop_out_init`:
+* `convert.conv_out_init`:
     Process outputs from an `__array_ufunc__` method using a constructor.
-* `convert_loop.conv_loop_out_view`:
+* `convert.conv_out_view`:
     Process outputs from an `__array_ufunc__` method using a view method.
 
 

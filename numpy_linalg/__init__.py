@@ -60,7 +60,7 @@ lqr
     For wide matrices LQ decomposition, otherwise QR decomposition.
 gufuncs
     Module with `gufuncs` for `linalg` etc.
-convert_loop
+convert
     Module with helpers for writing __array_ufunc__ methods.
 wrappers
     Module with functions that change function return types to `lnarray`.

@@ -31,6 +31,7 @@ __all__ = [
 # =============================================================================
 
 
+# new arrays
 empty = _wr.wrap_one(np.empty)
 eye = _wr.wrap_one(np.eye)
 identity = _wr.wrap_one(np.identity)
@@ -49,6 +50,7 @@ full_like = _wr.wrap_sub(np.full_like)
 # =============================================================================
 
 
+# new(ish) arrays
 array = _wr.wrap_sub(np.array)
 asarray = _wr.wrap_one(np.asarray)
 asanyarray = _wr.wrap_sub(np.asanyarray)
@@ -67,6 +69,7 @@ loadtxt = _wr.wrap_one(np.loadtxt)
 # =============================================================================
 
 
+# new arrays
 arange = _wr.wrap_one(np.arange)
 linspace = _wr.wrap_one(np.linspace)
 logspace = _wr.wrap_one(np.logspace)

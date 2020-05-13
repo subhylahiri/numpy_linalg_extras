@@ -25,6 +25,7 @@ __all__ = [
     'rfftfreq',
 ]
 
+# existing arrays
 fft = _wr.wrap_one(nf.fft)
 ifft = _wr.wrap_one(nf.ifft)
 rfft = _wr.wrap_one(nf.rfft)
@@ -39,9 +40,8 @@ fft2 = _wr.wrap_one(nf.fft2)
 ifft2 = _wr.wrap_one(nf.ifft2)
 fftn = _wr.wrap_one(nf.fftn)
 ifftn = _wr.wrap_one(nf.ifftn)
-
 fftshift = _wr.wrap_one(nf.fftshift)
 ifftshift = _wr.wrap_one(nf.ifftshift)
-# array creation
+# new arrays
 fftfreq = _wr.wrap_one(nf.fftfreq)
 rfftfreq = _wr.wrap_one(nf.rfftfreq)

@@ -35,14 +35,15 @@ Examples
 """
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Set, Tuple, Union
+from typing import List, Optional, Sequence, Set, Tuple, Union, ClassVar
 
 import numpy as np
 from numpy.lib.mixins import NDArrayOperatorsMixin
 
 from . import _linalg as la
-from . import convert_loop as cv
 from . import gufuncs as gf
+from .gufuncs import fam
+from .convert import conv_in_attr, conv_out_init
 
 # pylint: disable=invalid-name
 # =============================================================================
@@ -348,7 +349,7 @@ def _inv_input(ufunc: np.ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     # inverse_arguments tells us if each argument is a 'denominator'.
     # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
     # Hence `xor`.
-    func_in = gf.fam.inverse_arguments[ufunc]
+    func_in = fam.inverse_arguments[ufunc]
     # NOTE: rmatmul doesn't fit the pattern, needs special handling
     if all(func_in) and all(pinv_in):
         return (True, True, True)
@@ -378,15 +379,15 @@ def _inv_input_scalar(ufunc: np.ufunc,
     # if both arguments are (p)invarrays, return (indices of) None
     if all(pinv_in):
         return (False, False)
-    func_in = gf.fam.inverse_scalar_arguments[ufunc]
+    func_in = fam.inverse_scalar_arguments[ufunc]
     return tuple(x ^ y for x, y in zip(pinv_in, func_in))
 
 
 def _disallow_solve_pinv(ufunc: np.ufunc, is_pinv: Sequence[bool]) -> bool:
     """Check that pinvarray is not in denominator of solve"""
-    if not gf.fam.same_family(ufunc, gf.solve) or (ufunc == gf.rmatmul):
+    if not fam.same_family(ufunc, gf.solve) or (ufunc == gf.rmatmul):
         return False
-    denom = gf.fam.inverse_arguments[ufunc]
+    denom = fam.inverse_arguments[ufunc]
     return any(x and y for x, y in zip(denom, is_pinv))
 
 
@@ -395,7 +396,7 @@ def _who_chooses(obj: pinvarray,
                  inputs: Sequence[Arrayish],
                  pinv_in: Sequence[bool]) -> pinvarray:
     """Which input's gufunc_map should we use"""
-    if ufunc not in gf.fam.inverse_arguments.keys():
+    if ufunc not in fam.inverse_arguments.keys():
         return obj
     denom = _inv_input(ufunc, pinv_in)[:2]
     is_inv = [isinstance(x, invarray) for x in inputs]
@@ -430,7 +431,7 @@ def _implicit_ufunc(inputs: Sequence[Arrayish]) -> List[Arrayish]:
 
 
 def _implicit_getattr(obj: pinvarray, attr: str):
-    """Convert (p)invarray to explicit (pseudo)inverse for otther attributes.
+    """Convert (p)invarray to explicit (pseudo)inverse for other attributes.
 
     Alternative to returning `AttributeError()`: get it from explicit inverse.
     This would allow other operations to work with implicit inversion.
@@ -517,14 +518,14 @@ class pinvarray(NDArrayOperatorsMixin):
     # _ufunc_map[arg1][arg2] -> ufunc_out, where:
     # ar1/arg2 = is the second/first argument the numerator?
     # ufunc_out = ufunc to use instead of original for scalar operator
-    _ufunc_map: gf.fam.UFMap = gf.fam.truediv_family
+    _ufunc_map: ClassVar[fam.UFMap] = fam.truediv_family
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?
     # ufunc_out = gufunc to use instead of original in matrix operation
-    _gufunc_map: gf.fam.UFMap = gf.fam.lstsq_family
+    _gufunc_map: ClassVar[fam.UFMap] = fam.lstsq_family
 
     # these ufuncs are passed on to self._to_invert
-    _unary_ufuncs: Set[np.ufunc] = {np.positive, np.negative}
+    _unary_ufuncs: ClassVar[Set[np.ufunc]] = {np.positive, np.negative}
 
     def __init__(self, to_invert: lnarray):
         if isinstance(to_invert, lnarray):
@@ -541,7 +542,7 @@ class pinvarray(NDArrayOperatorsMixin):
         """
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
-        args, pinv_in = cv.conv_loop_in_attr('_to_invert', pinvarray, inputs)
+        args, pinv_in = conv_in_attr('_to_invert', pinvarray, inputs)
         obj = _who_chooses(self, ufunc, inputs, pinv_in)
         if obj is None:
             return NotImplemented
@@ -550,17 +551,16 @@ class pinvarray(NDArrayOperatorsMixin):
         ufunc, args, pinv_out = self._choose_ufunc(ufunc, args, pinv_in)
         if ufunc is None:
             return NotImplemented
-        outputs, pinv_out = cv.conv_loop_in_attr(
-            '_to_invert', pinvarray, kwds, pinv_out)
+        outs, pinv_out = conv_in_attr('_to_invert', pinvarray, kwds, pinv_out)
         results = self._to_invert.__array_ufunc__(ufunc, method, *args, **kwds)
-        return cv.conv_loop_out_init(self, results, outputs, pinv_out)
+        return conv_out_init(self, results, outs, pinv_out)
 
     def _choose_ufunc(self, ufunc: np.ufunc, args: Tuple[np.ndarray],
                       pinv_in: Sequence[bool]) -> (np.ufunc, Tuple[np.ndarray],
                                                    List[bool]):
         """Choose which ufunc to use, swap args if needed, convert result?"""
         pinv_out = [False] * ufunc.nout  # which outputs need converting back?
-        if ufunc in gf.fam.inverse_arguments.keys():
+        if ufunc in fam.inverse_arguments.keys():
             # _who_chooses -> correct choice across families
             left_arg, right_arg, swap = _inv_input(ufunc, pinv_in)
             ufunc = self._gufunc_map[left_arg][right_arg]
@@ -569,7 +569,7 @@ class pinvarray(NDArrayOperatorsMixin):
                 args = [args[1], args[0]] + args[2:]
             # only operation that returns `invarray` is `invarray @ invarray`
             pinv_out[0] = left_arg and right_arg
-        elif ufunc in gf.fam.inverse_scalar_arguments.keys():
+        elif ufunc in fam.inverse_scalar_arguments.keys():
             left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
             ufunc = self._ufunc_map[left_arg][right_arg]
             pinv_out[0] = True  # one of left_arg/right_arg must be True
@@ -789,7 +789,7 @@ class invarray(pinvarray):
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?
     # ufunc_out = gufunc to use instead of original in matrix operation
-    _gufunc_map: gf.fam.UFMap = gf.fam.solve_family
+    _gufunc_map: ClassVar[fam.UFMap] = fam.solve_family
 
     def __init__(self, to_invert: lnarray):
         super().__init__(to_invert)

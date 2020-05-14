@@ -344,16 +344,15 @@ def _inv_input(ufunc: np.ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     left, right
         `gufuncs.fam.inverse_arguments` of ufunc to call
     swap
-        should imputs be swapped?
+        should inputs be swapped?
     """
-    # inverse_arguments tells us if each argument is a 'denominator'.
-    # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
-    # Hence `xor`.
-    func_in = fam.inverse_arguments[ufunc]
     # NOTE: rmatmul doesn't fit the pattern, needs special handling
-    if all(func_in) and all(pinv_in):
+    swap = ufunc == gf.rmatmul
+    if swap and all(pinv_in):
         return (True, True, True)
-    swap = all(func_in)
+    # inverse_arguments tells us if each argument is a 'denominator'.
+    func_in = fam.inverse_arguments[ufunc]
+    # `(p)invarray` in 'numerator' slot -> 'denominator' & vice versa => `xor`.
     return tuple(x ^ y for x, y in zip(pinv_in, func_in)) + (swap,)
 
 
@@ -373,13 +372,12 @@ def _inv_input_scalar(ufunc: np.ufunc,
     left, right : bool
         `gufuncs.fam.inverse_scalar_arguments` of ufunc to call
     """
-    # inverse_scalar_arguments tells us if the other argument is a numerator.
-    # A `(p)invarray` in a 'numerator' slot -> 'denominator' & vice versa.
-    # Hence `xor`.
-    # if both arguments are (p)invarrays, return (indices of) None
+    # if both arguments are (p)invarrays, return indices of `None` in ufunc map
     if all(pinv_in):
         return (False, False)
+    # inverse_scalar_arguments tells us if the other argument is a numerator.
     func_in = fam.inverse_scalar_arguments[ufunc]
+    # `(p)invarray` in 'numerator' slot -> 'denominator' & vice versa => `xor`.
     return tuple(x ^ y for x, y in zip(pinv_in, func_in))
 
 
@@ -409,7 +407,7 @@ def _who_chooses(obj: pinvarray,
         return None
     if any(choosers):
         # only change the chooser if it is a denominator and a (p)invarray
-        return inputs[choosers[1]]
+        return inputs[choosers.index(True)]
     return obj
 
 
@@ -421,13 +419,7 @@ def _implicit_ufunc(inputs: Sequence[Arrayish]) -> List[Arrayish]:
     Not used on the basis that explicit > implicit.
     Use __call__ if you want an actual (pseudo)inverse matrix.
     """
-    args = []
-    for input_ in inputs:
-        if isinstance(input_, pinvarray):
-            args.append(input_())
-        else:
-            args.append(input_)
-    return args
+    return [x() if isinstance(x, pinvarray) else x for x in inputs]
 
 
 def _implicit_getattr(obj: pinvarray, attr: str):
@@ -566,7 +558,7 @@ class pinvarray(NDArrayOperatorsMixin):
             ufunc = self._gufunc_map[left_arg][right_arg]
             # NOTE: rmatmul doesn't fit the pattern, needs special handling
             if swap:
-                args = [args[1], args[0]] + args[2:]
+                args = args[1::-1] + args[2:]
             # only operation that returns `invarray` is `invarray @ invarray`
             pinv_out[0] = left_arg and right_arg
         elif ufunc in fam.inverse_scalar_arguments.keys():
@@ -579,8 +571,6 @@ class pinvarray(NDArrayOperatorsMixin):
             pinv_out[0] = True
         else:
             # Not a linalg operator ufunc. Not what this class is for.
-            # __array_ufunc__ should return NotImplemented. Use __call__ if
-            # you want an actual (pseudo)inverse matrix
             ufunc = None
             # Alternative: other ufuncs use implicit inversion.
             # args = _implicit_ufunc(inputs)

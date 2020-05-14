@@ -59,36 +59,37 @@ import typing as _ty
 import numpy as _np
 
 MyArray = _ty.TypeVar('MyArray')
-OutTuple = _ty.Tuple[_ty.Optional[_np.ndarray], ...]
-ArrayTuple = _ty.Tuple[_np.ndarray, ...]
-ArgTuple = _ty.Tuple[_ty.Union[_np.ndarray, MyArray], ...]
+BaseArray = _ty.TypeVar('BaseArray')
+OutTuple = _ty.Tuple[_ty.Optional[BaseArray], ...]
+ArrayTuple = _ty.Tuple[BaseArray, ...]
+ArgTuple = _ty.Tuple[_ty.Union[BaseArray, MyArray], ...]
 ArgDict = _ty.Dict[str, _ty.Any]
 ArgsIn = _ty.Union[ArgTuple[MyArray], ArgDict]
 BoolList = _ty.List[bool]
-Preparer = _ty.Callable[[MyArray], _np.ndarray]
-Restorer = _ty.Callable[[_np.ndarray], MyArray]
+Preparer = _ty.Callable[[MyArray], BaseArray]
+Restorer = _ty.Callable[[BaseArray], MyArray]
 # ==============================================================================
 # Inputs
 # ==============================================================================
 
 
-def conv_input(converter: Preparer[MyArray],
+def conv_input(converter: Preparer[MyArray, BaseArray],
                obj_typ: _ty.Type[MyArray],
-               args: ArgTuple[MyArray]) -> (ArrayTuple, BoolList):
+               args: ArgTuple[MyArray]) -> (ArrayTuple[BaseArray], BoolList):
     """Process inputs in an __array_ufunc__ method.
 
     Parameters
     ----------
-    converter : Callable[MyType -> ndarray]
+    converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
-    obj_typ : Type[MyType]
+    obj_typ : Type[MyArray]
         The type of object that needs converting.
-    args : Tuple[ndarray|MyType, ...]
+    args : Tuple[ndarray|MyArray, ...]
         Tuple of inputs to ufunc (or ``out`` argument)
 
     Returns
     -------
-    out : Tuple[ndarray|MyType, ...]
+    out : Tuple[ndarray|MyArray, ...]
         New tuple of inputs to ufunc (or ``out`` argument) with conversions.
     conv : List[bool]
         List of bools telling us if each input was converted.
@@ -105,17 +106,17 @@ def conv_input(converter: Preparer[MyArray],
     return out, conv
 
 
-def conv_in_out(converter: Preparer[MyArray],
+def conv_in_out(converter: Preparer[MyArray, BaseArray],
                 obj_typ: _ty.Type[MyArray],
                 kwds: ArgDict,
-                conv_out: BoolList) -> (OutTuple, BoolList):
+                conv_out: BoolList) -> (OutTuple[BaseArray], BoolList):
     """Process the out keyword in an __array_ufunc__ method.
 
     Parameters
     ----------
-    converter : Callable[MyType -> ndarray]
+    converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
-    obj_typ : Type[MyType]
+    obj_typ : Type[MyArray]
         The type of object that needs converting.
     kwds : Dict[str, Any]
         Dict of key word inputs to ufunc
@@ -138,30 +139,33 @@ def conv_in_out(converter: Preparer[MyArray],
     return outputs, conv_out
 
 
-def _conv_in(converter: Preparer[MyArray], obj_typ: _ty.Type[MyArray],
-             tup: ArgsIn, *conv_out) -> (OutTuple, BoolList):
+def _conv_in(converter: Preparer[MyArray, BaseArray],
+             obj_typ: _ty.Type[MyArray],
+             tup: ArgsIn,
+             *conv_out) -> (OutTuple[BaseArray], BoolList):
     """Call one of conv_input or conv_in_out"""
     if isinstance(tup, tuple):
         return conv_input(converter, obj_typ, tup)
     return conv_in_out(converter, obj_typ, tup, *conv_out)
 
 
-def prepare_via_view() -> Preparer[MyArray]:
+def prepare_via_view(std_array: _ty.Type[BaseArray] = _np.ndarray
+                     ) -> Preparer[MyArray, BaseArray]:
     """Create function to convert object to an array using view method.
 
     Returns
     -------
-    converter : Callable[MyType -> ndarray]
+    converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
     """
-    def converter(thing: MyArray) -> _np.ndarray:
+    def converter(thing: MyArray) -> BaseArray:
         """convert to array using view method
         """
-        return thing.view(_np.ndarray)
+        return thing.view(std_array)
     return converter
 
 
-def prepare_via_attr(attr: str) -> Preparer[MyArray]:
+def prepare_via_attr(attr: str) -> Preparer[MyArray, BaseArray]:
     """Create function to convert object to an array using an attribute.
 
     Parameters
@@ -171,10 +175,10 @@ def prepare_via_attr(attr: str) -> Preparer[MyArray]:
 
     Returns
     -------
-    converter : Callable[MyType -> ndarray]
+    converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
     """
-    def converter(thing: MyArray) -> _np.ndarray:
+    def converter(thing: MyArray) -> BaseArray:
         """convert to array using an attribute
         """
         return getattr(thing, attr)
@@ -183,14 +187,17 @@ def prepare_via_attr(attr: str) -> Preparer[MyArray]:
 
 def conv_in_view(obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *conv_out) -> (OutTuple, BoolList):
+                 *conv_out) -> (OutTuple[_np.ndarray], BoolList):
     """Process inputs in an __array_ufunc__ method using view method.
+
+    If the second argument is a tuple, we assume we are processing the ufunc's
+    inputs. If it is a dict, we are processing the `out` keyword.
 
     Parameters
     ----------
-    obj_typ : Type[MyType]
+    obj_typ : Type[MyArray]
         The type of object that needs converting via ``view`` method.
-    tup : Tuple[ndarray|MyType, ...], Dict[str, Any]
+    tup : Tuple[ndarray|MyArray, ...], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
         Dict of key word inputs to ufunc
     conv_out : Sequence[bool], optional
@@ -209,16 +216,19 @@ def conv_in_view(obj_typ: _ty.Type[MyArray],
 def conv_in_attr(attr: str,
                  obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *conv_out: bool) -> (OutTuple, BoolList):
+                 *conv_out: bool) -> (OutTuple[BaseArray], BoolList):
     """Process inputs in an __array_ufunc__ method using an attribute.
+
+    If the third argument is a tuple, we assume we are processing the ufunc's
+    inputs. If it is a dict, we are processing the `out` keyword.
 
     Parameters
     ----------
     attr : str, None
         The name of the ``obj_typ`` attribute to use in place of class.
-    obj_typ : Type[MyType]
+    obj_typ : Type[MyArray]
         The type of object that needs converting with its ``attr`` attribute.
-    tup : Tuple[ndarray|MyType, ...], Dict[str, Any]
+    tup : Tuple[ndarray|MyArray, ...], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
         Dict of key word inputs to ufunc
     conv_out : Sequence[bool], optional
@@ -239,15 +249,15 @@ def conv_in_attr(attr: str,
 # ======================================================================
 
 
-def conv_out(converter: Restorer[MyArray],
-             results: ArrayTuple,
-             outputs: OutTuple,
+def conv_out(converter: Restorer[BaseArray, MyArray],
+             results: ArrayTuple[BaseArray],
+             outputs: OutTuple[BaseArray],
              conv: _ty.Sequence[bool] = ()) -> ArgTuple[MyArray]:
     """Process outputs in an __array_ufunc__ method.
 
     Parameters
     ----------
-    converter : Callable[ndarray -> MyType]
+    converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     results : Tuple[ndarray]
         Tuple of outputs from ufunc
@@ -255,11 +265,11 @@ def conv_out(converter: Restorer[MyArray],
         ``out`` argument of ufunc, or tuple of ``None``.
     conv : Sequence[bool], default: ()
         Sequence of bools telling us if each output should be converted.
-        Converted to itertools.repeat(True) if bool(conv) == False (default)
+        Replaced with itertools.repeat(True) if bool(conv) == False (default)
 
     Returns
     -------
-    results : Tuple[ndarray|MyType, ...]
+    results : Tuple[ndarray|MyArray, ...]
         New tuple of results from ufunc with conversions.
     """
     if results is NotImplemented:
@@ -270,24 +280,23 @@ def conv_out(converter: Restorer[MyArray],
         conv = _itertools.repeat(True)
     results_out = []
     for result, output, cout in zip(results, outputs, conv):
-        if output is None:
-            if cout:
-                results_out.append(converter(result))
-            else:
-                results_out.append(result)
-        else:
+        if output is not None:
             results_out.append(output)
+        elif cout:
+            results_out.append(converter(result))
+        else:
+            results_out.append(result)
     if len(results_out) == 1:
         return results_out[0]
     return tuple(results_out)
 
 
-def restore_via_attr(obj: MyArray, attr: str) -> Restorer[MyArray]:
+def restore_via_attr(obj: MyArray, attr: str) -> Restorer[BaseArray, MyArray]:
     """Create function to convert arrays by setting obj.attr.
 
     Parameters
     ----------
-    obj : MyType
+    obj : MyArray
         The template object for conversions.
     attr: str, None
         The name of the ``type(obj)`` attribute returned in place of class.
@@ -296,10 +305,10 @@ def restore_via_attr(obj: MyArray, attr: str) -> Restorer[MyArray]:
 
     Returns
     -------
-    converter : Callable[ndarray -> MyType]
+    converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     """
-    def converter(thing: _np.ndarray) -> MyArray:
+    def converter(thing: BaseArray) -> MyArray:
         """convert arrays by setting obj.attr
         """
         try:
@@ -312,50 +321,50 @@ def restore_via_attr(obj: MyArray, attr: str) -> Restorer[MyArray]:
     return converter
 
 
-def restore_via_init(obj: MyArray) -> Restorer[MyArray]:
-    """Create function to convert arrays  using obj.__init__.
+def restore_via_init(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
+    """Create function to convert arrays  using objt.__init__.
 
     Parameters
     ----------
-    obj : MyType
-        The template object for conversions.
+    objt : Type[MyArray]
+        The type of object to converst to.
 
     Returns
     -------
-    converter : Callable[ndarray -> MyType]
+    converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     """
-    def converter(thing: _np.ndarray) -> MyArray:
-        """convert arrays using obj.__init__
+    def converter(thing: BaseArray) -> MyArray:
+        """convert arrays using objt.__init__
         """
-        return type(obj)(thing)
+        return objt(thing)
     return converter
 
 
-def restore_via_view(obj: MyArray) -> Restorer[MyArray]:
+def restore_via_view(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
     """Create function to convert arrays using array.view.
 
     Parameters
     ----------
-    obj : MyType
-        The template object for conversions.
+    objt : Type[MyArray]
+        The type of object to converst to.
 
     Returns
     -------
-    converter : Callable[ndarray -> MyType]
+    converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     """
-    def converter(thing: _np.ndarray) -> MyArray:
+    def converter(thing: BaseArray) -> MyArray:
         """convert arrays using array.view
         """
-        return thing.view(type(obj))
+        return thing.view(objt)
     return converter
 
 
 def conv_out_attr(obj: MyArray,
                   attr: str,
-                  results: ArrayTuple,
-                  outputs: OutTuple,
+                  results: ArrayTuple[BaseArray],
+                  outputs: OutTuple[BaseArray],
                   conv: _ty.Sequence[bool] = ()) -> ArgTuple[MyArray]:
     """Process outputs in an __array_ufunc__ method using an attribute.
 
@@ -363,7 +372,7 @@ def conv_out_attr(obj: MyArray,
 
     Parameters
     ----------
-    obj : MyType
+    obj : MyArray
         The template object for conversions.
     attr : str
         The name of the ``type(obj)`` attribute returned in place of class.
@@ -377,7 +386,7 @@ def conv_out_attr(obj: MyArray,
 
     Returns
     -------
-    results : Tuple[ndarray|MyType]
+    results : Tuple[ndarray|MyArray]
         New tuple of results from ufunc with conversions.
 
     Notes
@@ -389,8 +398,8 @@ def conv_out_attr(obj: MyArray,
 
 
 def conv_out_init(obj: MyArray,
-                  results: ArgTuple,
-                  outputs: ArgTuple,
+                  results: ArgTuple[BaseArray],
+                  outputs: OutTuple[BaseArray],
                   conv: _ty.Sequence[bool] = ()) -> ArgTuple[MyArray]:
     """Process outputs in an __array_ufunc__ method using a constructor.
 
@@ -398,7 +407,7 @@ def conv_out_init(obj: MyArray,
 
     Parameters
     ----------
-    obj : MyType
+    obj : MyArray
         The template object for conversions.
     results : Tuple[ndarray]
         Tuple of outputs from ufunc
@@ -410,15 +419,15 @@ def conv_out_init(obj: MyArray,
 
     Returns
     -------
-    results : Tuple[ndarray|MyType]
+    results : Tuple[ndarray|MyArray]
         New tuple of results from ufunc with conversions.
     """
-    return conv_out(restore_via_init(obj), results, outputs, conv)
+    return conv_out(restore_via_init(type(obj)), results, outputs, conv)
 
 
 def conv_out_view(obj: MyArray,
-                  results: ArrayTuple,
-                  outputs: OutTuple,
+                  results: ArrayTuple[BaseArray],
+                  outputs: OutTuple[BaseArray],
                   conv: _ty.Sequence[bool] = ()) -> ArgTuple[MyArray]:
     """Process outputs in an __array_ufunc__ method using a view method.
 
@@ -426,7 +435,7 @@ def conv_out_view(obj: MyArray,
 
     Parameters
     ----------
-    obj : MyType
+    obj : MyArray
         The template object for conversions.
     results : Tuple[ndarray]
         Tuple of outputs from ufunc
@@ -438,7 +447,7 @@ def conv_out_view(obj: MyArray,
 
     Returns
     -------
-    results : Tuple[ndarray|MyType]
+    results : Tuple[ndarray|MyArray]
         New tuple of results from ufunc with conversions.
     """
-    return conv_out(restore_via_view(obj), results, outputs, conv)
+    return conv_out(restore_via_view(type(obj)), results, outputs, conv)

@@ -107,14 +107,15 @@ class TestCaseNumpy(_ut.TestCase):
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 
     @_cx.contextmanager
-    def _adjusted_tols(self, array: np.ndarray):
+    def _adjusted_tols(self, array: np.ndarray, cond: float = 1.):
         """Adjusting all_close tolerances for dtype"""
         try:
+            cond = cond if np.isfinite(cond) else 1.
             old_opts = self.all_close_opts.copy()
             if np.issubdtype(array.dtype, np.inexact):
                 epsratio = np.finfo(array.dtype).eps / np.finfo(np.float64).eps
                 # single/double epsratio ~ 5.6e8
-                self.all_close_opts['rtol'] *= epsratio
+                self.all_close_opts['rtol'] *= epsratio * cond
                 self.all_close_opts['atol'] *= epsratio
             elif np.issubdtype(array.dtype, np.integer):
                 self.all_close_opts['rtol'] = 0
@@ -124,7 +125,7 @@ class TestCaseNumpy(_ut.TestCase):
             self.all_close_opts = old_opts
 
     def assertArrayAllClose(self, actual: np.ndarray, desired: np.ndarray,
-                            msg: Optional[str] = None):
+                            cond: float = 1., msg: Optional[str] = None):
         """Calls numpy.allclose and processes the results like a
         unittest.TestCase method.
 
@@ -133,10 +134,11 @@ class TestCaseNumpy(_ut.TestCase):
         The original tolerances are for `np.float64`.
         """
         # __unittest = True
-        with self._adjusted_tols(np.array(desired)):
+        with self._adjusted_tols(np.array(desired), cond=cond):
             if not np.allclose(actual, desired, **self.all_close_opts):
                 msg = '' if msg is None else f'{msg}\n'
                 msg += miss_str(actual, desired, **self.all_close_opts)
+                msg += '' if cond == 1. else f' (cond={cond})'
                 self.fail(msg)
 
     def assertArrayNotAllClose(self, actual: np.ndarray, desired: np.ndarray,

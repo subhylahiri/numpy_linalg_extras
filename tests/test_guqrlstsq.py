@@ -547,109 +547,117 @@ class TestLstsqVal(TestCaseNumpy):
     def test_lstsq_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
+        cond_bs = np.linalg.cond(m_bs).max()
+        cond_sb = np.linalg.cond(m_sb).max()
 
         # overconstrained
         x_sb = gfl.lstsq(m_bs, m_bb)
         m_bst = la.dagger(m_bs)
         # with self.subTest(msg='lstsq(over)'):
-        self.assertArrayAllClose(m_bst @ m_bs @ x_sb, m_bst @ m_bb)
+        self.assertArrayAllClose(m_bst @ m_bs @ x_sb, m_bst @ m_bb,
+                                 cond=cond_bs)
         x_bs = gfl.rlstsq(m_bb, m_sb)
         m_sbt = la.dagger(m_sb)
         # with self.subTest(msg='rlstsq(over)'):
-        self.assertArrayAllClose(x_bs @ m_sb @ m_sbt, m_bb @ m_sbt)
+        self.assertArrayAllClose(x_bs @ m_sb @ m_sbt, m_bb @ m_sbt,
+                                 cond=cond_sb)
         # underconstrained
         x_bs = gfl.lstsq(m_sb, m_ss)
         # with self.subTest(msg='lstsq(under)'):
-        self.assertArrayAllClose(m_sb @ x_bs, m_ss)
+        self.assertArrayAllClose(m_sb @ x_bs, m_ss, cond=cond_sb)
         x_sb = gfl.rlstsq(m_ss, m_bs)
         # with self.subTest(msg='rlstsq(under)'):
-        self.assertArrayAllClose(x_sb @ m_bs, m_ss)
+        self.assertArrayAllClose(x_sb @ m_bs, m_ss, cond=cond_bs)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), qr_funcs)
     def test_lstsq_qr_returns_expected_values_with_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         # overconstrained
         x0_sb = gfl.lstsq(m_bs, m_bb)
         # overconstrained
         x_sb, x_f, tau = fun(m_bs, m_bb)
         # with self.subTest('lstsq_qr(over,' + suffix):
-        self.assertArrayAllClose(x_sb, x0_sb)
+        self.assertArrayAllClose(x_sb, x0_sb, cond=cond)
         # overconstrained
         xx_sb = gfl.qr_lstsq(x_f, tau, m_bb)
         # with self.subTest('qr_lstsq(over,' + suffix):
-        self.assertArrayAllClose(xx_sb, x0_sb)
+        self.assertArrayAllClose(xx_sb, x0_sb, cond=cond)
         # underconstrained
         y_sb = gfl.rqr_lstsq(m_ss, x_f, tau)
         # with self.subTest('rqr_lstsq(under,' + suffix):
-        self.assertArrayAllClose(y_sb @ m_bs, m_ss)
+        self.assertArrayAllClose(y_sb @ m_bs, m_ss, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), rqr_funcs)
     def test_rlstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         # overconstrained
         x0_bs = gfl.rlstsq(m_bb, m_sb)
         # overconstrained
         x_bs, x_f, tau = fun(m_bb, m_sb)
         # with self.subTest('rlstsq_qr(under,' + suffix):
-        self.assertArrayAllClose(x_bs, x0_bs)
+        self.assertArrayAllClose(x_bs, x0_bs, cond=cond)
         # overconstrained
         xx_bs = gfl.rqr_lstsq(m_bb, x_f, tau)
         # with self.subTest('rqr_rlstsq(under,' + suffix):
-        self.assertArrayAllClose(xx_bs, x0_bs)
+        self.assertArrayAllClose(xx_bs, x0_bs, cond=cond)
         # underconstrained
         y_bs = gfl.qr_lstsq(x_f, tau, m_ss)
         # with self.subTest('qr_rlstsq(over,' + suffix):
-        self.assertArrayAllClose(m_sb @ y_bs, m_ss)
+        self.assertArrayAllClose(m_sb @ y_bs, m_ss, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), qr_funcs)
     def test_lstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         # underconstrained
         x0_bs = gfl.lstsq(m_sb, m_ss)
         # underconstrained
         x_bs, x_f, tau = fun(m_sb, m_ss)
         # with self.subTest('lstsq_qr(under,' + suffix):
-        self.assertArrayAllClose(x_bs, x0_bs)
+        self.assertArrayAllClose(x_bs, x0_bs, cond=cond)
         # underconstrained
         xx_bs = gfl.qr_lstsq(x_f, tau, m_ss)
         # with self.subTest('qr_lstsq(under,' + suffix):
-        self.assertArrayAllClose(xx_bs, x0_bs)
+        self.assertArrayAllClose(xx_bs, x0_bs, cond=cond)
         # overconstrained
         y_bs = gfl.rqr_lstsq(m_bb, x_f, tau)
         m_sbt = la.dagger(m_sb)
         # with self.subTest('rqr_lstsq(over,' + suffix):
-        self.assertArrayAllClose(y_bs @ m_sb @ m_sbt, m_bb @ m_sbt)
+        self.assertArrayAllClose(y_bs @ m_sb @ m_sbt, m_bb @ m_sbt, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), rqr_funcs)
     def test_rlstsq_qr_returns_expected_values_with_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         # underconstrained
         x0_sb = gfl.rlstsq(m_ss, m_bs)
         # underconstrained
         x_sb, x_f, tau = fun(m_ss, m_bs)
         # with self.subTest('rlstsq_qr(over,' + suffix):
-        self.assertArrayAllClose(x_sb, x0_sb)
+        self.assertArrayAllClose(x_sb, x0_sb, cond=cond)
         # underconstrained
         xx_sb = gfl.rqr_lstsq(m_ss, x_f, tau)
         # with self.subTest('rqr_rlstsq(over,' + suffix):
-        self.assertArrayAllClose(xx_sb, x0_sb)
+        self.assertArrayAllClose(xx_sb, x0_sb, cond=cond)
         # overconstrained
         y_sb = gfl.qr_lstsq(x_f, tau, m_bb)
         m_bst = la.dagger(m_bs)
         # with self.subTest('qr_rlstsq(under,' + suffix):
-        self.assertArrayAllClose(m_bst @ m_bs @ y_sb, m_bst @ m_bb)
+        self.assertArrayAllClose(m_bst @ m_bs @ y_sb, m_bst @ m_bb, cond=cond)
 
     @expectedFailure
     @errstate

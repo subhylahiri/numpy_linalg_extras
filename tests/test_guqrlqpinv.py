@@ -109,6 +109,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_returns_expected_values_with_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         unitary, right = gfl.qr_m(m_sb)
         wide = unitary @ right
@@ -116,28 +117,30 @@ class TestQR(TestCaseNumpy):
         eyet = unitary @ la.dagger(unitary)
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='qr'):
-        self.assertArrayAllClose(wide, m_sb)
+        self.assertArrayAllClose(wide, m_sb, cond=cond)
         # with self.subTest(msg='Q^T Q'):
-        self.assertArrayAllClose(id_s, eye)
+        self.assertArrayAllClose(id_s, eye, cond=cond)
         # with self.subTest(msg='Q Q^T'):
-        self.assertArrayAllClose(id_s, eyet)
+        self.assertArrayAllClose(id_s, eyet, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_returns_expected_values_with_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         unitary, right = gfl.qr_n(m_bs)
         tall = unitary @ right
         eye = la.dagger(unitary) @ unitary
         id_s = np.identity(m_bs.shape[-1], m_bs.dtype)
         # with self.subTest(msg='qr'):
-        self.assertArrayAllClose(tall, m_bs)
+        self.assertArrayAllClose(tall, m_bs, cond=cond)
         # with self.subTest(msg='Q^T Q'):
-        self.assertArrayAllClose(id_s, eye)
+        self.assertArrayAllClose(id_s, eye, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_complete_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         unitary, right = gfl.qr_m(m_bs)
         tall = unitary @ right
@@ -145,11 +148,11 @@ class TestQR(TestCaseNumpy):
         eyet = unitary @ la.dagger(unitary)
         id_b = np.identity(m_bs.shape[-2], m_bs.dtype)
         # with self.subTest(msg='qr'):
-        self.assertArrayAllClose(tall, m_bs)
+        self.assertArrayAllClose(tall, m_bs, cond=cond)
         # with self.subTest(msg='Q^T Q'):
-        self.assertArrayAllClose(id_b, eye)
+        self.assertArrayAllClose(id_b, eye, cond=cond)
         # with self.subTest(msg='Q Q^T'):
-        self.assertArrayAllClose(id_b, eyet)
+        self.assertArrayAllClose(id_b, eyet, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr_r_returns_expected_values(self, arrays):
@@ -157,17 +160,20 @@ class TestQR(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='r_m'):
+        cond = np.linalg.cond(m_sb).max()
         right = gfl.qr_rm(m_sb)
         rrr = gfl.qr_m(m_sb)[1]
-        self.assertArrayAllClose(right, rrr)
+        self.assertArrayAllClose(right, rrr, cond=cond)
         # with self.subTest(msg='r_n'):
+        cond = np.linalg.cond(m_bs).max()
         right = gfl.qr_rn(m_bs)
         rrr = gfl.qr_n(m_bs)[1]
-        self.assertArrayAllClose(right, rrr)
+        self.assertArrayAllClose(right, rrr, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_rawm_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         rrr = gfl.qr_m(m_sb)[1]
         num = rrr.shape[-2]
@@ -178,18 +184,19 @@ class TestQR(TestCaseNumpy):
         vnorm = gfb.norm(la.row(tau) * vecs[..., :num], axis=-2)**2
         right = np.triu(h_sb)
         # with self.subTest(msg='raw_m'):
-        self.assertArrayAllClose(right, rrr)
-        self.assertArrayAllClose(vnorm, 2 * tau.real)
+        self.assertArrayAllClose(right, rrr, cond=cond)
+        self.assertArrayAllClose(vnorm, 2 * tau.real, cond=cond)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k]
             ttt = la.scalar(tau[..., -k-1])
             right -= ttt * vvv * (la.dagger(vvv) @ right)
         # with self.subTest(msg='h_m'):
-        self.assertArrayAllClose(right, m_sb)
+        self.assertArrayAllClose(right, m_sb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_rawn_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         rrr = gfl.qr_n(m_bs)[1]
         num = rrr.shape[-1]
@@ -200,14 +207,14 @@ class TestQR(TestCaseNumpy):
         vnorm = gfb.norm(la.row(tau) * vecs, axis=-2)**2
         right = np.triu(h_bs)
         # with self.subTest(msg='raw_n'):
-        self.assertArrayAllClose(right[..., :num, :], rrr)
-        self.assertArrayAllClose(vnorm, 2 * tau.real)
+        self.assertArrayAllClose(right[..., :num, :], rrr, cond=cond)
+        self.assertArrayAllClose(vnorm, 2 * tau.real, cond=cond)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k]
             ttt = la.scalar(tau[..., -k-1])
             right -= ttt * vvv * (la.dagger(vvv) @ right)
         # with self.subTest(msg='h_n'):
-        self.assertArrayAllClose(right, m_bs)
+        self.assertArrayAllClose(right, m_bs, cond=cond)
 
 
 class TestLQ(TestCaseNumpy):
@@ -217,19 +224,21 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_returns_expected_values_with_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         left, unitary = gfl.lq_m(m_sb)
         wide = left @ unitary
         eye = unitary @ la.dagger(unitary)
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='lq'):
-        self.assertArrayAllClose(wide, m_sb)
+        self.assertArrayAllClose(wide, m_sb, cond=cond)
         # with self.subTest(msg='Q Q^T'):
-        self.assertArrayAllClose(id_s, eye)
+        self.assertArrayAllClose(id_s, eye, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_returns_expected_values_with_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         left, unitary = gfl.lq_n(m_bs)
         tall = left @ unitary
@@ -237,15 +246,16 @@ class TestLQ(TestCaseNumpy):
         eyet = la.dagger(unitary) @ unitary
         id_s = np.identity(m_bs.shape[-1], m_bs.dtype)
         # with self.subTest(msg='lq'):
-        self.assertArrayAllClose(tall, m_bs)
+        self.assertArrayAllClose(tall, m_bs, cond=cond)
         # with self.subTest(msg='Q Q^T'):
-        self.assertArrayAllClose(id_s, eye)
+        self.assertArrayAllClose(id_s, eye, cond=cond)
         # with self.subTest(msg='Q^T Q'):
-        self.assertArrayAllClose(id_s, eyet)
+        self.assertArrayAllClose(id_s, eyet, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_complete_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         left, unitary = gfl.lq_n(m_sb)
         wide = left @ unitary
@@ -253,11 +263,11 @@ class TestLQ(TestCaseNumpy):
         eyet = la.dagger(unitary) @ unitary
         id_b = np.identity(m_sb.shape[-1], m_sb.dtype)
         # with self.subTest(msg='lq'):
-        self.assertArrayAllClose(wide, m_sb)
+        self.assertArrayAllClose(wide, m_sb, cond=cond)
         # with self.subTest(msg='Q Q^T'):
-        self.assertArrayAllClose(id_b, eye)
+        self.assertArrayAllClose(id_b, eye, cond=cond)
         # with self.subTest(msg='Q^T Q'):
-        self.assertArrayAllClose(id_b, eyet)
+        self.assertArrayAllClose(id_b, eyet, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lq_l_returns_expected_values(self, arrays):
@@ -265,17 +275,20 @@ class TestLQ(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='l_m'):
+        cond = np.linalg.cond(m_sb).max()
         left = gfl.lq_lm(m_sb)
         llo = gfl.lq_m(m_sb)[0]
-        self.assertArrayAllClose(left, llo)
+        self.assertArrayAllClose(left, llo, cond=cond)
         # with self.subTest(msg='l_n'):
+        cond = np.linalg.cond(m_bs).max()
         left = gfl.lq_ln(m_bs)
         llo = gfl.lq_n(m_bs)[0]
-        self.assertArrayAllClose(left, llo)
+        self.assertArrayAllClose(left, llo, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_rawm_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         llo = gfl.lq_m(m_sb)[0]
         num = llo.shape[-2]
@@ -286,19 +299,20 @@ class TestLQ(TestCaseNumpy):
         vnorm = gfb.norm(la.col(tau) * vecs, axis=-1)**2
         left = np.tril(h_sb)
         # with self.subTest(msg='raw_m'):
-        self.assertArrayAllClose(left[..., :num], llo)
+        self.assertArrayAllClose(left[..., :num], llo, cond=cond)
         # with self.subTest(msg='tau_m'):
-        self.assertArrayAllClose(vnorm, 2 * tau.real)
+        self.assertArrayAllClose(vnorm, 2 * tau.real, cond=cond)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k, :]
             ttt = la.scalar(tau[..., -k-1])
             left -= ttt.conj() * (left @ la.dagger(vvv)) * vvv
         # with self.subTest(msg='h_m'):
-        self.assertArrayAllClose(left, m_sb)
+        self.assertArrayAllClose(left, m_sb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_rawn_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         llo = gfl.lq_n(m_bs)[0]
         num = llo.shape[-1]
@@ -309,15 +323,15 @@ class TestLQ(TestCaseNumpy):
         vnorm = gfb.norm(la.col(tau) * vecs[..., :num, :], axis=-1)**2
         left = np.tril(h_bs)
         # with self.subTest(msg='raw_n'):
-        self.assertArrayAllClose(left, llo)
+        self.assertArrayAllClose(left, llo, cond=cond)
         # with self.subTest(msg='tau_n'):
-        self.assertArrayAllClose(vnorm, 2 * tau.real)
+        self.assertArrayAllClose(vnorm, 2 * tau.real, cond=cond)
         for k in range(num):
             vvv = vecs[..., num-k-1:num-k, :]
             ttt = la.scalar(tau[..., -k-1])
             left -= ttt.conj() * (left @ la.dagger(vvv)) * vvv
         # with self.subTest(msg='h_n'):
-        self.assertArrayAllClose(left, m_bs)
+        self.assertArrayAllClose(left, m_bs, cond=cond)
 
 
 class TestPinv(TestCaseNumpy):
@@ -327,41 +341,43 @@ class TestPinv(TestCaseNumpy):
     def test_pinv_returns_expected_values_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_full_rank(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
         # with self.subTest(msg='wide'):
         wide_p = gfl.pinv(m_sb)
-        self.assertArrayAllClose(m_sb @ wide_p, id_s)
+        self.assertArrayAllClose(m_sb @ wide_p, id_s, cond=cond)
         # with self.subTest(msg='wide,+qr'):
         wide_pq, wide_f, wide_tau = gfl.pinv_qrm(m_sb)
         # actually want lq here
         qrf, tau = gfl.lq_rawm(m_sb)
         # qrf = la.dagger(qrf)
-        self.assertArrayAllClose(wide_pq, wide_p)
-        self.assertArrayAllClose(wide_f, qrf)
-        self.assertArrayAllClose(wide_tau, tau)
+        self.assertArrayAllClose(wide_pq, wide_p, cond=cond)
+        self.assertArrayAllClose(wide_f, qrf, cond=cond)
+        self.assertArrayAllClose(wide_tau, tau, cond=cond)
         # with self.subTest(msg='wide,-qr'):
         wide_qp = gfl.qr_pinv(wide_f, wide_tau)
-        self.assertArrayAllClose(wide_qp, wide_p)
+        self.assertArrayAllClose(wide_qp, wide_p, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_full_rank(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         # with self.subTest(msg='tall'):
         tall_p = gfl.pinv(m_bs)
         id_s = np.identity(m_bs.shape[-1], m_bs.dtype)
-        self.assertArrayAllClose(tall_p @ m_bs, id_s)
+        self.assertArrayAllClose(tall_p @ m_bs, id_s, cond=cond)
         # with self.subTest(msg='tall,+qr'):
         tall_pq, tall_f, tall_tau = gfl.pinv_qrn(m_bs)
         qrf, tau = gfl.qr_rawn(m_bs)
-        self.assertArrayAllClose(tall_pq, tall_p)
-        self.assertArrayAllClose(tall_f, qrf)
-        self.assertArrayAllClose(tall_tau, tau)
+        self.assertArrayAllClose(tall_pq, tall_p, cond=cond)
+        self.assertArrayAllClose(tall_f, qrf, cond=cond)
+        self.assertArrayAllClose(tall_tau, tau, cond=cond)
         # with self.subTest(msg='tall,-qr'):
         tall_qp = gfl.qr_pinv(tall_f, tall_tau)
-        self.assertArrayAllClose(tall_qp, tall_p)
+        self.assertArrayAllClose(tall_qp, tall_p, cond=cond)
 
 
 # =============================================================================

@@ -125,6 +125,8 @@ class TestArray(TestCaseNumpy):
         hy.assume(hn.tall(m_bs))
         hy.assume(m_ss.ndim != 3)  # causes np..solve's broadcasting issue
         hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_full_rank(m_bs_m))
+
         expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_bs, m_ss)
         ts_o = np.empty(expect, m_ss.dtype)
         ts_r = la.matmul(m_bs, m_ss, ts_o)
@@ -132,9 +134,13 @@ class TestArray(TestCaseNumpy):
         self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
         self.assertArrayAllClose(m_bs @ m_ss, np.matmul(m_bs, m_ss))
         self.assertArrayAllClose(m_bs @ vec, np.matmul(m_bs, vec))
-        self.assertArrayAllClose(gf.solve(m_ss, vec), nl.solve(m_ss, vec.c).uc)
+        cond = np.linalg.cond(m_ss).max()
+        self.assertArrayAllClose(gf.solve(m_ss, vec), nl.solve(m_ss, vec.c).uc,
+                                 cond=cond)
+        cond = np.linalg.cond(m_bs_m).max()
         self.assertArrayAllClose(gf.lstsq(m_bs_m.t, vec),
-                                 nl.lstsq(m_bs_m.t, vec, rcond=None)[0])
+                                 nl.lstsq(m_bs_m.t, vec, rcond=None)[0],
+                                 cond=cond)
         self.assertArrayAllClose(gf.rmatmul(m_ss, m_bs), np.matmul(m_bs, m_ss))
         # m_bs @= m_ss
         # self.assertArrayAllClose(ts_r, m_bs)
@@ -198,12 +204,13 @@ class TestPinvarray(TestCaseNumpy):
     def test_pinvarray_in_functions(self, arrays):
         m_sb, high, m_bs = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        # hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
-                                 gf.lstsq(m_bs, high))
+                                 gf.lstsq(m_bs, high), cond=cond)
         self.assertArrayAllClose(gf.matmul(m_sb, m_bs.pinv.t),
-                                 gf.rlstsq(m_sb, m_bs.t))
+                                 gf.rlstsq(m_sb, m_bs.t), cond=cond)
         xpout = la.pinvarray(la.empty_like(m_bs))
         m_bs_p = np.multiply(m_bs.pinv, 2, out=xpout)
         self.assertArrayAllClose(m_bs_p.pinv, xpout.pinv)
@@ -232,10 +239,11 @@ class TestPinvarray(TestCaseNumpy):
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
 
+        cond = np.linalg.cond(m_ss).max()
         self.assertArrayAllClose(gf.matmul(m_ss.inv, m_sb),
-                                 gf.solve(m_ss, m_sb))
+                                 gf.solve(m_ss, m_sb), cond=cond)
         self.assertArrayAllClose(gf.matmul(m_bs, m_ss.inv),
-                                 gf.rsolve(m_bs, m_ss))
+                                 gf.rsolve(m_bs, m_ss), cond=cond)
         self.assertArrayAllClose(gf.matmul(m_ss.inv, mini.inv).inv,
                                  mini @ m_ss)
         self.assertArrayAllClose(gf.solve(m_ss.inv, m_sb),
@@ -243,17 +251,18 @@ class TestPinvarray(TestCaseNumpy):
         self.assertArrayAllClose(gf.solve(mini, m_ss.inv).inv,
                                  gf.matmul(m_ss, mini))
         self.assertArrayAllClose(gf.solve(mini.inv, m_ss.inv),
-                                 gf.rsolve(mini, m_ss))
+                                 gf.rsolve(mini, m_ss), cond=cond)
         self.assertArrayAllClose(gf.rsolve(m_ss, mini.inv),
                                  gf.matmul(m_ss, mini))
         self.assertArrayAllClose(gf.rsolve(mini.inv, m_ss).inv,
                                  gf.matmul(m_ss, mini))
+        cond = np.linalg.cond(mini).max()
         self.assertArrayAllClose(gf.rsolve(mini.inv, m_ss.inv),
-                                 gf.solve(mini, m_ss))
+                                 gf.solve(mini, m_ss), cond=cond)
         self.assertArrayAllClose(gf.rmatmul(m_ss, mini.inv),
-                                 gf.solve(mini, m_ss))
+                                 gf.solve(mini, m_ss), cond=cond)
         self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss),
-                                 gf.rsolve(m_ss, mini))
+                                 gf.rsolve(m_ss, mini), cond=cond)
         self.assertArrayAllClose(gf.rmatmul(mini.inv, m_ss.inv).inv,
                                  mini @ m_ss)
 
@@ -289,39 +298,47 @@ class TestPinvarray(TestCaseNumpy):
         # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
-        # hy.assume(hn.all_full_rank(m_bs))
-        # hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
 
         self.assertArrayAllClose(la.lstsq(mini.inv, m_sb),
                                  la.matmul(mini, m_sb))
         self.assertArrayAllClose(la.rlstsq(m_bs, mini.inv),
                                  la.matmul(m_bs, mini))
+        cond = np.linalg.cond(m_bs).max()
         self.assertArrayAllClose(la.lstsq(mini.inv, m_bs.pinv),
-                                 la.rlstsq(mini, m_bs))
+                                 la.rlstsq(mini, m_bs), cond=cond)
+        cond = np.linalg.cond(mini).max()
         self.assertArrayAllClose(la.rlstsq(mini.inv, m_sb.pinv),
-                                 la.solve(mini, m_sb))
+                                 la.solve(mini, m_sb), cond=cond)
+        cond = np.linalg.cond(m_ss).max()
         self.assertArrayAllClose(la.lstsq(mini.inv, m_ss.inv),
-                                 la.rsolve(mini, m_ss))
+                                 la.rsolve(mini, m_ss), cond=cond)
+        cond = np.linalg.cond(mini).max()
         self.assertArrayAllClose(la.rlstsq(mini.inv, m_ss.inv),
-                                 la.solve(mini, m_ss))
+                                 la.solve(mini, m_ss), cond=cond)
+        cond = np.linalg.cond(m_ss).max()
         self.assertArrayAllClose(la.lstsq(m_bs.pinv, m_ss.inv),
-                                 la.rsolve(m_bs, m_ss))
+                                 la.rsolve(m_bs, m_ss), cond=cond)
+        cond = np.linalg.cond(m_sb).max()
         self.assertArrayAllClose(la.rlstsq(m_sb.pinv, m_ss.inv),
-                                 la.lstsq(m_sb, m_ss))
+                                 la.lstsq(m_sb, m_ss), cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(b,a),(a,b),(a,a)', None))
     def test_good_p_invarray_combos_in_solve(self, arrays):
         m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(mini))
-        # hy.assume(hn.all_full_rank(m_bs))
-        # hy.assume(hn.all_full_rank(m_sb))
+        # hy.assume(hn.all_non_singular(m_ss))
+        # hy.assume(hn.all_non_singular(mini))
+        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_full_rank(m_sb))
 
+        cond = np.linalg.cond(m_bs).max()
         self.assertArrayAllClose(la.solve(m_ss.inv, m_bs.pinv),
-                                 la.rlstsq(m_ss, m_bs))
+                                 la.rlstsq(m_ss, m_bs), cond=cond)
+        cond = np.linalg.cond(m_sb).max()
         self.assertArrayAllClose(la.rsolve(m_sb.pinv, mini.inv),
-                                 la.lstsq(m_sb, mini))
+                                 la.lstsq(m_sb, mini), cond=cond)
 
     @hy.given(hn.broadcastable('(a,b),(b,a),(b,a),()', None))
     def test_pinvarray_operators(self, arrays):
@@ -331,9 +348,13 @@ class TestPinvarray(TestCaseNumpy):
         # hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_full_rank(m_bs))
 
-        self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high))
-        self.assertArrayAllClose(m_bs.pinv() @ high, gf.lstsq(m_bs, high))
-        self.assertArrayAllClose(m_sb @ m_bs.pinv.t, gf.rlstsq(m_sb, m_bs.t))
+        cond = np.linalg.cond(m_bs).max()
+        self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high),
+                                 cond=cond)
+        self.assertArrayAllClose(m_bs.pinv() @ high, gf.lstsq(m_bs, high),
+                                 cond=cond)
+        self.assertArrayAllClose(m_sb @ m_bs.pinv.t, gf.rlstsq(m_sb, m_bs.t),
+                                 cond=cond)
         with self.assertRaises(TypeError):
             m_bs.pinv @ m_sb.pinv  # pylint: disable=pointless-statement
         self.assertArrayAllClose((m_bs.pinv * 3.5).pinv, m_bs / 3.5)
@@ -364,9 +385,13 @@ class TestPinvarray(TestCaseNumpy):
         hy.assume(hn.all_non_singular(m_ss))
         hy.assume(hn.all_non_singular(mini))
 
-        self.assertArrayAllClose(m_ss.inv @ m_sb, gf.solve(m_ss, m_sb))
-        self.assertArrayAllClose(m_ss.inv() @ m_sb, gf.solve(m_ss, m_sb))
-        self.assertArrayAllClose(m_bs @ m_ss.inv, gf.rsolve(m_bs, m_ss))
+        cond = np.linalg.cond(m_ss).max()
+        self.assertArrayAllClose(m_ss.inv @ m_sb, gf.solve(m_ss, m_sb),
+                                 cond=cond)
+        self.assertArrayAllClose(m_ss.inv() @ m_sb, gf.solve(m_ss, m_sb),
+                                 cond=cond)
+        self.assertArrayAllClose(m_bs @ m_ss.inv, gf.rsolve(m_bs, m_ss),
+                                 cond=cond)
         self.assertArrayAllClose((m_ss.inv @ mini.inv).inv, mini @ m_ss)
         self.assertArrayAllClose((m_ss.inv * 3.5).inv, m_ss / 3.5)
         self.assertArrayAllClose((2.4 * m_ss.inv).inv, m_ss / 2.4)

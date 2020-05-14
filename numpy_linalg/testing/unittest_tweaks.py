@@ -61,7 +61,7 @@ __unittest = True
 
 def _dir_dict(cls: type) -> Dict[str, bool]:
     my_dir = {}
-    for base in cls.__bases__:
+    for base in getattr(cls, '__bases__', ()):
         my_dir.update(_dir_dict(base))
     # could use cls.__dir__() or dir(cls)
     my_dir.update((k, True) for k in cls.__dict__)

@@ -255,32 +255,41 @@ class TestValue(TestCaseNumpy):
     def test_functions_solve(self, arrays):
         m_ss, m_sb, m_bs = arrays
         hy.assume(hn.all_non_singular(m_ss))
+        cond = np.linalg.cond(m_ss).max()
 
         # with self.subTest('solve'):
-        self.assertArrayAllClose(la.solve(m_ss, m_sb), gf.solve(m_ss, m_sb))
+        self.assertArrayAllClose(la.solve(m_ss, m_sb), gf.solve(m_ss, m_sb),
+                                 cond=cond)
         slv_sh = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         slv_out = np.empty(slv_sh, m_ss.dtype)
         slv_r = la.solve(m_ss, m_sb, out=slv_out)
         self.assertArrayAllClose(slv_out, slv_r)
         # with self.subTest('rsolve'):
-        self.assertArrayAllClose(la.rsolve(m_bs, m_ss), gf.rsolve(m_bs, m_ss))
+        self.assertArrayAllClose(la.rsolve(m_bs, m_ss), gf.rsolve(m_bs, m_ss),
+                                 cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(b)', None))
     def test_functions_lstsq(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_b = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.wide(m_sb))
+        cond_sb = np.linalg.cond(m_sb).max()
+        cond_bs = np.linalg.cond(m_bs).max()
 
         # with self.subTest('lstsq'):
-        self.assertArrayAllClose(la.lstsq(m_bs, m_bb), gf.lstsq(m_bs, m_bb))
-        self.assertArrayAllClose(la.lstsq(m_sb, m_ss), gf.lstsq(m_sb, m_ss))
+        self.assertArrayAllClose(la.lstsq(m_bs, m_bb), gf.lstsq(m_bs, m_bb),
+                                 cond=cond_bs)
+        self.assertArrayAllClose(la.lstsq(m_sb, m_ss), gf.lstsq(m_sb, m_ss),
+                                 cond=cond_sb)
         lsq_sh = utn.array_return_shape('(a,b),(a,c)->(b,c)', m_bs, m_bb)
         lsq_out = np.empty(lsq_sh, m_bs.dtype)
         lsq_r = la.lstsq(m_bs, m_bb, out=lsq_out)
         self.assertArrayAllClose(lsq_out, lsq_r)
         # with self.subTest('rlstsq'):
-        self.assertArrayAllClose(la.rlstsq(m_ss, m_bs), gf.rlstsq(m_ss, m_bs))
-        self.assertArrayAllClose(la.rlstsq(v_b, m_sb), gf.rlstsq(v_b, m_sb))
+        self.assertArrayAllClose(la.rlstsq(m_ss, m_bs), gf.rlstsq(m_ss, m_bs),
+                                 cond=cond_bs)
+        self.assertArrayAllClose(la.rlstsq(v_b, m_sb), gf.rlstsq(v_b, m_sb),
+                                 cond=cond_sb)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
     def test_functions_matldiv(self, arrays):
@@ -293,10 +302,15 @@ class TestValue(TestCaseNumpy):
         slv_sh = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         slv_out = np.empty(slv_sh, m_ss.dtype)
         slv_r = la.matldiv(m_ss, m_sb, out=slv_out)
-        self.assertArrayAllClose(slv_out, slv_r)
+        cond = np.linalg.cond(m_ss).max()
+        self.assertArrayAllClose(slv_out, slv_r, cond=cond)
         # with self.subTest('lstsq'):
-        self.assertArrayAllClose(la.matldiv(m_bs, m_bb), gf.lstsq(m_bs, m_bb))
-        self.assertArrayAllClose(la.matldiv(m_sb, m_ss), gf.lstsq(m_sb, m_ss))
+        cond = np.linalg.cond(m_bs).max()
+        self.assertArrayAllClose(la.matldiv(m_bs, m_bb), gf.lstsq(m_bs, m_bb),
+                                 cond=cond)
+        cond = np.linalg.cond(m_sb).max()
+        self.assertArrayAllClose(la.matldiv(m_sb, m_ss), gf.lstsq(m_sb, m_ss),
+                                 cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(b)', None))
     def test_functions_matrdiv(self, arrays):
@@ -306,51 +320,63 @@ class TestValue(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest('rsolve'):
-        self.assertArrayAllClose(la.matrdiv(m_bs, m_ss), gf.rsolve(m_bs, m_ss))
+        cond = np.linalg.cond(m_ss).max()
+        self.assertArrayAllClose(la.matrdiv(m_bs, m_ss), gf.rsolve(m_bs, m_ss),
+                                 cond=cond)
         # with self.subTest('rlstsq'):
-        self.assertArrayAllClose(la.matrdiv(m_ss, m_bs), gf.rlstsq(m_ss, m_bs))
-        self.assertArrayAllClose(la.matrdiv(v_b, m_sb), gf.rlstsq(v_b, m_sb))
+        cond = np.linalg.cond(m_bs).max()
+        self.assertArrayAllClose(la.matrdiv(m_ss, m_bs), gf.rlstsq(m_ss, m_bs),
+                                 cond=cond)
+        cond = np.linalg.cond(m_sb).max()
+        self.assertArrayAllClose(la.matrdiv(v_b, m_sb), gf.rlstsq(v_b, m_sb),
+                                 cond=cond)
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
         hy.assume(hn.wide(m_sb))
+        cond_sb = np.linalg.cond(m_sb).max()
+        cond_bs = np.linalg.cond(m_bs).max()
 
         # with self.subTest("reduced"):
         unitary, right = la.qr(m_bs, 'reduced')
-        self.assertArrayAllClose(unitary @ right, m_bs)
+        self.assertArrayAllClose(unitary @ right, m_bs, cond=cond_bs)
         unitary, right = la.qr(m_sb, 'reduced')
-        self.assertArrayAllClose(unitary @ right, m_sb)
+        self.assertArrayAllClose(unitary @ right, m_sb, cond=cond_sb)
         # with self.subTest("complete"):
         unitary, right = la.qr(m_bs, 'complete')
-        self.assertArrayAllClose(unitary @ right, m_bs)
+        self.assertArrayAllClose(unitary @ right, m_bs, cond=cond_bs)
         unitary, right = la.qr(m_sb, 'complete')
-        self.assertArrayAllClose(unitary @ right, m_sb)
+        self.assertArrayAllClose(unitary @ right, m_sb, cond=cond_sb)
         # with self.subTest("r/raw"):
         right = la.qr(m_bs, 'r')
         hhold, _ = la.qr(m_bs, 'raw')
-        self.assertArrayAllClose(right, np.triu(la.transpose(hhold))[box])
+        self.assertArrayAllClose(right, np.triu(la.transpose(hhold))[box],
+                                 cond=cond_bs)
         right = la.qr(m_sb, 'r')
         hhold, _ = la.qr(m_sb, 'raw')
-        self.assertArrayAllClose(right, np.triu(la.transpose(hhold)))
+        self.assertArrayAllClose(right, np.triu(la.transpose(hhold)),
+                                 cond=cond_sb)
 
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2]]
         hy.assume(hn.wide(m_sb))
+        cond_sb = np.linalg.cond(m_sb).max()
+        cond_bs = np.linalg.cond(m_bs).max()
 
         # with self.subTest("reduced"):
         left, unitary = la.lq(m_bs, 'reduced')
-        self.assertArrayAllClose(left @ unitary, m_bs)
+        self.assertArrayAllClose(left @ unitary, m_bs, cond=cond_bs)
         left, unitary = la.lq(m_sb, 'reduced')
-        self.assertArrayAllClose(left @ unitary, m_sb)
+        self.assertArrayAllClose(left @ unitary, m_sb, cond=cond_sb)
         # with self.subTest("complete"):
         left, unitary = la.lq(m_bs, 'complete')
-        self.assertArrayAllClose(left @ unitary, m_bs)
+        self.assertArrayAllClose(left @ unitary, m_bs, cond=cond_bs)
         left, unitary = la.lq(m_sb, 'complete')
-        self.assertArrayAllClose(left @ unitary, m_sb)
+        self.assertArrayAllClose(left @ unitary, m_sb, cond=cond_sb)
         # with self.subTest("l/raw"):
         left = la.lq(m_bs, 'l')
         hhold, _ = la.lq(m_bs, 'raw')
@@ -364,24 +390,28 @@ class TestValue(TestCaseNumpy):
         m_sb, m_bs = arrays
         box = np.s_[..., :m_sb.shape[-2], :]
         hy.assume(hn.wide(m_sb))
+        cond_sb = np.linalg.cond(m_sb).max()
+        cond_bs = np.linalg.cond(m_bs).max()
 
         # with self.subTest("reduced"):
         unitary, right = la.lqr(m_bs, 'reduced')
-        self.assertArrayAllClose(unitary @ right, m_bs)
+        self.assertArrayAllClose(unitary @ right, m_bs, cond=cond_bs)
         left, unitary = la.lqr(m_sb, 'reduced')
-        self.assertArrayAllClose(left @ unitary, m_sb)
+        self.assertArrayAllClose(left @ unitary, m_sb, cond=cond_sb)
         # with self.subTest("complete"):
         unitary, right = la.lqr(m_bs, 'complete')
-        self.assertArrayAllClose(unitary @ right, m_bs)
+        self.assertArrayAllClose(unitary @ right, m_bs, cond=cond_bs)
         left, unitary = la.lqr(m_sb, 'complete')
-        self.assertArrayAllClose(left @ unitary, m_sb)
+        self.assertArrayAllClose(left @ unitary, m_sb, cond=cond_sb)
         # with self.subTest("r/l/raw"):
         right = la.lqr(m_bs, 'r')
         hhold, _ = la.lqr(m_bs, 'raw')
-        self.assertArrayAllClose(right, np.triu(la.transpose(hhold))[box])
+        self.assertArrayAllClose(right, np.triu(la.transpose(hhold))[box],
+                                 cond=cond_bs)
         left = la.lqr(m_sb, 'r')
         hhold, _ = la.lqr(m_sb, 'raw')
-        self.assertArrayAllClose(left, np.tril(la.transpose(hhold))[box[:-1]])
+        self.assertArrayAllClose(left, np.tril(la.transpose(hhold))[box[:-1]],
+                                 cond=cond_sb)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_lu(self, arrays):
@@ -390,24 +420,27 @@ class TestValue(TestCaseNumpy):
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest("square"):
+        cond = np.linalg.cond(m_ss).max()
         lower, upper, piv = la.lu(m_ss, 'separate')
         luf, piv = la.lu(m_ss, 'raw')
         luf = la.transpose(luf)
-        self.assertArrayAllClose(lower @ upper, gf.pivot(m_ss, piv))
-        self.assertArrayAllClose(tril(lower), tril(luf))
-        self.assertArrayAllClose(upper, np.triu(luf))
+        self.assertArrayAllClose(lower @ upper, gf.pivot(m_ss, piv), cond=cond)
+        self.assertArrayAllClose(tril(lower), tril(luf), cond=cond)
+        self.assertArrayAllClose(upper, np.triu(luf), cond=cond)
         # with self.subTest("wide"):
+        cond = np.linalg.cond(m_bs).max()
         lower, upper, piv = la.lu(m_bs, 'separate')
         luf, piv = la.lu(m_bs, 'raw')
         luf = la.transpose(luf)
-        self.assertArrayAllClose(tril(lower), tril(luf))
-        self.assertArrayAllClose(upper, np.triu(luf)[box])
+        self.assertArrayAllClose(tril(lower), tril(luf), cond=cond)
+        self.assertArrayAllClose(upper, np.triu(luf)[box], cond=cond)
         # with self.subTest("wide"):
+        cond = np.linalg.cond(m_sb).max()
         lower, upper, piv = la.lu(m_sb, 'separate')
         luf, piv = la.lu(m_sb, 'raw')
         luf = la.transpose(luf)
-        self.assertArrayAllClose(tril(lower), tril(luf)[box[:-1]])
-        self.assertArrayAllClose(upper, np.triu(luf))
+        self.assertArrayAllClose(tril(lower), tril(luf)[box[:-1]], cond=cond)
+        self.assertArrayAllClose(upper, np.triu(luf), cond=cond)
 
     @expectedFailure
     @errstate

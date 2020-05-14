@@ -356,7 +356,7 @@ def non_singular(matrix: np.ndarray) -> Union[np.ndarray, bool]:
 
     Returns
     -------
-    is_not_singular : np.ndarray
+    is_not_singular : np.ndarray|bool
         bool/array of bools that are True if the matrix is non-singular.
     """
     return np.abs(np.linalg.slogdet(matrix)[1]) < 500
@@ -388,7 +388,7 @@ def full_rank(matrix: np.ndarray) -> Union[np.ndarray, bool]:
 
     Returns
     -------
-    is_not_singular : np.ndarray
+    is_full_rank : np.ndarray|bool
         bool/array of bools that are True if the matrix has full rank.
     """
     if tall(matrix):
@@ -408,10 +408,42 @@ def all_full_rank(*matrices: np.ndarray) -> bool:
 
     Returns
     -------
-    are_not_singular : bool
+    are_full_rank : bool
         True if all of the the matrices have full rank.
     """
     return all(np.all(full_rank(mat)) for mat in matrices)
+
+
+def well_conditioned(matrix: np.ndarray) -> Union[np.ndarray, bool]:
+    """Check condition number of matrix/matrices
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        matrix/array of matrices whose condition number to check
+
+    Returns
+    -------
+    is_well_conditioned : np.ndarray|bool
+        bool/array of bools that are True if the matrix is well conditioned.
+    """
+    return np.linalg.cond(matrix) < 1e3
+
+
+def all_well_conditioned(*matrices: np.ndarray) -> bool:
+    """Check condition number of all matrices
+
+    Parameters
+    ----------
+    matrices : np.ndarray
+        matrices whose condition number to check
+
+    Returns
+    -------
+    are_well_conditioned : bool
+        True if all of the the matrices are well conditioned.
+    """
+    return all(np.all(well_conditioned(mat)) for mat in matrices)
 
 
 # -----------------------------------------------------------------------------

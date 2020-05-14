@@ -65,6 +65,7 @@ class TestLU(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_lu_basic_returns_expected_values_square(self, m_bb):
         big = m_bb.shape
+        cond = np.linalg.cond(m_bb).max()
 
         sq_l, sq_u, sq_ip = gfl.lu_m(m_bb)
         sq = gfl.rpivot(sq_l @ sq_u, sq_ip)
@@ -76,13 +77,14 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(sq_l[dinds], 1.)
         self.assertArrayAllClose(sq_l[uinds], 0.)
         self.assertArrayAllClose(sq_u[linds], 0.)
-        self.assertArrayAllClose(sq_l @ sq_u, sqp)
-        self.assertArrayAllClose(sq, m_bb)
+        self.assertArrayAllClose(sq_l @ sq_u, sqp, cond=cond)
+        self.assertArrayAllClose(sq, m_bb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_basic_returns_expected_values_wide(self, m_sb):
         wide = m_sb.shape
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         wd_l, wd_u, wd_ip = gfl.lu_m(m_sb)
         wd = gfl.rpivot(wd_l @ wd_u, wd_ip)
@@ -94,13 +96,14 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(wd_l[dinds], 1.)
         self.assertArrayAllClose(wd_l[uinds], 0.)
         self.assertArrayAllClose(wd_u[linds], 0.)
-        self.assertArrayAllClose(wd_l @ wd_u, wdp)
-        self.assertArrayAllClose(wd, m_sb)
+        self.assertArrayAllClose(wd_l @ wd_u, wdp, cond=cond)
+        self.assertArrayAllClose(wd, m_sb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_basic_returns_expected_values_tall(self, m_bs):
         tall = m_bs.shape
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         tl_l, tl_u, tl_ip = gfl.lu_n(m_bs)
         tl = gfl.rpivot(tl_l @ tl_u, tl_ip)
@@ -112,8 +115,8 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(tl_l[dinds], 1.)
         self.assertArrayAllClose(tl_l[uinds], 0.)
         self.assertArrayAllClose(tl_u[linds], 0.)
-        self.assertArrayAllClose(tl_l @ tl_u, tlp)
-        self.assertArrayAllClose(tl, m_bs)
+        self.assertArrayAllClose(tl_l @ tl_u, tlp, cond=cond)
+        self.assertArrayAllClose(tl, m_bs, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_lu_raw_returns_expected_values_square(self, m_bb):
@@ -123,14 +126,16 @@ class TestLU(TestCaseNumpy):
         linds = (...,) + np.tril_indices(m_bb.shape[-1], -1)
         uinds = (...,) + np.triu_indices(m_bb.shape[-1], 0)
         # with self.subTest(msg="square"):
-        self.assertArrayAllClose(sq_f[linds], sq_l[linds])
-        self.assertArrayAllClose(sq_f[uinds], sq_u[uinds])
+        cond = np.linalg.cond(m_bb).max()
+        self.assertArrayAllClose(sq_f[linds], sq_l[linds], cond=cond)
+        self.assertArrayAllClose(sq_f[uinds], sq_u[uinds], cond=cond)
         self.assertEqual(sq_ip, sq_ip0)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_raw_returns_expected_values_wide(self, m_sb):
         wide = m_sb.shape
         hy.assume(hn.wide(m_sb))
+        cond = np.linalg.cond(m_sb).max()
 
         wd_l, wd_u, wd_ip0 = gfl.lu_m(m_sb)
         wd_f, wd_ip = gfl.lu_rawm(m_sb)
@@ -138,14 +143,15 @@ class TestLU(TestCaseNumpy):
         linds = (...,) + np.tril_indices(wide[-2], -1, wide[-1])
         uinds = (...,) + np.triu_indices(wide[-2], 0, wide[-1])
         # with self.subTest(msg="wide"):
-        self.assertArrayAllClose(wd_f[linds], wd_l[linds])
-        self.assertArrayAllClose(wd_f[uinds], wd_u[uinds])
+        self.assertArrayAllClose(wd_f[linds], wd_l[linds], cond=cond)
+        self.assertArrayAllClose(wd_f[uinds], wd_u[uinds], cond=cond)
         self.assertEqual(wd_ip, wd_ip0)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_raw_returns_expected_values_tall(self, m_bs):
         tall = m_bs.shape
         hy.assume(hn.tall(m_bs))
+        cond = np.linalg.cond(m_bs).max()
 
         tl_l, tl_u, tl_ip0 = gfl.lu_n(m_bs)
         tl_f, tl_ip = gfl.lu_rawn(m_bs)
@@ -153,8 +159,8 @@ class TestLU(TestCaseNumpy):
         linds = (...,) + np.tril_indices(tall[-2], -1, tall[-1])
         uinds = (...,) + np.triu_indices(tall[-2], 0, tall[-1])
         # with self.subTest(msg="tall"):
-        self.assertArrayAllClose(tl_f[linds], tl_l[linds])
-        self.assertArrayAllClose(tl_f[uinds], tl_u[uinds])
+        self.assertArrayAllClose(tl_f[linds], tl_l[linds], cond=cond)
+        self.assertArrayAllClose(tl_f[uinds], tl_u[uinds], cond=cond)
         self.assertEqual(tl_ip, tl_ip0)
 
     @hy.given(hn.broadcastable('(a,a)', 'd'))
@@ -173,21 +179,22 @@ class TestLU(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_inv_returns_expected_values(self, m_bb):
         hy.assume(hn.all_non_singular(m_bb))
+        cond = np.linalg.cond(m_bb).max()
 
         # with self.subTest(msg='inv'):
         id_b = np.identity(m_bb.shape[-1], m_bb.dtype)
         square_i = gfl.inv(m_bb)
-        self.assertArrayAllClose(m_bb @ square_i, id_b)
-        self.assertArrayAllClose(square_i @ m_bb, id_b)
+        self.assertArrayAllClose(m_bb @ square_i, id_b, cond=cond)
+        self.assertArrayAllClose(square_i @ m_bb, id_b, cond=cond)
         # with self.subTest(msg='inv,+lu'):
         square_if, square_f, square_ip = gfl.inv_lu(m_bb)
         luf, ipr = gfl.lu_rawn(m_bb)
-        self.assertArrayAllClose(square_if, square_i)
+        self.assertArrayAllClose(square_if, square_i, cond=cond)
         self.assertArrayAllClose(square_f, luf)
         self.assertEqual(square_ip, ipr)
         # with self.subTest(msg='inv,-lu'):
         square_fi = gfl.lu_inv(square_f, square_ip)
-        self.assertArrayAllClose(square_fi, square_i)
+        self.assertArrayAllClose(square_fi, square_i, cond=cond)
 
 
 # =============================================================================
@@ -435,45 +442,48 @@ class TestSolveVal(TestCaseNumpy):
     def test_solve_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
         hy.assume(hn.all_non_singular(m_ss))
+        cond = np.linalg.cond(m_ss).max()
 
         x_sb = gfl.solve(m_ss, m_sb)
         # with self.subTest(msg='solve'):
-        self.assertArrayAllClose(m_ss @ x_sb, m_sb)
+        self.assertArrayAllClose(m_ss @ x_sb, m_sb, cond=cond)
         x_bs = gfl.rsolve(m_bs, m_ss)
         # with self.subTest(msg='rsolve'):
-        self.assertArrayAllClose(x_bs @ m_ss, m_bs)
+        self.assertArrayAllClose(x_bs @ m_ss, m_bs, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_solve_lu_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
         hy.assume(hn.all_non_singular(m_ss))
+        cond = np.linalg.cond(m_ss).max()
 
         x0_sb = gfl.solve(m_ss, m_sb)
         x_sb, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         # with self.subTest('solve0'):
-        self.assertArrayAllClose(x_sb, x0_sb)
+        self.assertArrayAllClose(x_sb, x0_sb, cond=cond)
         xx_sb = gfl.lu_solve(x_f, i_p, m_sb)
         # with self.subTest('solve(lu)'):
-        self.assertArrayAllClose(xx_sb, x0_sb)
+        self.assertArrayAllClose(xx_sb, x0_sb, cond=cond)
         x_bs = gfl.rlu_solve(m_bs, x_f, i_p)
         # with self.subTest('rsolve(lu)'):
-        self.assertArrayAllClose(x_bs @ m_ss, m_bs)
+        self.assertArrayAllClose(x_bs @ m_ss, m_bs, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_rsolve_lu_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
         hy.assume(hn.all_non_singular(m_ss))
+        cond = np.linalg.cond(m_ss).max()
 
         x0_bs = gfl.rsolve(m_bs, m_ss)
         x_bs, x_f, i_p = gfl.rsolve_lu(m_bs, m_ss)
         # with self.subTest('rsolve0'):
-        self.assertArrayAllClose(x_bs, x0_bs)
+        self.assertArrayAllClose(x_bs, x0_bs, cond=cond)
         xx_bs = gfl.rlu_solve(m_bs, x_f, i_p)
         # with self.subTest('rsolve(rlu)'):
-        self.assertArrayAllClose(xx_bs, x0_bs)
+        self.assertArrayAllClose(xx_bs, x0_bs, cond=cond)
         x_sb = gfl.lu_solve(x_f, i_p, m_sb)
         # with self.subTest('solve(rlu)'):
-        self.assertArrayAllClose(m_ss @ x_sb, m_sb)
+        self.assertArrayAllClose(m_ss @ x_sb, m_sb, cond=cond)
 
     @expectedFailure
     @errstate

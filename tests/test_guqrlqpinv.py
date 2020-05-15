@@ -80,8 +80,7 @@ class TestQRPinvShape(TestCaseNumpy):
         m_sb, m_bs = arrays
         wide, tall = [arr.shape for arr in arrays]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
 
         # with self.subTest(msg='wide'):
         self.assertArrayShape(gfl.pinv(m_sb), utn.trnsp(wide))
@@ -109,6 +108,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_returns_expected_values_with_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         unitary, right = gfl.qr_m(m_sb)
@@ -126,6 +126,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_returns_expected_values_with_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         unitary, right = gfl.qr_n(m_bs)
@@ -140,6 +141,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_complete_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         unitary, right = gfl.qr_m(m_bs)
@@ -157,6 +159,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr_r_returns_expected_values(self, arrays):
         m_sb, m_bs = arrays
+        hy.assume(hn.all_well_behaved(m_sb, m_bs))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='r_m'):
@@ -173,6 +176,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_rawm_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         rrr = gfl.qr_m(m_sb)[1]
@@ -196,6 +200,7 @@ class TestQR(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_qr_rawn_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         rrr = gfl.qr_n(m_bs)[1]
@@ -224,6 +229,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_returns_expected_values_with_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         left, unitary = gfl.lq_m(m_sb)
@@ -238,6 +244,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_returns_expected_values_with_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         left, unitary = gfl.lq_n(m_bs)
@@ -255,6 +262,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_complete_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         left, unitary = gfl.lq_n(m_sb)
@@ -272,6 +280,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lq_l_returns_expected_values(self, arrays):
         m_sb, m_bs = arrays
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest(msg='l_m'):
@@ -288,6 +297,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_rawm_returns_expected_values(self, m_sb):
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         llo = gfl.lq_m(m_sb)[0]
@@ -312,6 +322,7 @@ class TestLQ(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lq_rawn_returns_expected_values(self, m_bs):
         hy.assume(hn.tall(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         llo = gfl.lq_n(m_bs)[0]
@@ -340,7 +351,7 @@ class TestPinv(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_wide(self, m_sb):
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         id_s = np.identity(m_sb.shape[-2], m_sb.dtype)
@@ -362,7 +373,7 @@ class TestPinv(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_pinv_returns_expected_values_tall(self, m_bs):
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         # with self.subTest(msg='tall'):

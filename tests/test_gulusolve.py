@@ -166,7 +166,7 @@ class TestLU(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a)', 'd'))
     def test_inv_returns_expected_shapes(self, m_bb):
         big = m_bb.shape
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_bb))
 
         # with self.subTest(msg='inv'):
         self.assertArrayShape(gfl.inv(m_bb), big)
@@ -178,7 +178,7 @@ class TestLU(TestCaseNumpy):
 
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_inv_returns_expected_values(self, m_bb):
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_bb))
         cond = np.linalg.cond(m_bb).max()
 
         # with self.subTest(msg='inv'):
@@ -209,7 +209,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_solve_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         self.assertArrayShape(gfl.solve(m_ss, m_sb), expect)
@@ -224,7 +224,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_rsolve_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_bb))
 
         expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
         self.assertArrayShape(gfl.rsolve(m_sb, m_bb), expect)
@@ -239,7 +239,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_solve_lu_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
         expect_f = expect[:-2] + 2 * m_ss.shape[-1:]
@@ -258,7 +258,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_lu_solve_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         _, x_f, i_p = gfl.solve_lu(m_ss, m_sb)
         expect = utn.array_return_shape('(a,a),(a,b)->(a,b)', m_ss, m_sb)
@@ -280,7 +280,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_rsolve_lu_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_bb))
 
         expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, m_bb)
         expect_f = expect[:-2] + m_bb.shape[-2:]
@@ -299,7 +299,7 @@ class TestSolveShape(TestCaseNumpy):
     def test_rlu_solve_returns_expected_shapes(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_bb))
 
         _, x_f, i_p = gfl.rsolve_lu(m_sb, m_bb)
         expect = utn.array_return_shape('(a,b),(b,b)->(a,b)', m_sb, x_f)
@@ -326,7 +326,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         off_b, y_one = utn.make_off_by_one(m_bb, m_sb)
 
         # with self.subTest('solve'):
@@ -344,7 +344,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         off_b, y_one = utn.make_off_by_one(m_bb, m_sb)
 
         # with self.subTest('solve_lu'):
@@ -364,7 +364,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss = arrays[0]
         v_s, v_b = hn.core_only(*arrays[1:], dims=1)
         hy.assume(len(v_s) != len(v_b))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         # with self.subTest('lu_solve'):
         _, x_f, i_p = gfl.solve_lu(m_ss, v_s)
@@ -381,7 +381,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve'):
@@ -399,7 +399,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve_lu'):
@@ -419,7 +419,7 @@ class TestSolveVectors(TestCaseNumpy):
         m_ss, m_sb, m_bs = arrays[:-2]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.nonsquare(m_sb))
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rlu_solve'):
@@ -441,7 +441,7 @@ class TestSolveVal(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_solve_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         cond = np.linalg.cond(m_ss).max()
 
         x_sb = gfl.solve(m_ss, m_sb)
@@ -454,7 +454,7 @@ class TestSolveVal(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_solve_lu_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         cond = np.linalg.cond(m_ss).max()
 
         x0_sb = gfl.solve(m_ss, m_sb)
@@ -471,7 +471,7 @@ class TestSolveVal(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_rsolve_lu_returns_expected_values(self, arrays):
         m_ss, m_sb, m_bs = arrays
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         cond = np.linalg.cond(m_ss).max()
 
         x0_bs = gfl.rsolve(m_bs, m_ss)

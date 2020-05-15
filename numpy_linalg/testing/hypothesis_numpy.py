@@ -385,6 +385,7 @@ def full_rank(matrix: np.ndarray) -> Union[np.ndarray, bool]:
     ----------
     matrix : np.ndarray
         square matrix/array of square matrices whose rank to check.
+        Checks `det(A A^T)` or `det(A^T A)`.
 
     Returns
     -------
@@ -444,6 +445,38 @@ def all_well_conditioned(*matrices: np.ndarray) -> bool:
         True if all of the the matrices are well conditioned.
     """
     return all(np.all(well_conditioned(mat)) for mat in matrices)
+
+
+def well_behaved(matrix: np.ndarray) -> Union[np.ndarray, bool]:
+    """Check condition number and determinant of matrix/matrices
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        matrix/array of matrices whose condition number & determinant to check
+
+    Returns
+    -------
+    is_well_conditioned : np.ndarray|bool
+        bool/array of bools that are True if the matrix is well behaved.
+    """
+    return np.logical_and(full_rank(matrix), well_conditioned(matrix))
+
+
+def all_well_behaved(*matrices: np.ndarray) -> bool:
+    """Check condition number and determinant of all matrices
+
+    Parameters
+    ----------
+    matrices : np.ndarray
+        matrices whose condition number and determinant to check
+
+    Returns
+    -------
+    are_well_conditioned : bool
+        True if all of the the matrices are well behaved.
+    """
+    return all(np.all(well_behaved(mat)) for mat in matrices)
 
 
 # -----------------------------------------------------------------------------

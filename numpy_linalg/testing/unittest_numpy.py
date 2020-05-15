@@ -116,7 +116,7 @@ class TestCaseNumpy(_ut.TestCase):
                 epsratio = np.finfo(array.dtype).eps / np.finfo(np.float64).eps
                 # single/double epsratio ~ 5.6e8
                 self.all_close_opts['rtol'] *= epsratio * cond
-                self.all_close_opts['atol'] *= epsratio
+                self.all_close_opts['atol'] *= epsratio * cond
             elif np.issubdtype(array.dtype, np.integer):
                 self.all_close_opts['rtol'] = 0
                 self.all_close_opts['atol'] = 0.5
@@ -138,7 +138,7 @@ class TestCaseNumpy(_ut.TestCase):
             if not np.allclose(actual, desired, **self.all_close_opts):
                 msg = '' if msg is None else f'{msg}\n'
                 msg += miss_str(actual, desired, **self.all_close_opts)
-                msg += '' if cond == 1. else f' (cond={cond})'
+                msg += f' (cond={cond})'
                 self.fail(msg)
 
     def assertArrayNotAllClose(self, actual: np.ndarray, desired: np.ndarray,

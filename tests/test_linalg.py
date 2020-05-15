@@ -71,7 +71,7 @@ class TestShape(TestCaseNumpy):
         m_ss, m_sb, m_bs = arrays[:-2]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, tall = [arr.shape for arr in arrays[:-2]]
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         # with self.subTest('solve'):
         expect = gf.return_shape('(a,b),(b,c)->(a,c)', smol, wide)
@@ -109,7 +109,7 @@ class TestShape(TestCaseNumpy):
         m_ss, m_sb, m_bb, m_bs = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         smol, wide, big, tall = [arr.shape for arr in arrays[:-1]]
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest('solve'):
@@ -129,7 +129,7 @@ class TestShape(TestCaseNumpy):
         m_ss, m_sb, m_bs = arrays[:-2]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         smol, wide, tall = [arr.shape for arr in arrays[:-2]]
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest('rsolve'):
@@ -254,7 +254,7 @@ class TestValue(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', None))
     def test_functions_solve(self, arrays):
         m_ss, m_sb, m_bs = arrays
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         cond = np.linalg.cond(m_ss).max()
 
         # with self.subTest('solve'):
@@ -294,7 +294,7 @@ class TestValue(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None))
     def test_functions_matldiv(self, arrays):
         m_ss, m_sb, m_bb, m_bs = arrays
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest('solve'):
@@ -316,7 +316,7 @@ class TestValue(TestCaseNumpy):
     def test_functions_matrdiv(self, arrays):
         m_ss, m_sb, m_bs = arrays[:-1]
         v_b = hn.core_only(arrays[-1], dims=1)
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
         hy.assume(hn.wide(m_sb))
 
         # with self.subTest('rsolve'):
@@ -334,8 +334,9 @@ class TestValue(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_qr(self, arrays):
         m_sb, m_bs = arrays
-        box = np.s_[..., :m_sb.shape[-2], :]
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb, m_bs))
+        box = np.s_[..., :m_sb.shape[-2], :]
         cond_sb = np.linalg.cond(m_sb).max()
         cond_bs = np.linalg.cond(m_bs).max()
 
@@ -362,8 +363,9 @@ class TestValue(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lq(self, arrays):
         m_sb, m_bs = arrays
-        box = np.s_[..., :m_sb.shape[-2]]
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb, m_bs))
+        box = np.s_[..., :m_sb.shape[-2]]
         cond_sb = np.linalg.cond(m_sb).max()
         cond_bs = np.linalg.cond(m_bs).max()
 
@@ -388,8 +390,9 @@ class TestValue(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,b),(b,a)', None))
     def test_lqr(self, arrays):
         m_sb, m_bs = arrays
-        box = np.s_[..., :m_sb.shape[-2], :]
         hy.assume(hn.wide(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb, m_bs))
+        box = np.s_[..., :m_sb.shape[-2], :]
         cond_sb = np.linalg.cond(m_sb).max()
         cond_bs = np.linalg.cond(m_bs).max()
 

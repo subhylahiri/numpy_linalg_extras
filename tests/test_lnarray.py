@@ -59,8 +59,7 @@ class TestArray(TestCaseNumpy):
         m_sb_n, m_bs_n = arrays[:2]
         m_sb, m_bs, m_ss, m_bb = view_as(*arrays)
         m_bs_m, m_ss_m, m_bb_m = hn.core_only(m_bs, m_ss, m_bb)
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(m_bb))
+        hy.assume(hn.all_well_behaved(m_ss, m_bb))
         hy.assume(m_sb.ndim != m_ss.ndim - 1)  # np..solve's broadcasting issue
 
         self.assertIsInstance(m_sb @ m_bs, la.lnarray)
@@ -124,8 +123,7 @@ class TestArray(TestCaseNumpy):
         vec = hn.core_only(vec, dims=1)
         hy.assume(hn.tall(m_bs))
         hy.assume(m_ss.ndim != 3)  # causes np..solve's broadcasting issue
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_full_rank(m_bs_m))
+        hy.assume(hn.all_well_behaved(m_ss, m_bs_m))
 
         expect = utn.array_return_shape('(a,b),(b,c)->(a,c)', m_bs, m_ss)
         ts_o = np.empty(expect, m_ss.dtype)
@@ -153,7 +151,7 @@ class TestPinvarray(TestCaseNumpy):
     @hy.given(hn.broadcastable('(a,a),(b,a)', ['d', 'D']))
     def test_pinvarray_attribute_types(self, arrays):
         m_ss, m_bs = view_as(*arrays)
-        hy.assume(hn.all_non_singular(m_ss))
+        hy.assume(hn.all_well_behaved(m_ss))
 
         self.assertIsInstance(m_ss.pinv, la.pinvarray)
         self.assertIsInstance(m_ss.inv, la.invarray)
@@ -181,7 +179,7 @@ class TestPinvarray(TestCaseNumpy):
     def test_pinvarray_shape_methods(self, array):
         m_bs = array.view(la.lnarray)
         hy.assume(hn.nonsquare(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         m_bs_p = m_bs.pinv
         expect = utn.trnsp(m_bs.shape)
 
@@ -204,7 +202,7 @@ class TestPinvarray(TestCaseNumpy):
     def test_pinvarray_in_functions(self, arrays):
         m_sb, high, m_bs = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         self.assertArrayAllClose(gf.matmul(m_bs.pinv, high),
@@ -236,8 +234,7 @@ class TestPinvarray(TestCaseNumpy):
     def test_invarray_in_functions(self, arrays):
         m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(mini))
+        hy.assume(hn.all_well_behaved(m_ss, mini))
 
         cond = np.linalg.cond(m_ss).max()
         self.assertArrayAllClose(gf.matmul(m_ss.inv, m_sb),
@@ -296,10 +293,7 @@ class TestPinvarray(TestCaseNumpy):
     def test_good_p_invarray_combos_in_lstsq(self, arrays):
         m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(mini))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_ss, mini, m_bs, m_sb))
 
         self.assertArrayAllClose(la.lstsq(mini.inv, m_sb),
                                  la.matmul(mini, m_sb))
@@ -328,10 +322,8 @@ class TestPinvarray(TestCaseNumpy):
     def test_good_p_invarray_combos_in_solve(self, arrays):
         m_ss, m_bs, m_sb, mini = view_as(*arrays)
         # hy.assume(hn.tall(m_bs))
-        # hy.assume(hn.all_non_singular(m_ss))
-        # hy.assume(hn.all_non_singular(mini))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
+        # hy.assume(hn.all_well_behaved(m_ss, mini))
 
         cond = np.linalg.cond(m_bs).max()
         self.assertArrayAllClose(la.solve(m_ss.inv, m_bs.pinv),
@@ -346,7 +338,7 @@ class TestPinvarray(TestCaseNumpy):
         scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
 
         cond = np.linalg.cond(m_bs).max()
         self.assertArrayAllClose(m_bs.pinv @ high, gf.lstsq(m_bs, high),
@@ -382,8 +374,7 @@ class TestPinvarray(TestCaseNumpy):
         scal[np.abs(scal) < 1e-5] += 1.
         scal = scal.s
         # hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_non_singular(m_ss))
-        hy.assume(hn.all_non_singular(mini))
+        hy.assume(hn.all_well_behaved(m_ss, mini))
 
         cond = np.linalg.cond(m_ss).max()
         self.assertArrayAllClose(m_ss.inv @ m_sb, gf.solve(m_ss, m_sb),

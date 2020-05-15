@@ -90,7 +90,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_lstsq_qr_returns_expected_shape_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         tall = m_bs.shape
 
         expect = utn.array_return_shape('(m,n),(m,p)->(n,p),(n,m)', m_bs, m_bb)
@@ -108,7 +108,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_qr_lstsq_returns_expected_shape_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
 
         _, x_f, tau = fun(m_bs, m_bb)
         expect = utn.array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_bb)
@@ -129,7 +129,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_lstsq_qr_returns_expected_shape_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         wide = m_sb.shape
 
         expect = utn.array_return_shape('(m,n),(m,p)->(n,p),(n,m)', m_sb, m_ss)
@@ -147,7 +147,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_qr_lstsq_returns_expected_shape_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
 
         _, x_f, tau = fun(m_sb, m_ss)
         expect = utn.array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_ss)
@@ -168,7 +168,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_shape_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         tall = m_bs.shape
 
         expect = utn.array_return_shape('(m,n),(p,n)->(m,p),(n,p)', m_ss, m_bs)
@@ -186,7 +186,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_rqr_lstsq_returns_expected_shape_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
 
         _, x_f, tau = fun(m_ss, m_bs)
         expect = utn.array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_bb)
@@ -207,7 +207,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_shape_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         wide = m_sb.shape
 
         expect = utn.array_return_shape('(m,n),(p,n)->(m,p),(n,p)', m_bb, m_sb)
@@ -225,7 +225,7 @@ class TestLstsqShape(TestCaseNumpy):
     def test_rqr_lstsq_returns_expected_shape_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
 
         _, x_f, tau = fun(m_bb, m_sb)
         expect = utn.array_return_shape('(n,m),(m,p)->(n,p)', x_f, m_ss)
@@ -328,8 +328,7 @@ class TestLstsqQRVectors(TestCaseNumpy):
         wide, tall = [arr.shape for arr in arrays[:-2]]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
         off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         tau = m_bs.shape[:-2] + tau_len(m_bs, fun)
@@ -388,8 +387,7 @@ class TestLstsqQRVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_sb, m_bs))
         off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         tau = m_sb.shape[:-2] + tau_len(m_sb, fun)
@@ -424,8 +422,7 @@ class TestQRLstsqVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
         off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = fun(m_bs, v_b)
@@ -509,8 +506,7 @@ class TestQRLstsqVectors(TestCaseNumpy):
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         wide, tall = [arr.shape for arr in arrays[:-2]]
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_bs, m_sb))
         off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = fun(v_s, m_bs)
@@ -573,7 +569,7 @@ class TestLstsqVal(TestCaseNumpy):
     def test_lstsq_qr_returns_expected_values_with_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         # overconstrained
@@ -595,7 +591,7 @@ class TestLstsqVal(TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         # overconstrained
@@ -617,7 +613,7 @@ class TestLstsqVal(TestCaseNumpy):
     def test_lstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_sb))
+        hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
 
         # underconstrained
@@ -640,7 +636,7 @@ class TestLstsqVal(TestCaseNumpy):
     def test_rlstsq_qr_returns_expected_values_with_tall(self, arrays, fun):
         m_ss, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
-        hy.assume(hn.all_full_rank(m_bs))
+        hy.assume(hn.all_well_behaved(m_bs))
         cond = np.linalg.cond(m_bs).max()
 
         # underconstrained

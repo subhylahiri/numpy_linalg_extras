@@ -21,20 +21,26 @@ __all__ = [
     'empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like',
     'zeros', 'zeros_like', 'full', 'full_like',
     'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'copy', 'loadtxt',
+    'asfortranarray', 'asarray_chkfinite', 'require',
     'frombuffer', 'fromfile', 'fromfunction', 'fromiter', 'fromstring',
     'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
-    'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander'
+    'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
+    'tril_indices', 'triu_indices', 'indices',
 ]
-
-
 
 wrap_one = wr.make_wrap_one(lnarray, "numpy_linalg")
 wrap_sub = wr.make_wrap_sub(lnarray, "numpy_linalg")
 wrap_several = wr.make_wrap_several(lnarray, "numpy_linalg")
+wrap_subd = wr.deprecated(wrap_sub)
 # =========================================================================
 # Ones and zeros
 # =========================================================================
 
+# existing arrrays
+empty_like = wrap_subd(np.empty_like)
+ones_like = wrap_subd(np.ones_like)
+zeros_like = wrap_subd(np.zeros_like)
+full_like = wrap_subd(np.full_like)
 # new arrays
 empty = wrap_one(np.empty)
 eye = wrap_one(np.eye)
@@ -42,11 +48,6 @@ identity = wrap_one(np.identity)
 ones = wrap_one(np.ones)
 zeros = wrap_one(np.zeros)
 full = wrap_one(np.full)
-# existing arrrays
-empty_like = wrap_sub(np.empty_like)
-ones_like = wrap_sub(np.ones_like)
-zeros_like = wrap_sub(np.zeros_like)
-full_like = wrap_sub(np.full_like)
 
 
 # =========================================================================
@@ -56,7 +57,7 @@ full_like = wrap_sub(np.full_like)
 
 # new(ish) arrays
 array = wrap_sub(np.array)
-asarray = wrap_one(np.asarray)
+asarray = wrap_sub(np.asarray)
 asanyarray = wrap_sub(np.asanyarray)
 ascontiguousarray = wrap_one(np.ascontiguousarray)
 copy = wrap_one(np.copy)
@@ -66,6 +67,9 @@ fromfunction = wrap_one(np.fromfunction)
 fromiter = wrap_one(np.fromiter)
 fromstring = wrap_one(np.fromstring)
 loadtxt = wrap_one(np.loadtxt)
+asfortranarray = wrap_one(np.asfortranarray)
+asarray_chkfinite = wrap_one(np.asarray_chkfinite)
+require = wrap_sub(np.require)
 
 
 # =========================================================================
@@ -82,14 +86,15 @@ meshgrid = wrap_several(np.meshgrid)
 
 
 # =========================================================================
-# Building matrices
+# Generating index arrays
 # =========================================================================
+ravel_multi_index = wrap_several(np.ravel_multi_index)
+unravel_index = wrap_several(np.unravel_index)
+diag_indices = wrap_several(np.diag_indices)
+mask_indices = wrap_several(np.mask_indices)
+tril_indices = wrap_several(np.tril_indices)
+triu_indices = wrap_several(np.triu_indices)
+indices = wrap_several(np.indices)
 
 
 # existing arrrays
-diag = wrap_one(np.diag)
-diagflat = wrap_one(np.diagflat)
-tri = wrap_one(np.tri)
-tril = wrap_one(np.tril)
-triu = wrap_one(np.triu)
-vander = wrap_one(np.vander)

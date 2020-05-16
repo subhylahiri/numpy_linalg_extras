@@ -69,7 +69,8 @@ def deprecated(old_wrapper):
         return new_wrapped
     return new_wrapper
 
-def make_wrap_one(array_type: type, module_name: str=None):
+
+def make_wrap_one(array_type: type, module_name: str = None):
     """Create a wrapper for functions with one array output
 
     see docstring of created function.
@@ -105,7 +106,7 @@ def make_wrap_one(array_type: type, module_name: str=None):
     return wrap_one
 
 
-def make_wrap_several(array_type, module_name: str=None):
+def make_wrap_several(array_type, module_name: str = None):
     """Create a wrapper for functions with several array outputs
 
     see docstring of created function.
@@ -142,7 +143,7 @@ def make_wrap_several(array_type, module_name: str=None):
     return wrap_several
 
 
-def make_wrap_some(array_type, module_name: str=None):
+def make_wrap_some(array_type, module_name: str = None):
     """Create a wrapper for functions with some array outputs, some not
 
     see docstring of created function.
@@ -180,7 +181,7 @@ def make_wrap_some(array_type, module_name: str=None):
     return wrap_some
 
 
-def make_wrap_sub(array_type, module_name: str=None):
+def make_wrap_sub(array_type, module_name: str = None):
     """Create a wrapper for functions with one array output
 
     see docstring of created function.
@@ -216,7 +217,7 @@ def make_wrap_sub(array_type, module_name: str=None):
     return wrap_sub
 
 
-def make_wrap_subseveral(array_type, module_name: str=None):
+def make_wrap_subseveral(array_type, module_name: str = None):
     """Create a wrapper for functions with several array outputs
 
     see docstring of created function.
@@ -253,7 +254,7 @@ def make_wrap_subseveral(array_type, module_name: str=None):
     return wrap_subseveral
 
 
-def make_wrap_subsome(array_type, module_name: str=None):
+def make_wrap_subsome(array_type, module_name: str = None):
     """Create a wrapper for functions with some array outputs, some not
 
     see docstring of created function.

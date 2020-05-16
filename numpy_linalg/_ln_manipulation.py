@@ -16,21 +16,21 @@ from . import wrappers as wr
 from ._lnarray import lnarray
 
 __all__ = [
-           'reshape', 'moveaxis', 'rollaxis', 'swapaxes',
-           'atleast_1d', 'atleast_2d', 'atleast_3d',
-           'broadcast_to', 'broadcast_arrays', 'expand_dims', 'squeeze',
-           'asfarray', 'asfortranarray', 'asarray_chkfinite', 'require',
-           'concatenate', 'stack', 'column_stack', 'dstack', 'hstack',
-           'vstack', 'block', 'split', 'array_split', 'dsplit', 'hsplit',
-           'vsplit', 'tile', 'repeat', 'delete', 'insert', 'append', 'resize',
-           'trim_zeros', 'unique', 'flip', 'fliplr', 'flipud',
-           'roll', 'rot90'
-           ]
+    'reshape', 'moveaxis', 'rollaxis', 'swapaxes',
+    'atleast_1d', 'atleast_2d', 'atleast_3d',
+    'broadcast_to', 'broadcast_arrays', 'expand_dims', 'squeeze',
+    'concatenate', 'stack', 'column_stack', 'dstack', 'hstack', 'vstack',
+    'block', 'split', 'array_split', 'dsplit', 'hsplit', 'vsplit', 'tile',
+    'repeat', 'delete', 'insert', 'append', 'resize', 'trim_zeros', 'unique',
+    'flip', 'fliplr', 'flipud', 'roll', 'rot90', 'ix_', 'fill_diagonal',
+    'diag_indices_from', 'tril_indices_from', 'triu_indices_from',
+    'asfarray', 'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander',
+]
 
-wrap_one = wr.make_wrap_one(lnarray, "numpy_linalg")
-wrap_sub = wr.make_wrap_sub(lnarray, "numpy_linalg")
-wrap_several = wr.make_wrap_several(lnarray, "numpy_linalg")
-wrap_subseveral = wr.make_wrap_subseveral(lnarray, "numpy_linalg")
+wrap_one = wr.deprecated(wr.make_wrap_one(lnarray, "numpy_linalg"))
+wrap_sub = wr.deprecated(wr.make_wrap_sub(lnarray, "numpy_linalg"))
+wrap_several = wr.deprecated(wr.make_wrap_several(lnarray, "numpy_linalg"))
+wrap_submany = wr.deprecated(wr.make_wrap_subseveral(lnarray, "numpy_linalg"))
 # =========================================================================
 # Array manipulation routines
 # =========================================================================
@@ -56,16 +56,9 @@ atleast_1d = wrap_one(np.atleast_1d)
 atleast_2d = wrap_one(np.atleast_2d)
 atleast_3d = wrap_one(np.atleast_3d)
 broadcast_to = wrap_sub(np.broadcast_to)
-broadcast_arrays = wrap_subseveral(np.broadcast_arrays)
+broadcast_arrays = wrap_submany(np.broadcast_arrays)
 expand_dims = wrap_one(np.expand_dims)
 squeeze = wrap_one(np.squeeze)
-# =========================================================================
-# Changing kind of array
-# =========================================================================
-asfarray = wrap_one(np.asfarray)
-asfortranarray = wrap_one(np.asfortranarray)
-asarray_chkfinite = wrap_one(np.asarray_chkfinite)
-require = wrap_sub(np.require)
 # =========================================================================
 # Joining arrays
 # =========================================================================
@@ -107,3 +100,21 @@ flipud = wrap_one(np.flipud)
 reshape = wrap_one(np.reshape)
 roll = wrap_one(np.roll)
 rot90 = wrap_one(np.rot90)
+# =========================================================================
+# Indexing-like operations
+# =========================================================================
+ix_ = wrap_several(np.ix_)
+fill_diagonal = wrap_several(np.fill_diagonal)
+diag_indices_from = wrap_several(np.diag_indices_from)
+tril_indices_from = wrap_several(np.tril_indices_from)
+triu_indices_from = wrap_several(np.triu_indices_from)
+# =========================================================================
+# Building matrices
+# =========================================================================
+asfarray = wrap_one(np.asfarray)
+diag = wrap_one(np.diag)
+diagflat = wrap_one(np.diagflat)
+tri = wrap_one(np.tri)
+tril = wrap_one(np.tril)
+triu = wrap_one(np.triu)
+vander = wrap_one(np.vander)

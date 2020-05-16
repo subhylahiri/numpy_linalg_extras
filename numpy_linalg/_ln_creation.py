@@ -14,7 +14,8 @@ To use some other array class, change the second import statement.
 """
 
 import numpy as np
-from . import _ln_wrap as _wr
+from . import _ln_wrap as wr
+from ._lnarray import lnarray
 
 __all__ = [
     'empty', 'empty_like', 'eye', 'identity', 'ones', 'ones_like',
@@ -26,66 +27,69 @@ __all__ = [
 ]
 
 
-# =============================================================================
-# Ones and zeros
-# =============================================================================
 
+wrap_one = wr.make_wrap_one(lnarray, "numpy_linalg")
+wrap_sub = wr.make_wrap_sub(lnarray, "numpy_linalg")
+wrap_several = wr.make_wrap_several(lnarray, "numpy_linalg")
+# =========================================================================
+# Ones and zeros
+# =========================================================================
 
 # new arrays
-empty = _wr.wrap_one(np.empty)
-eye = _wr.wrap_one(np.eye)
-identity = _wr.wrap_one(np.identity)
-ones = _wr.wrap_one(np.ones)
-zeros = _wr.wrap_one(np.zeros)
-full = _wr.wrap_one(np.full)
+empty = wrap_one(np.empty)
+eye = wrap_one(np.eye)
+identity = wrap_one(np.identity)
+ones = wrap_one(np.ones)
+zeros = wrap_one(np.zeros)
+full = wrap_one(np.full)
 # existing arrrays
-empty_like = _wr.wrap_sub(np.empty_like)
-ones_like = _wr.wrap_sub(np.ones_like)
-zeros_like = _wr.wrap_sub(np.zeros_like)
-full_like = _wr.wrap_sub(np.full_like)
+empty_like = wrap_sub(np.empty_like)
+ones_like = wrap_sub(np.ones_like)
+zeros_like = wrap_sub(np.zeros_like)
+full_like = wrap_sub(np.full_like)
 
 
-# =============================================================================
+# =========================================================================
 # From existing data
-# =============================================================================
+# =========================================================================
 
 
 # new(ish) arrays
-array = _wr.wrap_sub(np.array)
-asarray = _wr.wrap_one(np.asarray)
-asanyarray = _wr.wrap_sub(np.asanyarray)
-ascontiguousarray = _wr.wrap_one(np.ascontiguousarray)
-copy = _wr.wrap_one(np.copy)
-frombuffer = _wr.wrap_one(np.frombuffer)
-fromfile = _wr.wrap_one(np.fromfile)
-fromfunction = _wr.wrap_one(np.fromfunction)
-fromiter = _wr.wrap_one(np.fromiter)
-fromstring = _wr.wrap_one(np.fromstring)
-loadtxt = _wr.wrap_one(np.loadtxt)
+array = wrap_sub(np.array)
+asarray = wrap_one(np.asarray)
+asanyarray = wrap_sub(np.asanyarray)
+ascontiguousarray = wrap_one(np.ascontiguousarray)
+copy = wrap_one(np.copy)
+frombuffer = wrap_one(np.frombuffer)
+fromfile = wrap_one(np.fromfile)
+fromfunction = wrap_one(np.fromfunction)
+fromiter = wrap_one(np.fromiter)
+fromstring = wrap_one(np.fromstring)
+loadtxt = wrap_one(np.loadtxt)
 
 
-# =============================================================================
+# =========================================================================
 # Numerical ranges
-# =============================================================================
+# =========================================================================
 
 
 # new arrays
-arange = _wr.wrap_one(np.arange)
-linspace = _wr.wrap_one(np.linspace)
-logspace = _wr.wrap_one(np.logspace)
-geomspace = _wr.wrap_one(np.geomspace)
-meshgrid = _wr.wrap_several(np.meshgrid)
+arange = wrap_one(np.arange)
+linspace = wrap_one(np.linspace)
+logspace = wrap_one(np.logspace)
+geomspace = wrap_one(np.geomspace)
+meshgrid = wrap_several(np.meshgrid)
 
 
-# =============================================================================
+# =========================================================================
 # Building matrices
-# =============================================================================
+# =========================================================================
 
 
 # existing arrrays
-diag = _wr.wrap_one(np.diag)
-diagflat = _wr.wrap_one(np.diagflat)
-tri = _wr.wrap_one(np.tri)
-tril = _wr.wrap_one(np.tril)
-triu = _wr.wrap_one(np.triu)
-vander = _wr.wrap_one(np.vander)
+diag = wrap_one(np.diag)
+diagflat = wrap_one(np.diagflat)
+tri = wrap_one(np.tri)
+tril = wrap_one(np.tril)
+triu = wrap_one(np.triu)
+vander = wrap_one(np.vander)

@@ -31,146 +31,193 @@ wrap_subsome
 """
 from functools import wraps as _wraps
 from typing import List as _List
+from warnings import warn
 
 import numpy as _np
 
-from ._lnarray import lnarray as _array
+# from ._lnarray import lnarray as _ARRAY
 
 # =============================================================================
 # Wrapping functionals
 # =============================================================================
 
 
-def wrap_one(np_func):
-    """Create version of numpy function with single lnarray output.
-
-    Does not pass through subclasses of `lnarray`
-
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a single `ndarray`.
-
-    Returns
-    -------
-    my_func : function
-        A function that returns a single `lnarray`.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        return _converter(np_func(*args, **kwargs))
-    return wrapped
+def set_module(module: str = 'numpy_linalg'):
+    """Create a decorator to set the __module__ attribute"""
+    def decorator(thing):
+        thing.__module__ = module
+        return thing
+    return decorator
 
 
-def wrap_several(np_func):
-    """Create version of numpy function with multiple lnarray outputs.
+def deprecated(old_wrapper):
+    def new_wrapper(np_func):
+        old_wrapped = old_wrapper(np_func)
+        module = getattr(old_wrapped, '__module__', "numpy_linalg")
+        msg = f"Use {np_func.__module__}.{np_func.__name__} "
+        msg += f"instead of {module}.{np_func.__name__}"
+        @_wraps(np_func)
+        def new_wrapped(*args, **kwargs):
+            warn(msg, DeprecationWarning, 2)
+            return old_wrapped(*args, **kwargs)
+        new_wrapped.__module__ = old_wrapped.__module__
+        return new_wrapped
+    return new_wrapper
 
-    Does not pass through subclasses of `lnarray`
+def make_wrap_one(array_type, module_name: str=None):
+    def wrap_one(np_func):
+        """Create version of numpy function with single lnarray output.
 
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a tuple of `ndarray`s.
+        Does not pass through subclasses of `lnarray`
 
-    Returns
-    -------
-    my_func : function
-        A function that returns a tuple of `lnarray`s.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        output = np_func(*args, **kwargs)
-        return (_converter(x) for x in output)
-    return wrapped
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a single `ndarray`.
 
-
-def wrap_some(np_func):
-    """Create version of numpy function with some lnarray outputs, some
-    non-array outputs.
-
-    Does not pass through subclasses of `lnarray`
-
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a mixed tuple of `ndarray`s and others.
-
-    Returns
-    -------
-    my_func : function
-        A function that returns a mixed tuple of `lnarray`s and others.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        output = np_func(*args, **kwargs)
-        return (_converter_check(x) for x in output)
-    return wrapped
+        Returns
+        -------
+        my_func : function
+            A function that returns a single `lnarray`.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            return _converter(np_func(*args, **kwargs), array_type)
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_one
 
 
-def wrap_sub(np_func):
-    """Create version of numpy function with single lnarray output.
+def make_wrap_several(array_type, module_name: str=None):
+    def wrap_several(np_func):
+        """Create version of numpy function with multiple lnarray outputs.
 
-    Does pass through subclasses of `lnarray`
+        Does not pass through subclasses of `lnarray`
 
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a single `ndarray`.
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a tuple of `ndarray`s.
 
-    Returns
-    -------
-    my_func : function
-        A function that returns a single `lnarray`.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        return _converter_sub(np_func(*args, **kwargs))
-    return wrapped
-
-
-def wrap_subseveral(np_func):
-    """Create version of numpy function with multiple lnarray outputs.
-
-    Does pass through subclasses of `lnarray`
-
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a tuple of `ndarray`s.
-
-    Returns
-    -------
-    my_func : function
-        A function that returns a tuple of `lnarray`s.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        output = np_func(*args, **kwargs)
-        return (_converter_sub(x) for x in output)
-    return wrapped
+        Returns
+        -------
+        my_func : function
+            A function that returns a tuple of `lnarray`s.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            return (_converter(x, array_type) for x in output)
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_several
 
 
-def wrap_subsome(np_func):
-    """Create version of numpy function with some lnarray outputs, some
-    non-array outputs.
+def make_wrap_some(array_type, module_name: str=None):
+    def wrap_some(np_func):
+        """Create version of numpy function with some lnarray outputs, some
+        non-array outputs.
 
-    Does pass through subclasses of `lnarray`
+        Does not pass through subclasses of `lnarray`
 
-    Parameters
-    ----------
-    np_func : function
-        A function that returns a mixed tuple of `ndarray`s and others.
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a mixed tuple of `ndarray`s and others.
 
-    Returns
-    -------
-    my_func : function
-        A function that returns a mixed tuple of `lnarray`s and others.
-    """
-    @_wraps(np_func)
-    def wrapped(*args, **kwargs):
-        output = np_func(*args, **kwargs)
-        return (_converter_subcheck(x) for x in output)
-    return wrapped
+        Returns
+        -------
+        my_func : function
+            A function that returns a mixed tuple of `lnarray`s and others.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            return (_converter_check(x) for x in output)
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_some
+
+
+def make_wrap_sub(array_type, module_name: str=None):
+    def wrap_sub(np_func):
+        """Create version of numpy function with single lnarray output.
+
+        Does pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a single `ndarray`.
+
+        Returns
+        -------
+        my_func : function
+            A function that returns a single `lnarray`.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            return _converter_sub(np_func(*args, **kwargs))
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_sub
+
+
+def make_wrap_subseveral(array_type, module_name: str=None):
+    def wrap_subseveral(np_func):
+        """Create version of numpy function with multiple lnarray outputs.
+
+        Does pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a tuple of `ndarray`s.
+
+        Returns
+        -------
+        my_func : function
+            A function that returns a tuple of `lnarray`s.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            return (_converter_sub(x) for x in output)
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_subseveral
+
+
+def make_wrap_some(array_type, module_name: str=None):
+    def wrap_subsome(np_func):
+        """Create version of numpy function with some lnarray outputs, some
+        non-array outputs.
+
+        Does pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : function
+            A function that returns a mixed tuple of `ndarray`s and others.
+
+        Returns
+        -------
+        my_func : function
+            A function that returns a mixed tuple of `lnarray`s and others.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            return (_converter_subcheck(x) for x in output)
+        if module_name is not None:
+            wrapped.__module__ = module_name
+        return wrapped
+    return wrap_subsome
 
 
 # =============================================================================
@@ -179,7 +226,8 @@ def wrap_subsome(np_func):
 
 
 def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
-                parent: str = 'numpy', imps: str = '', internal: bool = False):
+                parent: str = 'numpy', imps: str = '', internal: bool = True,
+                module: str = "numpy_linalg"):
     """Create a wrapped version of a numpy module
 
     Parameters
@@ -203,12 +251,16 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
         if internal:
             f.write('from . ')
         f.write('import _ln_wrap as _wr\n\n')
+        if internal:
+            f.write('from ._lnarray ')
+        f.write('import lnarray as _lnarray\n\n')
         f.write('__all__ = [\n')
         for fn in funcs:
             f.write(f"    '{fn}',\n")
         f.write(']\n\n')
+        f.write(f'_{wrapper} = _wr.make_{wrapper}(_lnarray)\n')
         for fn in funcs:
-            f.write(f"{fn} = _wr.{wrapper}(_pr.{fn})\n")
+            f.write(f"{fn} = _{wrapper}(_pr.{fn}, {module})\n")
 
 
 # =============================================================================
@@ -216,23 +268,23 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
 # =============================================================================
 
 
-def _converter(a: _np.ndarray) -> _array:
-    return a.view(_array)
+def _converter(a, array_type):
+    return a.view(array_type)
 
 
-def _converter_check(a):
+def _converter_check(a, array_type):
     if isinstance(a, _np.ndarray):
-        return _converter(a)
+        return _converter(a, array_type)
     return a
 
 
-def _converter_sub(a):
-    if isinstance(a, _array):
+def _converter_sub(a, array_type):
+    if isinstance(a, array_type):
         return a
-    return _converter(a)
+    return _converter(a, array_type)
 
 
-def _converter_subcheck(a):
-    if isinstance(a, _np.ndarray) and not isinstance(a, _array):
-        return _converter(a)
+def _converter_subcheck(a, array_type):
+    if isinstance(a, _np.ndarray) and not isinstance(a, array_type):
+        return _converter(a, array_type)
     return a

@@ -45,6 +45,7 @@ import numpy.linalg.linalg as nla
 
 from . import gufuncs as gf
 from .gufuncs import lstsq, matmul, rlstsq, rmatmul, rsolve, solve
+from ._ln_wrap import set_module
 
 __all__ = [
     'flattish',
@@ -73,6 +74,7 @@ __all__ = [
 # =============================================================================
 
 
+@set_module('numpy_linalg')
 def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     """Partial flattening.
 
@@ -100,6 +102,7 @@ def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     return np.reshape(arr, newshape)
 
 
+@set_module('numpy_linalg')
 def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     """Expand the shape of the array with length one axes.
 
@@ -143,6 +146,7 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     return expand_dims(expand_dims(arr, axes_sort[0]), *axes_sort[1:])
 
 
+@set_module('numpy_linalg')
 def transpose(arr: np.ndarray) -> np.ndarray:
     """Transpose last two indices.
 
@@ -162,6 +166,7 @@ def transpose(arr: np.ndarray) -> np.ndarray:
     return nla.transpose(arr)
 
 
+@set_module('numpy_linalg')
 def dagger(arr: np.ndarray) -> np.ndarray:
     """Hermitian conjugate over last two indices.
 
@@ -179,6 +184,7 @@ def dagger(arr: np.ndarray) -> np.ndarray:
     return transpose(arr.conj())
 
 
+@set_module('numpy_linalg')
 def col(arr: np.ndarray) -> np.ndarray:
     """Treat multi-dim array as a stack of column vectors.
 
@@ -197,6 +203,7 @@ def col(arr: np.ndarray) -> np.ndarray:
     return expand_dims(arr, -1)
 
 
+@set_module('numpy_linalg')
 def row(arr: np.ndarray) -> np.ndarray:
     """Treat multi-dim array as a stack of row vectors.
 
@@ -215,6 +222,7 @@ def row(arr: np.ndarray) -> np.ndarray:
     return expand_dims(arr, -2)
 
 
+@set_module('numpy_linalg')
 def scalar(arr: np.ndarray) -> np.ndarray:
     """Treat multi-dim array as a stack of scalars.
 
@@ -242,6 +250,7 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # rlstsq = gf.vec.vec_wrap(gf.rlstsq)
 
 
+@set_module('numpy_linalg')
 def matldiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
     """Matrix division from left.
 
@@ -283,6 +292,7 @@ def matldiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
     return lstsq(lft, rgt, *args, **kwargs)
 
 
+@set_module('numpy_linalg')
 def matrdiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
     """Matrix division from right.
 
@@ -335,6 +345,7 @@ qr_modes = {'reduced': (gf.qr_m, gf.qr_n),
             'raw': (gf.qr_rawm, gf.qr_rawn)}
 
 
+@set_module('numpy_linalg')
 def qr(arr: np.ndarray, mode: str = 'reduced', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """QR decomposition.
@@ -381,6 +392,7 @@ lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
             'raw': (gf.lq_rawm, gf.lq_rawn)}
 
 
+@set_module('numpy_linalg')
 def lq(arr: np.ndarray, mode: str = 'reduced', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ decomposition.
@@ -421,6 +433,7 @@ def lq(arr: np.ndarray, mode: str = 'reduced', *args,
     return ufunc(arr, *args, **kwds)
 
 
+@set_module('numpy_linalg')
 def lqr(arr: np.ndarray, mode: str = 'reduced', *args,
         **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ/QR decomposition.
@@ -468,6 +481,7 @@ lu_modes = {'separate': (gf.lu_m, gf.lu_n),
             'raw': (gf.lu_rawm, gf.lu_rawn)}
 
 
+@set_module('numpy_linalg')
 def lu(arr: np.ndarray, mode: str = 'separate', *args,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LU decomposition.

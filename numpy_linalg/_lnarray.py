@@ -44,6 +44,7 @@ from . import _linalg as la
 from . import gufuncs as gf
 from .gufuncs import fam
 from .convert import conv_in_attr, conv_out_init, conv_in_view, conv_out_view
+from ._ln_wrap import set_module
 
 # pylint: disable=invalid-name
 # =============================================================================
@@ -65,6 +66,7 @@ _TUPLE_FUNCS = {np.concatenate, np.stack, np.column_stack, np.dstack,
                 np.hstack, np.vstack}
 
 
+@set_module("numpy_linalg")
 class lnarray(np.ndarray):
     """Array object with linear algebra customisation.
 
@@ -464,6 +466,7 @@ def _implicit_getattr(obj: pinvarray, attr: str):
 # =============================================================================
 
 
+@set_module("numpy_linalg")
 class pinvarray(NDArrayOperatorsMixin):
     """Lazy matrix pseudoinverse of `lnarray`.
 
@@ -735,6 +738,7 @@ class pinvarray(NDArrayOperatorsMixin):
 # =============================================================================
 
 
+@set_module("numpy_linalg")
 class invarray(pinvarray):
     """Lazy matrix inverse of `lnarray`.
 

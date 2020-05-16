@@ -3,6 +3,7 @@
 """
 import numpy.fft as nf
 from . import _ln_wrap as _wr
+from ._lnarray import lnarray as _lnarray
 
 __all__ = [
     'fft',
@@ -24,24 +25,25 @@ __all__ = [
     'fftfreq',
     'rfftfreq',
 ]
-
+_wrap_one = _wr.make_wrap_one(_lnarray, "numpy_linalg.fft")
+_wrap_oned = _wr.deprecated(_wrap_one)
 # existing arrays
-fft = _wr.wrap_one(nf.fft)
-ifft = _wr.wrap_one(nf.ifft)
-rfft = _wr.wrap_one(nf.rfft)
-irfft = _wr.wrap_one(nf.irfft)
-hfft = _wr.wrap_one(nf.hfft)
-ihfft = _wr.wrap_one(nf.ihfft)
-rfftn = _wr.wrap_one(nf.rfftn)
-irfftn = _wr.wrap_one(nf.irfftn)
-rfft2 = _wr.wrap_one(nf.rfft2)
-irfft2 = _wr.wrap_one(nf.irfft2)
-fft2 = _wr.wrap_one(nf.fft2)
-ifft2 = _wr.wrap_one(nf.ifft2)
-fftn = _wr.wrap_one(nf.fftn)
-ifftn = _wr.wrap_one(nf.ifftn)
-fftshift = _wr.wrap_one(nf.fftshift)
-ifftshift = _wr.wrap_one(nf.ifftshift)
+fft = _wrap_oned(nf.fft)
+ifft = _wrap_one(nf.ifft)
+rfft = _wrap_one(nf.rfft)
+irfft = _wrap_one(nf.irfft)
+hfft = _wrap_one(nf.hfft)
+ihfft = _wrap_one(nf.ihfft)
+rfftn = _wrap_one(nf.rfftn)
+irfftn = _wrap_one(nf.irfftn)
+rfft2 = _wrap_one(nf.rfft2)
+irfft2 = _wrap_one(nf.irfft2)
+fft2 = _wrap_one(nf.fft2)
+ifft2 = _wrap_one(nf.ifft2)
+fftn = _wrap_one(nf.fftn)
+ifftn = _wrap_one(nf.ifftn)
+fftshift = _wrap_one(nf.fftshift)
+ifftshift = _wrap_one(nf.ifftshift)
 # new arrays
-fftfreq = _wr.wrap_one(nf.fftfreq)
-rfftfreq = _wr.wrap_one(nf.rfftfreq)
+fftfreq = _wrap_one(nf.fftfreq)
+rfftfreq = _wrap_one(nf.rfftfreq)

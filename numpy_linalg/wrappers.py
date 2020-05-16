@@ -2,16 +2,20 @@
 # =============================================================================
 # Created on Tue Dec  5 02:46:29 2017
 # @author: subhy
-# module: _ln_wrap
+# module: wrappers
 # =============================================================================
 """
 Functions that change the return type of functions from `ndarray` to `lnarray`.
 They can be used as function decorators.
 To use some other array class, change the first import statement and the
-docstrings.
+docstrings.argument of `make_...`.
 
 Functions
 ---------
+The following are created by `make_<function name>`, which takes arguments
+`array_type` (the array class to use) and `module_name` (the module where these
+functions will be exposed).
+
 wrap_one
     Create version of `numpy` function with single `lnarray` output.
 wrap_several
@@ -31,11 +35,11 @@ wrap_subsome
 """
 from functools import wraps as _wraps
 from typing import List as _List
-from warnings import warn
+from warnings import warn as _warn
 
 import numpy as _np
 
-# from ._lnarray import lnarray as _ARRAY
+# from ._lnarray import lnarray
 
 # =============================================================================
 # Wrapping functionals
@@ -51,6 +55,7 @@ def set_module(module: str = 'numpy_linalg'):
 
 
 def deprecated(old_wrapper):
+    """Create a deprecated version of another wrapper"""
     def new_wrapper(np_func):
         old_wrapped = old_wrapper(np_func)
         module = getattr(old_wrapped, '__module__', "numpy_linalg")
@@ -58,13 +63,24 @@ def deprecated(old_wrapper):
         msg += f"instead of {module}.{np_func.__name__}"
         @_wraps(np_func)
         def new_wrapped(*args, **kwargs):
-            warn(msg, DeprecationWarning, 2)
+            _warn(msg, DeprecationWarning, 2)
             return old_wrapped(*args, **kwargs)
         new_wrapped.__module__ = old_wrapped.__module__
         return new_wrapped
     return new_wrapper
 
-def make_wrap_one(array_type, module_name: str=None):
+def make_wrap_one(array_type: type, module_name: str=None):
+    """Create a wrapper for functions with one array output
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_one(np_func):
         """Create version of numpy function with single lnarray output.
 
@@ -90,6 +106,17 @@ def make_wrap_one(array_type, module_name: str=None):
 
 
 def make_wrap_several(array_type, module_name: str=None):
+    """Create a wrapper for functions with several array outputs
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_several(np_func):
         """Create version of numpy function with multiple lnarray outputs.
 
@@ -116,6 +143,17 @@ def make_wrap_several(array_type, module_name: str=None):
 
 
 def make_wrap_some(array_type, module_name: str=None):
+    """Create a wrapper for functions with some array outputs, some not
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_some(np_func):
         """Create version of numpy function with some lnarray outputs, some
         non-array outputs.
@@ -143,6 +181,17 @@ def make_wrap_some(array_type, module_name: str=None):
 
 
 def make_wrap_sub(array_type, module_name: str=None):
+    """Create a wrapper for functions with one array output
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_sub(np_func):
         """Create version of numpy function with single lnarray output.
 
@@ -168,6 +217,17 @@ def make_wrap_sub(array_type, module_name: str=None):
 
 
 def make_wrap_subseveral(array_type, module_name: str=None):
+    """Create a wrapper for functions with several array outputs
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_subseveral(np_func):
         """Create version of numpy function with multiple lnarray outputs.
 
@@ -193,7 +253,18 @@ def make_wrap_subseveral(array_type, module_name: str=None):
     return wrap_subseveral
 
 
-def make_wrap_some(array_type, module_name: str=None):
+def make_wrap_subsome(array_type, module_name: str=None):
+    """Create a wrapper for functions with some array outputs, some not
+
+    see docstring of created function.
+
+    Parameters
+    ----------
+    array_type : type
+        The array class to use
+    module_name : str, optional
+        The module from where these functions will be imported, by default None
+    """
     def wrap_subsome(np_func):
         """Create version of numpy function with some lnarray outputs, some
         non-array outputs.
@@ -250,7 +321,7 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
         f.write(f'import {parent} as _pr\n')
         if internal:
             f.write('from . ')
-        f.write('import _ln_wrap as _wr\n\n')
+        f.write('import wrappers as _wr\n\n')
         if internal:
             f.write('from ._lnarray ')
         f.write('import lnarray as _lnarray\n\n')
@@ -258,7 +329,7 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
         for fn in funcs:
             f.write(f"    '{fn}',\n")
         f.write(']\n\n')
-        f.write(f'_{wrapper} = _wr.make_{wrapper}(_lnarray)\n')
+        f.write(f'_{wrapper} = _wr.make_{wrapper}(_lnarray, "numpy_linalg")\n')
         for fn in funcs:
             f.write(f"{fn} = _{wrapper}(_pr.{fn}, {module})\n")
 

@@ -45,7 +45,7 @@ import numpy.linalg.linalg as nla
 
 from . import gufuncs as gf
 from .gufuncs import lstsq, matmul, rlstsq, rmatmul, rsolve, solve
-from ._ln_wrap import set_module
+from .wrappers import set_module
 
 __all__ = [
     'flattish',

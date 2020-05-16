@@ -86,13 +86,19 @@ from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
                       matldiv, matrdiv, flattish, expand_dims)
 from .gufuncs import matmul, solve, rsolve, lstsq, rlstsq, norm
 from . import gufuncs
-from . import _ln_wrap as wrappers
+from . import wrappers
+from . import convert
 from . import random
+from . import fft
 from ._ln_creation import (
     empty, empty_like, eye, identity, ones, ones_like, zeros, zeros_like, full,
     full_like, array, asarray, asanyarray, ascontiguousarray, copy, frombuffer,
     fromfile, fromfunction, fromiter, fromstring, loadtxt, arange, linspace,
     logspace, geomspace, meshgrid, diag, diagflat, tri, tril, triu, vander)
+from ._ln_indexing import (
+    ravel_multi_index, unravel_index, ix_, fill_diagonal, mask_indices,
+    diag_indices, tril_indices, triu_indices, indices,
+    diag_indices_from, tril_indices_from, triu_indices_from)
 from ._ln_manipulation import (
     reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
     broadcast_to, broadcast_arrays, squeeze, asfarray, asfortranarray,
@@ -110,14 +116,19 @@ assert any((lnarray, pinvarray, invarray))
 assert any((transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
             matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
 assert any((
-    empty, empty_like, eye, identity, ones, ones_like, zeros, zeros_like, full,
-    full_like, array, asarray, asanyarray, ascontiguousarray, copy, frombuffer,
-    fromfile, fromfunction, fromiter, fromstring, loadtxt, arange, linspace,
-    logspace, geomspace, meshgrid, diag, diagflat, tri, tril, triu, vander))
+    True, empty, empty_like, eye, identity, ones, ones_like, zeros, zeros_like,
+    full, full_like, array, asarray, asanyarray, ascontiguousarray, copy,
+    frombuffer, fromfile, fromfunction, fromiter, fromstring, loadtxt,
+    arange, linspace, logspace, geomspace, meshgrid, diag, diagflat, vander,
+    tri, tril, triu))
+assert any ((
+    True, ravel_multi_index, unravel_index, ix_, fill_diagonal, mask_indices,
+    diag_indices, tril_indices, triu_indices, indices,
+    diag_indices_from, tril_indices_from, triu_indices_from))
 assert any((
+    True, asfarray, asfortranarray, asarray_chkfinite, require,
     reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
-    broadcast_to, broadcast_arrays, expand_dims, squeeze, asfarray, flattish,
-    asfortranarray, asarray_chkfinite, require, concatenate, stack,
-    column_stack, dstack, hstack, vstack, block, split, array_split, dsplit,
-    hsplit, vsplit, tile, repeat, delete, insert, append, resize, trim_zeros,
-    unique, flip, fliplr, flipud, reshape, roll, rot90))
+    broadcast_to, broadcast_arrays, expand_dims, squeeze, flattish,
+    concatenate, stack, column_stack, dstack, hstack, vstack, block,
+    split, array_split, dsplit, hsplit, vsplit, tile, repeat, delete, insert,
+    append, resize, trim_zeros, unique, flip, fliplr, flipud, roll, rot90))

@@ -12,7 +12,7 @@ See `numpy` documentation for array manipulation routines.
 To use some other array class, change the second import statement.
 """
 import numpy as np
-from . import _ln_wrap as wr
+from . import wrappers as wr
 from ._lnarray import lnarray
 
 __all__ = [

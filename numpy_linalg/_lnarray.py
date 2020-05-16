@@ -44,7 +44,7 @@ from . import _linalg as la
 from . import gufuncs as gf
 from .gufuncs import fam
 from .convert import conv_in_attr, conv_out_init, conv_in_view, conv_out_view
-from ._ln_wrap import set_module
+from .wrappers import set_module
 
 # pylint: disable=invalid-name
 # =============================================================================

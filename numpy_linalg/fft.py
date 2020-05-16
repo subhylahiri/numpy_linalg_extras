@@ -2,7 +2,7 @@
 """Wrapped numpy.fft routines
 """
 import numpy.fft as nf
-from . import _ln_wrap as _wr
+from . import wrappers as _wr
 from ._lnarray import lnarray as _lnarray
 
 __all__ = [

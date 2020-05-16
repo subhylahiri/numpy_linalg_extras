@@ -43,7 +43,7 @@ from numpy.lib.mixins import NDArrayOperatorsMixin
 from . import _linalg as la
 from . import gufuncs as gf
 from .gufuncs import fam
-from .convert import conv_in_attr, conv_out_init
+from .convert import conv_in_attr, conv_out_init, conv_in_view, conv_out_view
 
 # pylint: disable=invalid-name
 # =============================================================================
@@ -61,6 +61,8 @@ __all__ = [
 # =============================================================================
 # Class: lnarray
 # =============================================================================
+_TUPLE_FUNCS = {np.concatenate, np.stack, np.column_stack, np.dstack,
+                np.hstack, np.vstack}
 
 
 class lnarray(np.ndarray):
@@ -137,6 +139,22 @@ class lnarray(np.ndarray):
         `np.matmul` : implements this operator.
         """
         return gf.matmul(self, other, out=(self,))
+
+    def __array_function__(self, func, types, args, kwargs):
+        if not all(issubclass(t, lnarray) for t in types):
+            return NotImplemented
+        if func in _TUPLE_FUNCS:
+            args = list(args)
+            args[0], _ = conv_in_view(lnarray, args[0])
+        elif func == np.block:
+            args = list(args)
+            args[0] = _nested_func(args[0],
+                                   lambda x: conv_in_view(lnarray, (x,))[0])
+        else:
+            args, _ = conv_in_view(lnarray, args)
+        outs, conv_out = conv_in_view(lnarray, kwargs, ())
+        result = super().__array_function__(func, (), tuple(args), kwargs)
+        return conv_out_view(self, result, outs, conv_out)
 
     def flattish(self, start: int, stop: int) -> lnarray:
         """Partial flattening.
@@ -327,6 +345,12 @@ class lnarray(np.ndarray):
 # =============================================================================
 # Helpers for pinvarray
 # =============================================================================
+
+
+def _nested_func(nested, func):
+    if isinstance(nested, list):
+        return [_nested_func(x, func) for x in nested]
+    return func(nested)
 
 
 def _inv_input(ufunc: np.ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:

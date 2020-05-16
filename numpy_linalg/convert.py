@@ -127,8 +127,8 @@ def conv_in_out(converter: Preparer[MyArray, BaseArray],
     -------
     out : Tuple[ndarray|None, ...]
         New tuple of inputs to ufunc (or ``out`` argument) with conversions.
-    conv : List[bool]
-        List of bools telling us if each input was converted.
+    conv_out : List[bool]
+        List of bools telling us if each output was converted.
     """
     outputs = kwds.pop('out', None)
     if outputs:
@@ -278,13 +278,15 @@ def conv_out(converter: Restorer[BaseArray, MyArray],
         return NotImplemented
     if not isinstance(results, tuple):
         results = (results,)
+    if not outputs:
+        outputs = _itertools.repeat(None)
     if not conv:
         conv = _itertools.repeat(True)
     results_out = []
     for result, output, cout in zip(results, outputs, conv):
         if output is not None:
             results_out.append(output)
-        elif cout:
+        elif cout and isinstance(result, _np.ndarray):
             results_out.append(converter(result))
         else:
             results_out.append(result)

@@ -398,10 +398,10 @@ class TestPinvarray(TestCaseNumpy):
             scal.inv * mini.inv  # pylint: disable=pointless-statement
         with self.assertRaises(TypeError):
             m_ss + mini.inv  # pylint: disable=pointless-statement
-        mini_old = 1. * mini
+        mini_ss = m_ss @ mini
         mini_i = mini.inv
         mini_i @= m_ss.inv
-        self.assertArrayAllClose(mini, m_ss @ mini_old)
+        self.assertArrayAllClose(mini, mini_ss)
 
 
 if __name__ == '__main__':

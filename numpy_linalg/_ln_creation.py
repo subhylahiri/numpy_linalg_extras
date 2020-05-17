@@ -25,7 +25,7 @@ __all__ = [
     'frombuffer', 'fromfile', 'fromfunction', 'fromiter', 'fromstring',
     'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
     'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
-    'tril_indices', 'triu_indices', 'indices',
+    'tril_indices', 'triu_indices', 'indices', 'mgrid', 'ogrid', 'r_', 'c_',
 ]
 wrap = wr.Wrappers(lnarray, "numpy_linalg")
 wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
@@ -94,4 +94,40 @@ triu_indices = wrap.several(np.triu_indices)
 indices = wrap.several(np.indices)
 
 
-# existing arrrays
+# =========================================================================
+# Classes
+# =========================================================================
+
+
+class WrappedNDGrid(wr.WrappedSubscriptable,
+                    array_type=lnarray,
+                    module_name="numpy_linalg",
+                    method="several"):
+    """
+    See Also
+    --------
+    numpy.mgrid
+    numpy.ogrid
+    """
+    obj: np.lib.index_tricks.nd_grid
+
+
+mgrid = WrappedNDGrid(np.mgrid)
+ogrid = WrappedNDGrid(np.ogrid)
+
+
+class WrappedAxisConcatenator(wr.WrappedSubscriptable,
+                              array_type=lnarray,
+                              module_name="numpy_linalg",
+                              method="sub"):
+    """
+    See Also
+    --------
+    numpy.r_
+    numpy.c_
+    """
+    obj: np.lib.index_tricks.AxisConcatenator
+
+
+r_ = WrappedAxisConcatenator(np.r_)
+c_ = WrappedAxisConcatenator(np.c_)

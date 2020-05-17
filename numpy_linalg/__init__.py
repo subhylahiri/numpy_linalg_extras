@@ -91,7 +91,7 @@ from . import convert
 from . import random
 from . import fft
 from ._ln_creation import (
-    empty, eye, identity, ones, zeros, full,
+    mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
     empty_like, ones_like, zeros_like, full_like,
     array, asarray, asanyarray, ascontiguousarray,
     asfortranarray, copy, frombuffer, asarray_chkfinite, require,
@@ -116,9 +116,10 @@ assert any((True, lnarray, pinvarray, invarray))
 assert any((True, transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
             matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
 assert any((
-    True, empty, empty_like, eye, identity, ones, ones_like, zeros, zeros_like,
-    full, full_like, array, asarray, asanyarray, ascontiguousarray, copy,
-    asfortranarray, asarray_chkfinite, require,
+    True, mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
+    empty_like, ones_like, zeros_like, full_like,
+    array, asarray, asanyarray, ascontiguousarray, copy, asfortranarray,
+    asarray_chkfinite, require,
     frombuffer, fromfile, fromfunction, fromiter, fromstring, loadtxt,
     arange, linspace, logspace, geomspace, meshgrid, ravel_multi_index,
     unravel_index, mask_indices, diag_indices, tril_indices, triu_indices,

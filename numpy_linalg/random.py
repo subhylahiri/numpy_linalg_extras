@@ -114,7 +114,8 @@ sample = _wrap.one(_pr.sample)
 
 class WrappedGenerator(_wr.WrappedClass,
                        array_type=_lnarray,
-                       module_name="numpy_linalg.random"):
+                       module_name="numpy_linalg.random",
+                       method="one"):
     """Version of numpy.random.Generator that returns lnarrays
 
     See Also
@@ -124,7 +125,7 @@ class WrappedGenerator(_wr.WrappedClass,
     obj: _pr.Generator
 
     def __init__(self, seed=None):
-        self.obj = _pr.default_rng(seed)
+        super().__init__(_pr.default_rng(seed))
 
     def __getattr__(self, attr):
         if attr in {"bit_generator", "shuffle", "permutation"}:

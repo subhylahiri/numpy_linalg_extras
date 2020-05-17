@@ -277,13 +277,42 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
 # =============================================================================
 
 class WrappedClass:
-    """Clas to wrap the metthods of another class
+    """Class to wrap the methods of another class
     """
-    wrap: _ty.ClassVar[Wrappers]
+    wrappers: _ty.ClassVar[Wrappers]
+    wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
 
-    def __init_subclass__(cls, array_type, module_name=None, **kwargs):
+    def __init_subclass__(cls, array_type: _ty.Type[_Arr] = _np.ndarray,
+                          module_name: _ty.Optional[str] = None,
+                          method: str = 'subsome',
+                          **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.wrap = Wrappers(array_type, module_name)
+        cls.wrappers = Wrappers(array_type, module_name)
+        cls.wrap = getattr(cls.wrappers, method)
+
+    def __init__(self, obj):
+        self.obj = obj
 
     def __getattr__(self, attr):
-        return self.wrap.one(getattr(self.obj, attr))
+        return self.wrap(getattr(self.obj, attr))
+
+
+class WrappedSubscriptable(WrappedClass):
+    """Class to wrap the __getitem__ method of another class
+    """
+    _get: _MyFn[_Arr]
+
+    def __init_subclass__(cls, array_type: _ty.Type[_Arr],
+                          module_name: _ty.Optional[str] = None,
+                          method: str = 'subsome',
+                          **kwargs):
+        super().__init_subclass__(array_type=array_type,
+                                  module_name=module_name, method=method,
+                                  **kwargs)
+
+    def __init__(self, obj):
+        super().__init__(obj)
+        self._get = self.wrap(self.obj.__getitem__)
+
+    def __getitem__(self, key):
+        return self._get(key)

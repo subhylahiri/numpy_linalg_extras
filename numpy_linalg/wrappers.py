@@ -12,7 +12,7 @@ docstrings.argument of `make_...`.
 
 Classes
 -------
-Wrapper
+Wrappers
     Class with methods to wrap `numpy` functions to return `lnarray`s instead
     of `ndarray`s:
 
@@ -297,8 +297,24 @@ class DeprecatedWrappers(Wrappers):
     Wrappers
     """
     def func_hook(self, np_func: _NpFn, wrapped: _MyFn[_Arr]) -> _MyFn[_Arr]:
-        msg = f"Use {np_func.__module__}.{np_func.__name__} "
-        msg += f"instead of {self._mod_name}.{np_func.__name__}"
+        """This method is called on the wrapped function before returning
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            The `numpy` function being wrapped.
+        wrapped : Callable[...->Array]
+            The wrapped function.
+
+        Returns
+        -------
+        wrapped : Callable[...->Array]
+            The wrapped function.
+        """
+        super().func_hook(np_func, wrapped)
+        msg = f"\nUse {np_func.__module__}.{np_func.__name__} "
+        msg += f"instead of {self._mod_name}.{np_func.__name__}.\n"
+        msg += "This function will be removed in numpy_linalg 0.4.0"
         @_wraps(np_func)
         def new_wrapped(*args, **kwargs):
             _warn(msg, DeprecationWarning, 2)
@@ -343,12 +359,12 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'one',
         package = '.' if internal else 'numpy_linalg'
         f.write(f'from {package} import wrappers as _wr\n')
         package = '._lnarray' if internal else 'numpy_linalg'
-        f.write(f'from {package} import lnarray as _lnarray\n\n')
+        f.write(f'from {package} import lnarray as _array\n\n')
         f.write('__all__ = [\n')
         for fun in funcs:
             f.write(f"    '{fun}',\n")
         f.write(']\n\n')
-        f.write(f'_wrap = _wr.Wrappers(_lnarray, "{module}")\n\n')
+        f.write(f'_wrap = _wr.Wrappers(_array, "{module}")\n\n')
         for fun in funcs:
             f.write(f"{fun} = _wrap.{wrapper}(_pr.{fun})\n")
 
@@ -368,7 +384,7 @@ class WrappedClass:
     parameter when subclassing. You can also pass the name of module from
     which these functions will be imported as the `module` parameter and
     the name of the `Wrappers` method to use as the `method` parameter.
-    You cap ass a `Wrappers` instance as the `wrappers` parameter instead of
+    You can pass a `Wrappers` instance as the `wrappers` parameter instead of
     the `array_type` and `module` parameters.
 
     Parameters
@@ -380,8 +396,8 @@ class WrappedClass:
     -----
     Does not work for `__getitem__`. For that, use `WrappedSubscriptable`.
 
-    The methods are created when called, so `hasattr`, linters, your IDE's
-    autocomplete, etc. will most likely not see them.
+    The methods are created when called and not stored, so they will most
+    likely not be seen by `hasattr`, linters, your IDE's autocomplete, etc.
     """
     _wrappers: _ty.ClassVar[Wrappers]
     _wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
@@ -400,9 +416,10 @@ class WrappedClass:
 
     def __init__(self, obj):
         self._obj = obj
+        # set docstring & module
         self._wrappers.func_hook(obj, self)
 
-    def __getattr__(self, attr: str):
+    def __getattr__(self, attr: str) -> _MyFn[_Arr]:
         return self._wrap(getattr(self._obj, attr))
 
     def __dir__(self):
@@ -434,5 +451,5 @@ class WrappedSubscriptable(WrappedClass):
         super().__init__(obj)
         self._get = self._wrap(self._obj.__getitem__)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> _Arr:
         return self._get(key)

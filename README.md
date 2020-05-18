@@ -13,6 +13,7 @@ matrix division.
    - [Requirements](#requirements)   
    - [Classes](#classes)   
    - [Functions](#functions)   
+   - [Array creation](#array-creation)   
    - [GUfuncs](#gufuncs)   
    - [Wrappers](#wrappers)   
    - [Examples](#examples)   
@@ -23,9 +24,9 @@ matrix division.
 <!-- /MDTOC -->
 
 The main way of using this is package is via the `lnarray` class
-(the `lstsq` and `qr` functions are the only other things I find useful here).
-All of the functions will work with `numpy.ndarray` objects as well.
-Most `numpy` functions will return an `lnarray` when a parameter is an `lnarray`.
+(`qr` functions are the only other things I find useful here).
+All of the functions defined here will work with `numpy.ndarray` objects as well.
+Most `numpy` functions will return an `lnarray` when any parameter is an `lnarray`.
 
 The `lnarray` class has properties `t` for transposing, `h` for
 conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
@@ -44,6 +45,14 @@ To get the actual inverse matrices you can explicitly call the objects:
 ```python
 >>> x = y.inv()
 >>> x = y.pinv()
+```
+
+You can create `lnarray`s by view casting from `ndarray`s.
+This module also has versions of `NumPy`'s array creation routines that have been wrapped
+to return `lnarray`s. [2](#footnotes)
+```python
+>>> x = np.arange(6).view(nl.lnarray)
+>>> y = nl.arange(6)
 ```
 
 
@@ -103,7 +112,7 @@ reasons:
 ## Requirements
 
 * [Python 3.7](https://docs.python.org/3/)
-* [Numpy 1.16](https://numpy.org/doc/stable/index.html)
+* [Numpy 1.17](https://numpy.org/doc/stable/index.html)
 * BLAS/Lapack distribution that was present when the binaries were built
 * [to build] C compiler or prebuilt binaries in `numpy_linalg.gufuncs`
 ([see below](#building-the-cpython-modules))
@@ -111,6 +120,7 @@ reasons:
 * [to test] [Hypothesis 5.8](https://hypothesis.readthedocs.io).
 
 The version numbers above are minimum requirements only.
+Checkout the branch `_v0.2.0` if you need NumPy 1.16 compatability.
 Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability.
 
 ## Classes
@@ -144,7 +154,7 @@ Checkout the branch `_v0.1.0` if you need Python 3.6 or NumPy 1.15 compatability
 
 The following implement operators/properties of the classes above.
 * `matmul`:
-    Alias for `numpy.matmul`.[1](#footnotes)
+    Alias for `numpy.matmul` [1](#footnotes).
 * `solve`:
     Linear equation solving (matrix left-division) with broadcasting and Lapack
     acceleration.
@@ -233,11 +243,38 @@ The following are not defined:
 >>> rsolve(invarray, pinvarray)
 ```
 
+## Array creation
+
+This module has versions of `NumPy`'s array creation routines that have been wrapped
+to return `lnarray`s [2](#footnotes), namely:  
+`empty`, `eye`, `identity`, `ones`, `zeros`, `full`,
+`array`, `asarray`, `asanyarray`, `ascontiguousarray`,
+`asfortranarray`, `asarray_chkfinite`, `copy`, `loadtxt`, `require`,
+`frombuffer`, `fromfile`, `fromfunction`, `fromiter`, `fromstring`,
+`arange`, `linspace`, `logspace`, `geomspace`, `meshgrid`,
+`ravel_multi_index`, `unravel_index`, `diag_indices`, `mask_indices`,
+`tril_indices`, `triu_indices`, `indices`, `mgrid`, `ogrid`, `r_`, `c_`.
+
+The instances `mgrid`, `ogrid`, `r_`, `c_` return `lnarray`s when subscripted.
+When `r_` and `c_` are used to concatenate, they will convert `ndarray`s to `lnarray`s.
+
+In addition we have the following in submodules:
+* `fft.fftfreq`, `fft.rfftfreq`:
+    These are wrapped versions of the `numpy` functions.
+* `random.default_rng`:
+    This returns a version of `numpy.random.Generator` 
+    whose methods return `lnarray`s instead of `ndarrays`.
+
+The `random` module also has wrapped versions of the legacy functions in `numpy.random`, 
+but not the `RandomState` class.
+
+Most of these routines have not been properly tested.
+
 ## GUfuncs
 
 The following can be found in `numpy_linalg.gufuncs`:
 * `gufuncs.matmul`:
-    This is an alias for `numpy.matmul`.[1](#footnotes)
+    This is an alias for `numpy.matmul` [1](#footnotes).
 * `gufuncs.solve`:
     These are literally the same as the function above.
 * `gufuncs.rsolve`:
@@ -307,23 +344,26 @@ The following can be found in `numpy_linalg.gufuncs`:
 
 ## Wrappers
 
-These can be found in `numpy_linalg.wrappers`:
-* `wrappers.wrap_one`:
-    Create version of `numpy` function with single `lnarray` output.
-* `wrappers.wrap_several`:
-    Create version of `numpy` function with multiple `lnarray` outputs.
-* `wrappers.wrap_some`:
-    Create version of `numpy` function with some `lnarray` outputs, some
-    non-array outputs.
-* `wrappers.wrap_sub`:
-    Create version of `numpy` function with single `lnarray` output, passing
-    through subclasses.
-* `wrappers.wrap_subseveral`:
-    Create version of `numpy` function with multiple `lnarray` outputs, passing
-    through subclasses.
-* `wrappers.wrap_subsome`:
-    Create version of `numpy` function with some `lnarray` outputs, some
-    non-array outputs, passing through subclasses.
+Tools for wrapping `numpy` functions to return `lnarrays`.
+These classes can be found in `numpy_linalg.wrappers`:
+* `wrappers.Wrappers`:
+    Class with methods to wrap `numpy` functions to return `lnarray`s instead
+    of `ndarray`s, e.g.:
+    * `wrappers.Wrappers.one`:
+        Create version of `numpy` function with single `lnarray` output.
+    * `wrappers.Wrappers.several:`
+        Create version of `numpy` function with multiple `lnarray` outputs.
+    * `wrappers.Wrappers.some:`
+        Create version of `numpy` function with some `lnarray` outputs, some
+        non-array outputs.
+* `wrappers.WrappedClass`:
+    When this class is subclassed, the resulting class has the same methods as
+    the object passed in the constructor, except they return `lnarray`s instead
+    of `ndarray`s.
+* `wrappers.WrappedSubscriptable`:
+    When this class is subclassed, the resulting class's instances can be
+    subscripted in the same manner as the object passed in the constructor,
+    except it will return `lnarray`s instead of `ndarray`s.
 
 ## Testing
 
@@ -444,6 +484,7 @@ e.g. `Largest mismatch: 2.1e-5 at (2, 7) with dtype=float32`.
 Because the underlying BLAS/LAPACK routines raise runtime warnings when passed 
 `inf` or `nan`, these values are excluded from tests. 
 Most of these functions return all `nan`s in such cases.
+Low rank matrices are not properly tested yet.
 
 ## To dos
 
@@ -451,8 +492,6 @@ Most of these functions return all `nan`s in such cases.
 (and a QR based version of `lstsq` for completeness).
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
 * Write other norms.
-* Document `__array_function__` method and wrappers.
-* Document updated `random` and creation functions.
 
 #
 
@@ -460,6 +499,9 @@ Most of these functions return all `nan`s in such cases.
 
 1. This package previously used a custom `gufunc` for `matmul`, 
     but as of v1.16 `NumPy` does this so we use that instead.
+2. This package currently also has wrapped versions of `NumPy`'s array manipulation
+    routines, but as of `NumPy` v1.17, the `__array_function__` protocol has removed
+    their need. They now issue deprecation warnings.
 
 [dont-invert-matrix]: <https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/> "Blog post about matrix inversion."
 

@@ -35,7 +35,8 @@ Examples
 """
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Set, Tuple, Union, ClassVar
+from typing import (List, Optional, Sequence, Set, Tuple, Union, ClassVar,
+                    Mapping, Callable, Any)
 
 import numpy as np
 from numpy.lib.mixins import NDArrayOperatorsMixin
@@ -142,7 +143,19 @@ class lnarray(np.ndarray):
         """
         return gf.matmul(self, other, out=(self,))
 
-    def __array_function__(self, func, types, args, kwargs):
+    def __array_function__(self, func: Callable[[np.ndarray], np.ndarray],
+                           types: Sequence[type], args: Sequence[Any],
+                           kwargs: Mapping[str, Any]):
+        """Implements the array_function  for lnarrays.
+
+        This method is called when an `lnarray` is passed to `numpy` functions.
+        It ensures that the inputs are converted to `ndarray`s and the results
+        are converted to `lnarrays`.
+
+        See </reference/arrays.classes.html#numpy.class.__array_function__> at
+        <https://numpy.org/doc/stable/>
+        for a description of the protocol and parameters.
+        """
         if not all(issubclass(t, lnarray) for t in types):
             return NotImplemented
         if func in _TUPLE_FUNCS:
@@ -501,7 +514,7 @@ class pinvarray(NDArrayOperatorsMixin):
     -----
     It can also be multiplied and divided by a nonzero scalar or stack of
     scalars, i.e. `ndarray` with last two dimensions singletons.
-    Actually divides/multiplies the pre-inversion object.
+    It actually divides/multiplies the pre-inversion object instead.
     It will also behave appropriately in the `(r)lstsq` functions from *this*
     package (not the `numpy` versions).
 
@@ -528,7 +541,7 @@ class pinvarray(NDArrayOperatorsMixin):
     See also
     --------
     lnarray : the array class used.
-    invarray : class that provides an interface for matrix division.
+    invarray : class to provide an interface for exact matrix division.
     """
     _to_invert: lnarray
     _inverted: Optional[lnarray]
@@ -557,7 +570,16 @@ class pinvarray(NDArrayOperatorsMixin):
         self._factored = ()
 
     def __array_ufunc__(self, ufunc: np.ufunc, method: str, *inputs, **kwds):
-        """Handling ufuncs with pinvarrays
+        """Implements the array_ufunc protocol for pinvarrays.
+
+        This method is called when a `pinvarray` is passed to `numpy` `ufunc`.
+        It ensures that the inputs are converted to `ndarray`s, the original
+        `ufunc` is replaced appropriately, and the results are converted to
+        `pinvarrays` when necessary.
+
+        See </reference/arrays.classes.html#numpy.class.__array_ufunc__> at
+        <https://numpy.org/doc/stable/>
+        for a description of the protocol and parameters.
         """
         # which inputs are we converting?
         # For most inputs, we swap multiplication & division instead of inverse
@@ -802,7 +824,7 @@ class invarray(pinvarray):
     See also
     --------
     lnarray : the array class used.
-    pinvarray : class that provides an interface for matrix pseudo-division.
+    pinvarray : class to provide an interface for least-square matrix division.
     """
     # _gufunc_map[arg1][arg2] -> gufunc_out, where:
     # ar1/arg2 = is the first/second argument an array to be lazily inverted?

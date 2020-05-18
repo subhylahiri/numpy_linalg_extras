@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
-"""Helpers for writing __array_ufunc__ methods.
+"""Helpers for writing __array_ufunc__ and __array_function__ methods.
 
 Routine Listings
 ----------------
+Converters that process inputs/`out` parameter in an `__array_ufunc__` method:
+
 conv_in_attr
-    Process inputs in an `__array_ufunc__` method using an attribute.
+    Process inputs/`out` parameter using an attribute.
 conv_in_view
-    Process inputs in an `__array_ufunc__` method using a view method.
+    Process inputs/`out` parameter using a view method.
+
+Converters that process outputs from an `__array_ufunc__` method:
+
 conv_out_attr
-    Process outputs in an `__array_ufunc__` method using an attribute.
+    Process outputs using an attribute.
 conv_out_init
-    Process outputs in an `__array_ufunc__` method using a constructor.
+    Process outputs using a constructor.
 conv_out_view
-    Process outputs in an `__array_ufunc__` method using a view method.
+    Process outputs using a view method.
 
 Converters that take a callback function as a parameter:
 
@@ -23,7 +28,7 @@ conv_in_out
 conv_out
     Process outputs from a `ufunc`.
 
-Creators of allback functions to convert a single iput/output:
+Creators of callback functions to convert a single iput/output:
 
 prepare_via_attr
     Create a callback to process inputs using an attribute.

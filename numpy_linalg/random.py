@@ -77,7 +77,7 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="one"):
     --------
     numpy.random.Generator
     """
-    obj: _pr.Generator
+    _obj: _pr.Generator
 
     def __init__(self, seed=None):
         super().__init__(_pr.default_rng(seed))

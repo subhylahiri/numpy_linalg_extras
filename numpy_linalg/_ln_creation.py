@@ -43,7 +43,7 @@ class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
     numpy.mgrid
     numpy.ogrid
     """
-    obj: np.lib.index_tricks.nd_grid
+    _obj: np.lib.index_tricks.nd_grid
 
 
 mgrid = LnNdGrid(np.mgrid)

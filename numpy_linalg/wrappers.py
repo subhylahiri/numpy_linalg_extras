@@ -380,11 +380,11 @@ class WrappedClass:
     -----
     Does not work for `__getitem__`. For that, use `WrappedSubscriptable`.
 
-    The methods are created when called, so your IDE's autocomplete, etc, will
-    most likely not see them.
+    The methods are created when called, so `hasattr`, linters, your IDE's
+    autocomplete, etc. will most likely not see them.
     """
-    wrappers: _ty.ClassVar[Wrappers]
-    wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
+    _wrappers: _ty.ClassVar[Wrappers]
+    _wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
 
     def __init_subclass__(cls,
                           wrappers: _ty.Optional[Wrappers] = None,
@@ -393,20 +393,20 @@ class WrappedClass:
                           method: str = 'subsome',
                           **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.wrappers = wrappers
+        cls._wrappers = wrappers
         if wrappers is None:
-            cls.wrappers = Wrappers(array_type, module)
-        cls.wrap = getattr(cls.wrappers, method)
+            cls._wrappers = Wrappers(array_type, module)
+        cls._wrap = getattr(cls._wrappers, method)
 
     def __init__(self, obj):
-        self.obj = obj
-        self.wrappers.func_hook(obj, self)
+        self._obj = obj
+        self._wrappers.func_hook(obj, self)
 
     def __getattr__(self, attr: str):
-        return self.wrap(getattr(self.obj, attr))
+        return self._wrap(getattr(self._obj, attr))
 
     def __dir__(self):
-        return dir(self.obj)
+        return dir(self._obj)
 
 
 class WrappedSubscriptable(WrappedClass):
@@ -432,7 +432,7 @@ class WrappedSubscriptable(WrappedClass):
 
     def __init__(self, obj):
         super().__init__(obj)
-        self._get = self.wrap(self.obj.__getitem__)
+        self._get = self._wrap(self._obj.__getitem__)
 
     def __getitem__(self, key):
         return self._get(key)

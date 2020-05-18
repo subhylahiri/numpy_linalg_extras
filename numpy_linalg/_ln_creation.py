@@ -29,6 +29,41 @@ __all__ = [
 ]
 wrap = wr.Wrappers(lnarray, "numpy_linalg")
 wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
+
+# =========================================================================
+# Classes
+# =========================================================================
+
+
+@wr.set_module("numpy_linalg")
+class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
+    """
+    See Also
+    --------
+    numpy.mgrid
+    numpy.ogrid
+    """
+    obj: np.lib.index_tricks.nd_grid
+
+
+mgrid = LnNdGrid(np.mgrid)
+ogrid = LnNdGrid(np.ogrid)
+
+
+@wr.set_module("numpy_linalg")
+class LnAxisConcatenator(wr.WrappedSubscriptable, wrappers=wrap, method="sub"):
+    """
+    See Also
+    --------
+    numpy.r_
+    numpy.c_
+    """
+    obj: np.lib.index_tricks.AxisConcatenator
+
+
+r_ = LnAxisConcatenator(np.r_)
+c_ = LnAxisConcatenator(np.c_)
+
 # =========================================================================
 # Ones and zeros
 # =========================================================================
@@ -46,13 +81,9 @@ ones = wrap.one(np.ones)
 zeros = wrap.one(np.zeros)
 full = wrap.one(np.full)
 
-
 # =========================================================================
 # From existing data
 # =========================================================================
-
-
-# new(ish) arrays
 array = wrap.sub(np.array)
 asarray = wrap.sub(np.asarray)
 asanyarray = wrap.sub(np.asanyarray)
@@ -68,19 +99,14 @@ asfortranarray = wrap.one(np.asfortranarray)
 asarray_chkfinite = wrap.one(np.asarray_chkfinite)
 require = wrap.sub(np.require)
 
-
 # =========================================================================
 # Numerical ranges
 # =========================================================================
-
-
-# new arrays
 arange = wrap.one(np.arange)
 linspace = wrap.one(np.linspace)
 logspace = wrap.one(np.logspace)
 geomspace = wrap.one(np.geomspace)
 meshgrid = wrap.several(np.meshgrid)
-
 
 # =========================================================================
 # Generating index arrays
@@ -92,42 +118,3 @@ mask_indices = wrap.several(np.mask_indices)
 tril_indices = wrap.several(np.tril_indices)
 triu_indices = wrap.several(np.triu_indices)
 indices = wrap.several(np.indices)
-
-
-# =========================================================================
-# Classes
-# =========================================================================
-
-
-class WrappedNDGrid(wr.WrappedSubscriptable,
-                    array_type=lnarray,
-                    module_name="numpy_linalg",
-                    method="several"):
-    """
-    See Also
-    --------
-    numpy.mgrid
-    numpy.ogrid
-    """
-    obj: np.lib.index_tricks.nd_grid
-
-
-mgrid = WrappedNDGrid(np.mgrid)
-ogrid = WrappedNDGrid(np.ogrid)
-
-
-class WrappedAxisConcatenator(wr.WrappedSubscriptable,
-                              array_type=lnarray,
-                              module_name="numpy_linalg",
-                              method="sub"):
-    """
-    See Also
-    --------
-    numpy.r_
-    numpy.c_
-    """
-    obj: np.lib.index_tricks.AxisConcatenator
-
-
-r_ = WrappedAxisConcatenator(np.r_)
-c_ = WrappedAxisConcatenator(np.c_)

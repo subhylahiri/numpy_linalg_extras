@@ -10,28 +10,39 @@ They can be used as function decorators.
 To use some other array class, change the first import statement and the
 docstrings.argument of `make_...`.
 
-Functions
----------
-The following are created by `make_<function name>`, which takes arguments
-`array_type` (the array class to use) and `module_name` (the module where these
-functions will be exposed).
+Classes
+-------
+Wrapper
+    Class with methods to wrap `numpy` functions to return `lnarray`s instead
+    of `ndarray`s:
 
-wrap_one
-    Create version of `numpy` function with single `lnarray` output.
-wrap_several
-    Create version of `numpy` function with multiple `lnarray` outputs.
-wrap_some
-    Create version of `numpy` function with some `lnarray` outputs, some
-    non-array outputs.
-wrap_sub
-    Create version of `numpy` function with single `lnarray` output, passing
-    through subclasses.
-wrap_subseveral
-    Create version of `numpy` function with multiple `lnarray` outputs, passing
-    through subclasses.
-wrap_subsome
-    Create version of `numpy` function with some `lnarray` outputs, some
-    non-array outputs, passing through subclasses.
+    one
+        Create version of `numpy` function with single `lnarray` output.
+    several
+        Create version of `numpy` function with multiple `lnarray` outputs.
+    some
+        Create version of `numpy` function with some `lnarray` outputs, some
+        non-array outputs.
+    sub
+        Create version of `numpy` function with single `lnarray` output,
+        passing through subclasses.
+    subseveral
+        Create version of `numpy` function with multiple `lnarray` outputs,
+        passing through subclasses.
+    subsome
+        Create version of `numpy` function with some `lnarray` outputs, some
+        non-array outputs, passing through subclasses.
+DeprecatedWrappers
+    A version of `Wrappers` that raises a deprecation warning when the wrapped
+    functions are used.
+WrappedClass
+    When this class is subclassed, the resulting class has the same methods as
+    the object passed in the constructor, except they return `lnarray`s instead
+    of `ndarray`s.
+WrappedSubscriptable
+    When this class is subclassed, the resulting class can be subscripted in
+    the same manner as the object passed in the constructor, except it will
+    return `lnarray`s instead of `ndarray`s.
 """
 from functools import wraps as _wraps
 import typing as _ty
@@ -44,12 +55,18 @@ _Arr = _ty.TypeVar("MyArray")
 _NpFn = _ty.Callable[..., _np.ndarray]
 _MyFn = _ty.Callable[..., _Arr]
 # =============================================================================
-# Wrapping functionals
+# Wrapping functions
 # =============================================================================
 
 
 def set_module(module: str = 'numpy_linalg'):
-    """Create a decorator to set the __module__ attribute"""
+    """Create a decorator to set the __module__ attribute
+
+    Parameters
+    ----------
+    module : str, None, optional
+        The module from which the function will be imported, by default `None`.
+    """
     def decorator(thing):
         thing.__module__ = module
         return thing
@@ -58,14 +75,25 @@ def set_module(module: str = 'numpy_linalg'):
 
 class Wrappers:
     """Wrappers for array functions
+
+    This class's methods can be used to wrap `numpy` functions to return
+    `lnarray`s instead of `ndarray`s. Any other class can be substituted for
+    `lnarray` in the previouas sentence.
+
+    Parameters
+    ----------
+    array_type : Type[Array], optional
+        The array class to which outputs are converted, by default `ndarray`.
+    module : str, None, optional
+        The module from which the functions will be imported, by default `None`
     """
     _arr_cls: _ty.Type[_Arr]
     _mod_name: _Optional[str]
 
-    def __init__(self, array_type: _ty.Type[_Arr],
-                 module_name: _Optional[str] = None):
+    def __init__(self, array_type: _ty.Type[_Arr] = _np.ndarray,
+                 module: _Optional[str] = None):
         self._arr_cls = array_type
-        self._mod_name = module_name
+        self._mod_name = module
 
     def func_hook(self, np_func: _NpFn, wrapped: _MyFn[_Arr]) -> _MyFn[_Arr]:
         if self._mod_name is not None:
@@ -219,6 +247,10 @@ class Wrappers:
 
 class DeprecatedWrappers(Wrappers):
     """Wrappers for deprecated functions
+
+    See Also
+    --------
+    Wrappers
     """
     def func_hook(self, np_func: _NpFn, wrapped: _MyFn[_Arr]) -> _MyFn[_Arr]:
         msg = f"Use {np_func.__module__}.{np_func.__name__} "
@@ -234,42 +266,47 @@ class DeprecatedWrappers(Wrappers):
 # =============================================================================
 
 
-def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
+def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'one',
                 parent: str = 'numpy', imps: str = '', internal: bool = True,
                 module: str = "numpy_linalg"):
     """Create a wrapped version of a numpy module
 
+    This function can be used to create (the first draft of) a module file that
+    has versions of functions that return `lnarray`s instead of `ndarray`s.
+
     Parameters
     ----------
-    file_name: str
+    file_name : str
         Name of file for new module (without extension).
-    funcs: List[str]
+    funcs : List[str]
         List of names of functions to wrap (from parent.__all__?).
-    wrapper: str = 'wrap_one'
-        Name of function from this mudule used to wrap.
-    parent: str = 'numpy'
+    wrapper : str = 'one'
+        Name of `Wrappers` method used to wrap.
+    parent : str = 'numpy'
         Name of module containing unwrapped functions.
-    imps: str = ''
+    imps : str = ''
         To be written after docstring, before imports & functions.
+    internal : bool = True
+        Is the wrapped module in the same package as this module?
+    module : str = 'numpy_linalg'
+        Name of module from which these functions will be imported.
     """
     with open(file_name + '.py', 'w') as f:
         f.write(f'"""Wrapped version of module {parent}\n')
         f.write('"""\n')
         f.write(imps + '\n')
         f.write(f'import {parent} as _pr\n')
-        if internal:
-            f.write('from . ')
-        f.write('import wrappers as _wr\n\n')
-        if internal:
-            f.write('from ._lnarray ')
-        f.write('import lnarray as _lnarray\n\n')
+        package = '.' if internal else 'numpy_linalg'
+        f.write(f'from {package} import wrappers as _wr\n')
+        package = '._lnarray' if internal else 'numpy_linalg'
+        f.write(f'from {package} import lnarray as _lnarray\n\n')
         f.write('__all__ = [\n')
-        for fn in funcs:
-            f.write(f"    '{fn}',\n")
+        for fun in funcs:
+            f.write(f"    '{fun}',\n")
         f.write(']\n\n')
-        f.write(f'_wrap = _wr.Wrappers(_lnarray, "{module}")\n')
-        for fn in funcs:
-            f.write(f"{fn} = _wrap.{wrapper}(_pr.{fn})\n")
+        f.write(f'_wrap = _wr.Wrappers(_lnarray, "{module}")\n\n')
+        for fun in funcs:
+            f.write(f"{fun} = _wrap.{wrapper}(_pr.{fun})\n")
 
 
 # =============================================================================
@@ -278,37 +315,76 @@ def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'wrap_one',
 
 class WrappedClass:
     """Class to wrap the methods of another class
+
+    When this class is subclassed, the resulting class has the same methods as
+    the object passed in the constructor, except they return `lnarray`s instead
+    of `ndarray`s.
+
+    The array class you wish to use must be passed as the `array_type`
+    parameter when subclassing. You can also pass the name of module from
+    which these functions will be imported as the `module` parameter and
+    the name of the `Wrappers` method to use as the `method` parameter.
+    You cap ass a `Wrappers` instance as the `wrappers` parameter instead of
+    the `array_type` and `module` parameters.
+
+    Parameters
+    ----------
+    object : Any
+        An instance of the class being wrapped.
+
+    Notes
+    -----
+    Does not work for `__getitem__`. For that, use `WrappedSubscriptable`.
+
+    The methods are present in a virtual manner, so your IDE's autocomplete,
+    etc, will most likely not see them.
     """
     wrappers: _ty.ClassVar[Wrappers]
     wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
 
-    def __init_subclass__(cls, array_type: _ty.Type[_Arr] = _np.ndarray,
-                          module_name: _ty.Optional[str] = None,
+    def __init_subclass__(cls,
+                          wrappers: _ty.Optional[Wrappers] = None,
+                          array_type: _ty.Type[_Arr] = _np.ndarray,
+                          module: _ty.Optional[str] = None,
                           method: str = 'subsome',
                           **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.wrappers = Wrappers(array_type, module_name)
+        cls.wrappers = wrappers
+        if wrappers is None:
+            cls.wrappers = Wrappers(array_type, module)
         cls.wrap = getattr(cls.wrappers, method)
 
     def __init__(self, obj):
         self.obj = obj
+        self.__doc__ = obj.__doc__
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         return self.wrap(getattr(self.obj, attr))
 
 
 class WrappedSubscriptable(WrappedClass):
     """Class to wrap the __getitem__ method of another class
+
+    When this class is subclassed, the resulting class can be subscripted in
+    the same manner as the object passed in the constructor, except it will
+    return `lnarray`s instead of `ndarray`s.
+
+    The array class you wish to use must be passed as the `array_type`
+    parameter when subclassing. You can also pass the name of module from
+    which these functions will be imported as the `module` parameter and
+    the name of the `Wrappers` method to use as the `method` parameter.
+    You cap ass a `Wrappers` instance as the `wrappers` parameter instead of
+    the `array_type` and `module` parameters.
+
+    Parameters
+    ----------
+    object : Any
+        An instance of the subscriptable class being wrapped.
     """
     _get: _MyFn[_Arr]
 
-    def __init_subclass__(cls, array_type: _ty.Type[_Arr],
-                          module_name: _ty.Optional[str] = None,
-                          method: str = 'subsome',
-                          **kwargs):
-        super().__init_subclass__(array_type=array_type,
-                                  module_name=module_name, method=method,
-                                  **kwargs)
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
 
     def __init__(self, obj):
         super().__init__(obj)

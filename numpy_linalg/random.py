@@ -60,6 +60,57 @@ __all__ = [
 ]
 _wrap = _wr.Wrappers(_lnarray, "numpy_linalg.random")
 
+# =========================================================================
+# Modern RNG
+# =========================================================================
+
+
+class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="one"):
+    """Version of numpy.random.Generator that returns lnarrays
+
+    Parameters
+    ----------
+    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
+        The argument of `numpy.random.default_rng`. By default `None`.
+
+    See Also
+    --------
+    numpy.random.Generator
+    """
+    obj: _pr.Generator
+
+    def __init__(self, seed=None):
+        super().__init__(_pr.default_rng(seed))
+
+    def __getattr__(self, attr):
+        if attr in {"bit_generator", "shuffle", "permutation"}:
+            return getattr(self.obj, attr)
+        return super().__getattr__(attr)
+
+
+def default_rng(seed=None) -> LnGenerator:
+    """Create a random number generator that returns lnarrays
+
+    Parameters
+    ----------
+    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
+        The argument of `numpy.random.default_rng`. By default `None`.
+
+    Returns
+    -------
+    rng : LnGenerator
+        A generator instance
+
+    See Also
+    --------
+    numpy.random.default_rng
+    """
+    return LnGenerator(seed)
+
+
+# =========================================================================
+# Legacy RNG
+# =========================================================================
 beta = _wrap.one(_pr.beta)
 binomial = _wrap.one(_pr.binomial)
 bytes = _wrap.one(_pr.bytes)
@@ -110,44 +161,3 @@ zipf = _wrap.one(_pr.zipf)
 ranf = _wrap.one(_pr.ranf)
 random = _wrap.one(_pr.random)
 sample = _wrap.one(_pr.sample)
-
-
-class WrappedGenerator(_wr.WrappedClass,
-                       array_type=_lnarray,
-                       module_name="numpy_linalg.random",
-                       method="one"):
-    """Version of numpy.random.Generator that returns lnarrays
-
-    See Also
-    --------
-    numpy.random.Generator
-    """
-    obj: _pr.Generator
-
-    def __init__(self, seed=None):
-        super().__init__(_pr.default_rng(seed))
-
-    def __getattr__(self, attr):
-        if attr in {"bit_generator", "shuffle", "permutation"}:
-            return getattr(self.obj, attr)
-        return super().__getattr__(attr)
-
-
-def default_rng(seed=None) -> WrappedGenerator:
-    """Create a random number generator that returns lnarrays
-
-    Parameters
-    ----------
-    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
-        The argument of `numpy.random.default_rng`.
-
-    Returns
-    -------
-    rng : WrappedGenerator
-        A generator instance
-
-    See Also
-    --------
-    numpy.random.default_rng
-    """
-    return WrappedGenerator(seed)

@@ -25,6 +25,7 @@ matrix division.
 The main way of using this is package is via the `lnarray` class
 (the `lstsq` and `qr` functions are the only other things I find useful here).
 All of the functions will work with `numpy.ndarray` objects as well.
+Most `numpy` functions will return an `lnarray` when a parameter is an `lnarray`.
 
 The `lnarray` class has properties `t` for transposing, `h` for
 conjugate-transposing, `r` for row vectors, `c` for column vectors and `s` for
@@ -449,9 +450,9 @@ Most of these functions return all `nan`s in such cases.
 * SVD based versions of `lstsq_qr` and `qr_lstsq`
 (and a QR based version of `lstsq` for completeness).
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
-* Write an `__array_function__` method.
 * Write other norms.
-* update random.
+* Document `__array_function__` method and wrappers.
+* Document updated `random` and creation functions.
 
 #
 

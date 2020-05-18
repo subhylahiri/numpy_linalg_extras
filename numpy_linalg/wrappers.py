@@ -436,3 +436,26 @@ class WrappedSubscriptable(WrappedClass):
 
     def __getitem__(self, key):
         return self._get(key)
+
+
+class WrappedAlias:
+    """Generic alias for a class for type hints"""
+    alias_for: type
+    origin: type
+
+    def __init__(self, alias_for: type, origin: type):
+        self.alias_for = alias_for
+        self.origin = origin
+
+    def __mro_entries__(self, bases):
+        return (self.alias_for,)
+
+    def __repr__(self):
+        return f"{self.origin.__name__}[{self.alias_for.__name__}]"
+
+
+class LnVersion:
+    """Alias for version of class that produces lnarrays"""
+
+    def __class_getitem__(cls, arg):
+        return WrappedAlias(arg, LnVersion)

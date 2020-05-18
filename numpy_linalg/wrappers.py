@@ -40,9 +40,36 @@ WrappedClass
     the object passed in the constructor, except they return `lnarray`s instead
     of `ndarray`s.
 WrappedSubscriptable
-    When this class is subclassed, the resulting class can be subscripted in
-    the same manner as the object passed in the constructor, except it will
-    return `lnarray`s instead of `ndarray`s.
+    When this class is subclassed, the resulting class's instances can be
+    subscripted in the same manner as the object passed in the constructor,
+    except it will return `lnarray`s instead of `ndarray`s.
+
+Example
+-------
+```
+import numpy as np
+from . import wrappers as wr
+from ._lnarray import lnarray
+
+wrap = wr.Wrappers(lnarray, "numpy_linalg")
+
+@wr.set_module("numpy_linalg")
+class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
+    \"\"\"
+    See Also
+    --------
+    numpy.mgrid
+    numpy.ogrid
+    \"\"\"
+    obj: np.lib.index_tricks.nd_grid
+
+mgrid = LnNdGrid(np.mgrid)
+ogrid = LnNdGrid(np.ogrid)
+empty = wrap.one(np.empty)
+ones = wrap.one(np.ones)
+zeros = wrap.one(np.zeros)
+full = wrap.one(np.full)
+```
 """
 from functools import wraps as _wraps
 import typing as _ty
@@ -96,6 +123,23 @@ class Wrappers:
         self._mod_name = module
 
     def func_hook(self, np_func: _NpFn, wrapped: _MyFn[_Arr]) -> _MyFn[_Arr]:
+        """This method is called on the wrapped function before returning
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            The `numpy` function being wrapped.
+        wrapped : Callable[...->Array]
+            The wrapped function.
+
+        Returns
+        -------
+        wrapped : Callable[...->Array]
+            The wrapped function.
+        """
+        doc = getattr(np_func, '__doc__', None)
+        if doc is not None:
+            wrapped.__doc__ = doc.replace('ndarray', self._arr_cls.__name__)
         if self._mod_name is not None:
             wrapped.__module__ = self._mod_name
         return wrapped
@@ -107,12 +151,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a single `ndarray`.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a single `lnarray`.
         """
         @_wraps(np_func)
@@ -127,12 +171,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a tuple of `ndarray`s.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a tuple of `lnarray`s.
         """
         @_wraps(np_func)
@@ -149,12 +193,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a mixed tuple of `ndarray`s and others.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a mixed tuple of `lnarray`s and others.
         """
         @_wraps(np_func)
@@ -170,12 +214,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a single `ndarray`.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a single `lnarray`.
         """
         @_wraps(np_func)
@@ -190,12 +234,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a tuple of `ndarray`s.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a tuple of `lnarray`s.
         """
         @_wraps(np_func)
@@ -212,12 +256,12 @@ class Wrappers:
 
         Parameters
         ----------
-        np_func : function
+        np_func : Callable[...->ndarray]
             A function that returns a mixed tuple of `ndarray`s and others.
 
         Returns
         -------
-        my_func : function
+        my_func : Callable[...->Array]
             A function that returns a mixed tuple of `lnarray`s and others.
         """
         @_wraps(np_func)
@@ -336,8 +380,8 @@ class WrappedClass:
     -----
     Does not work for `__getitem__`. For that, use `WrappedSubscriptable`.
 
-    The methods are present in a virtual manner, so your IDE's autocomplete,
-    etc, will most likely not see them.
+    The methods are created when called, so your IDE's autocomplete, etc, will
+    most likely not see them.
     """
     wrappers: _ty.ClassVar[Wrappers]
     wrap: _ty.ClassVar[_ty.Callable[[_NpFn], _MyFn[_Arr]]]
@@ -356,10 +400,13 @@ class WrappedClass:
 
     def __init__(self, obj):
         self.obj = obj
-        self.__doc__ = obj.__doc__
+        self.wrappers.func_hook(obj, self)
 
     def __getattr__(self, attr: str):
         return self.wrap(getattr(self.obj, attr))
+
+    def __dir__(self):
+        return dir(self.obj)
 
 
 class WrappedSubscriptable(WrappedClass):
@@ -382,9 +429,6 @@ class WrappedSubscriptable(WrappedClass):
         An instance of the subscriptable class being wrapped.
     """
     _get: _MyFn[_Arr]
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
 
     def __init__(self, obj):
         super().__init__(obj)

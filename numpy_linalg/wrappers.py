@@ -164,6 +164,27 @@ class Wrappers:
             return self._converter(np_func(*args, **kwargs))
         return self.func_hook(np_func, wrapped)
 
+    def check(self, np_func: _NpFn) -> _MyFn[_Arr]:
+        """Create version of numpy function with single lnarray or non-array
+        output.
+
+        Does not pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            A function that returns a single `ndarray` or a number.
+
+        Returns
+        -------
+        my_func : Callable[...->Array]
+            A function that returns a single `lnarray` or a number.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            return self._converter_check(np_func(*args, **kwargs))
+        return self.func_hook(np_func, wrapped)
+
     def several(self, np_func: _NpFn) -> _MyFn[_Arr]:
         """Create version of numpy function with multiple lnarray outputs.
 
@@ -225,6 +246,27 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             return self._converter_sub(np_func(*args, **kwargs))
+        return self.func_hook(np_func, wrapped)
+
+    def subcheck(self, np_func: _NpFn) -> _MyFn[_Arr]:
+        """Create version of numpy function with single lnarray or non-array
+        output.
+
+        Does pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            A function that returns a single `ndarray` or a number.
+
+        Returns
+        -------
+        my_func : Callable[...->Array]
+            A function that returns a single `lnarray` or a number.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            return self._converter_subcheck(np_func(*args, **kwargs))
         return self.func_hook(np_func, wrapped)
 
     def subseveral(self, np_func: _NpFn) -> _MyFn[_Arr]:

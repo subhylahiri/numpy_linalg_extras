@@ -225,12 +225,24 @@ class TestCaseNumpy(_ut.TestCase):
         for array, shape in zip(arrays, shapes):
             self.assertEqual(array.shape, shape, msg)
 
+    def assertArrayDtype(self,
+                         array_dtype: Union[np.ndarray, np.dtype, type, str],
+                         dtype: Union[np.dtype, type, str],
+                         msg: Optional[str] = None):
+        if hasattr(array_dtype, 'dtype'):
+            array_dtype = array_dtype.dtype
+        if not np.issubsctype(array_dtype, dtype):
+            msg = '' if msg is None else msg + "\n"
+            msg += f"expected: {dtype}, actual: {array_dtype}"
+            self.fail(msg)
+
 
 # =============================================================================
 # Helpers for TestCaseNumpy methods
 # =============================================================================
 
 
+@np.errstate(all="ignore")
 def miss_str(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
              rtol: float = 1e-5, equal_nan: bool = True) -> str:
     """Returns a string describing the maximum deviation of left and right
@@ -261,6 +273,9 @@ def miss_str(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
         argmax = np.nanargmax
     else:
         argmax = np.argmax
+    if np.all(np.isnan(mismatch)) or np.all(np.isnan(mis_frac)):
+        def argmax(val):
+            return 0
     a_ind = np.unravel_index(argmax(mismatch), mismatch.shape)
     r_ind = np.unravel_index(argmax(mis_frac), mis_frac.shape)
 

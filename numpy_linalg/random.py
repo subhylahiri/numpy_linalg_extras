@@ -65,7 +65,7 @@ _wrap = _wr.Wrappers(_lnarray, "numpy_linalg.random")
 # =========================================================================
 
 
-class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="one"):
+class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="check"):
     """Version of numpy.random.Generator that returns lnarrays
 
     Parameters
@@ -83,7 +83,7 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="one"):
         super().__init__(_pr.default_rng(seed))
 
     def __getattr__(self, attr):
-        if attr in {"bit_generator", "shuffle", "permutation"}:
+        if attr in {"bit_generator", "shuffle", "permutation", "bytes"}:
             return getattr(self.obj, attr)
         return super().__getattr__(attr)
 

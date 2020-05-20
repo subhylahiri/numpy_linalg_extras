@@ -268,6 +268,8 @@ In addition we have the following in submodules:
 The `random` module also has wrapped versions of the legacy functions in `numpy.random`, 
 but not the `RandomState` class.
 
+All of these functions and objects will probably confuse your IDE's autocomplete, etc.
+
 Most of these routines have not been properly tested.
 
 ## GUfuncs

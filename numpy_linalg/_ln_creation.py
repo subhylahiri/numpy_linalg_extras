@@ -12,17 +12,21 @@ See `numpy` documentation for array creation routines.
 This module doesn't include any record arrays or char/string stuff.
 To use some other array class, change the arguments of `Wrappers`.
 """
+from functools import wraps
 
 import numpy as np
+import numpy.lib.npyio as npio
+
 from . import wrappers as wr
 from ._lnarray import lnarray
-
+# =============================================================================
 __all__ = [
     'empty', 'eye', 'identity', 'ones', 'zeros', 'full',
     'empty_like', 'ones_like', 'zeros_like', 'full_like',
-    'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'copy', 'loadtxt',
-    'asfortranarray', 'asarray_chkfinite', 'require',
-    'frombuffer', 'fromfile', 'fromfunction', 'fromiter', 'fromstring',
+    'array', 'asarray', 'asanyarray', 'ascontiguousarray',
+    'asfortranarray', 'asarray_chkfinite', 'copy', 'require',
+    'load', 'loadtxt', 'genfromtxt', 'fromfile', 'fromregex',
+    'frombuffer', 'fromstring', 'fromfunction', 'fromiter',
     'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
     'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
     'tril_indices', 'triu_indices', 'indices', 'mgrid', 'ogrid', 'r_', 'c_',
@@ -64,6 +68,29 @@ class LnAxisConcatenator(wr.WrappedSubscriptable, wrappers=wrap, method="sub"):
 r_ = LnAxisConcatenator(np.r_)
 c_ = LnAxisConcatenator(np.c_)
 
+
+@wr.set_module("numpy_linalg")
+class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="one"):
+    """
+    See Also
+    --------
+    numpy.load
+    numpy.lib/npyio.NpzFile
+    """
+    _obj: npio.NpzFile
+
+
+@wr.set_module("numpy_linalg")
+@wraps(np.load)
+def load(*args, **kwargs):
+    """Wrapped version of numpy.load
+    """
+    result = wr_load(*args, **kwargs)
+    if isinstance(result, npio.NpzFile):
+        return LnNpzFile(result)
+    return result
+
+
 # =========================================================================
 # Ones and zeros
 # =========================================================================
@@ -88,16 +115,22 @@ array = wrap.sub(np.array)
 asarray = wrap.sub(np.asarray)
 asanyarray = wrap.sub(np.asanyarray)
 ascontiguousarray = wrap.one(np.ascontiguousarray)
-copy = wrap.one(np.copy)
-frombuffer = wrap.one(np.frombuffer)
-fromfile = wrap.one(np.fromfile)
-fromfunction = wrap.one(np.fromfunction)
-fromiter = wrap.one(np.fromiter)
-fromstring = wrap.one(np.fromstring)
-loadtxt = wrap.one(np.loadtxt)
 asfortranarray = wrap.one(np.asfortranarray)
 asarray_chkfinite = wrap.one(np.asarray_chkfinite)
+copy = wrap.one(np.copy)
 require = wrap.sub(np.require)
+fromfunction = wrap.one(np.fromfunction)
+fromiter = wrap.one(np.fromiter)
+frombuffer = wrap.one(np.frombuffer)
+fromstring = wrap.one(np.fromstring)
+# -----------------------------------------------------------------------------
+# input/outpu
+# -----------------------------------------------------------------------------
+fromregex = wrap.one(np.fromregex)
+fromfile = wrap.one(np.fromfile)
+loadtxt = wrap.one(np.loadtxt)
+genfromtxt = wrap.one(np.genfromtxt)
+wr_load = wrap.check(np.load)
 
 # =========================================================================
 # Numerical ranges

@@ -92,12 +92,12 @@ from . import random
 from . import fft
 from ._ln_creation import (
     mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
-    empty_like, ones_like, zeros_like, full_like,
-    array, asarray, asanyarray, ascontiguousarray,
-    asfortranarray, copy, frombuffer, asarray_chkfinite, require,
-    fromfile, fromfunction, fromiter, fromstring, loadtxt, arange, linspace,
-    logspace, geomspace, meshgrid, ravel_multi_index, unravel_index,
-    mask_indices, diag_indices, tril_indices, triu_indices, indices,)
+    empty_like, ones_like, zeros_like, full_like, array, asarray, asanyarray,
+    ascontiguousarray, asfortranarray, asarray_chkfinite, copy, require,
+    load, loadtxt, genfromtxt, fromfile, fromregex, frombuffer, fromstring,
+    fromfunction, fromiter, arange, linspace, logspace, geomspace, meshgrid,
+    ravel_multi_index, unravel_index, mask_indices, diag_indices,
+    tril_indices, triu_indices, indices,)
 from ._ln_manipulation import (
     asfarray, diag, diagflat, tri, tril, triu, vander, ix_, fill_diagonal,
     diag_indices_from, tril_indices_from, triu_indices_from,
@@ -117,13 +117,12 @@ assert any((True, transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
             matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
 assert any((
     True, mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
-    empty_like, ones_like, zeros_like, full_like,
-    array, asarray, asanyarray, ascontiguousarray, copy, asfortranarray,
-    asarray_chkfinite, require,
-    frombuffer, fromfile, fromfunction, fromiter, fromstring, loadtxt,
-    arange, linspace, logspace, geomspace, meshgrid, ravel_multi_index,
-    unravel_index, mask_indices, diag_indices, tril_indices, triu_indices,
-    indices,))
+    empty_like, ones_like, zeros_like, full_like, array, asarray, asanyarray,
+    ascontiguousarray, asfortranarray, asarray_chkfinite, copy, require,
+    load, loadtxt, genfromtxt, fromfile, fromregex, frombuffer, fromstring,
+    fromfunction, fromiter, arange, linspace, logspace, geomspace, meshgrid,
+    ravel_multi_index, unravel_index, mask_indices, diag_indices,
+    tril_indices, triu_indices, indices,))
 assert any((
     True, broadcast_to, broadcast_arrays, expand_dims, squeeze, flattish,
     reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,

@@ -249,8 +249,8 @@ This module has versions of `NumPy`'s array creation routines that have been wra
 to return `lnarray`s [2](#footnotes), namely:  
 `empty`, `eye`, `identity`, `ones`, `zeros`, `full`,
 `array`, `asarray`, `asanyarray`, `ascontiguousarray`,
-`asfortranarray`, `asarray_chkfinite`, `copy`, `loadtxt`, `require`,
-`frombuffer`, `fromfile`, `fromfunction`, `fromiter`, `fromstring`,
+`asfortranarray`, `asarray_chkfinite`, `copy`, `require`, `load`, `loadtxt`, `genfromtxt`,
+`fromfile`, `fromregex`, `frombuffer`, `fromstring`, `fromfunction`, `fromiter`,
 `arange`, `linspace`, `logspace`, `geomspace`, `meshgrid`,
 `ravel_multi_index`, `unravel_index`, `diag_indices`, `mask_indices`,
 `tril_indices`, `triu_indices`, `indices`, `mgrid`, `ogrid`, `r_`, `c_`.
@@ -270,7 +270,7 @@ but not the `RandomState` class.
 
 All of these functions and objects will probably confuse your IDE's autocomplete, etc.
 
-Most of these routines have not been properly tested.
+Most of these routines have not been properly tested yet.
 
 ## GUfuncs
 

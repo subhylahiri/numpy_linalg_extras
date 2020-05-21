@@ -83,7 +83,7 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="check"):
         super().__init__(_pr.default_rng(seed))
 
     def __getattr__(self, attr):
-        if attr in {"bit_generator", "shuffle", "permutation", "bytes"}:
+        if attr in {"bit_generator", "shuffle", "bytes"}:
             return getattr(self.obj, attr)
         return super().__getattr__(attr)
 

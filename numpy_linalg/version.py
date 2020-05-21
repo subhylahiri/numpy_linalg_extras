@@ -26,10 +26,8 @@ def get_version(arg: Union[_pkv.Version, str, bytes, Module]) -> _pkv.Version:
         return arg
     if isinstance(arg, (str, bytes)):
         return _pkv.parse(_decode(arg))
-    try:
+    if hasattr(arg, '__version__'):
         return _pkv.parse(_decode(arg.__version__))
-    except AttributeError:
-        pass
     return _pkv.parse('0')
 
 

@@ -18,6 +18,9 @@ Wrappers
 
     one
         Create version of `numpy` function with single `lnarray` output.
+    check
+        Create version of `numpy` function with one `lnarray` or non-array
+        output.
     several
         Create version of `numpy` function with multiple `lnarray` outputs.
     some
@@ -26,6 +29,9 @@ Wrappers
     sub
         Create version of `numpy` function with single `lnarray` output,
         passing through subclasses.
+    subcheck
+        Create version of `numpy` function with one `lnarray` or non-array
+        output, passing through subclasses.
     subseveral
         Create version of `numpy` function with multiple `lnarray` outputs,
         passing through subclasses.
@@ -73,8 +79,6 @@ full = wrap.one(np.full)
 """
 from functools import wraps as _wraps
 import typing as _ty
-from typing import List as _List, Optional as _Optional
-from warnings import warn as _warn
 
 import numpy as _np
 
@@ -115,10 +119,10 @@ class Wrappers:
         The module from which the functions will be imported, by default `None`
     """
     _arr_cls: _ty.Type[_Arr]
-    _mod_name: _Optional[str]
+    _mod_name: _ty.Optional[str]
 
     def __init__(self, array_type: _ty.Type[_Arr] = _np.ndarray,
-                 module: _Optional[str] = None):
+                 module: _ty.Optional[str] = None):
         self._arr_cls = array_type
         self._mod_name = module
 
@@ -354,13 +358,11 @@ class DeprecatedWrappers(Wrappers):
             The wrapped function.
         """
         super().func_hook(np_func, wrapped)
-        msg = f"\nUse {np_func.__module__}.{np_func.__name__} "
-        msg += f"instead of {self._mod_name}.{np_func.__name__}.\n"
-        msg += "This function will be removed in numpy_linalg 0.4.0"
-        @_wraps(np_func)
-        def new_wrapped(*args, **kwargs):
-            _warn(msg, DeprecationWarning, 2)
-            return wrapped(*args, **kwargs)
+        old_name = f"{self._mod_name}.{np_func.__name__}"
+        new_name = f"{np_func.__module__}.{np_func.__name__}"
+        msg = "This function will be removed in numpy_linalg 0.4.0"
+        new_wrapped = _np.deprecate(wrapped, old_name=old_name,
+                                    new_name=new_name, message=msg)
         return super().func_hook(np_func, new_wrapped)
 
 # =============================================================================
@@ -368,7 +370,7 @@ class DeprecatedWrappers(Wrappers):
 # =============================================================================
 
 
-def wrap_module(file_name: str, funcs: _List[str], wrapper: str = 'one',
+def wrap_module(file_name: str, funcs: _ty.List[str], wrapper: str = 'one',
                 parent: str = 'numpy', imps: str = '', internal: bool = True,
                 module: str = "numpy_linalg"):
     """Create a wrapped version of a numpy module

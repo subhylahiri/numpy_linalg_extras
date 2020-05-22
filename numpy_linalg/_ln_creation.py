@@ -13,6 +13,7 @@ This module doesn't include any record arrays or char/string stuff.
 To use some other array class, change the arguments of `Wrappers`.
 """
 from functools import wraps
+from typing import Union
 
 import numpy as np
 import numpy.lib.npyio as npio
@@ -70,7 +71,7 @@ c_ = LnAxisConcatenator(np.c_)
 
 
 @wr.set_module("numpy_linalg")
-class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="one"):
+class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
     """
     See Also
     --------
@@ -82,7 +83,7 @@ class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="one"):
 
 @wr.set_module("numpy_linalg")
 @wraps(np.load)
-def load(*args, **kwargs):
+def load(*args, **kwargs) -> Union[lnarray, LnNpzFile]:
     """Wrapped version of numpy.load
     """
     result = wr_load(*args, **kwargs)

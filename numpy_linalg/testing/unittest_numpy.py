@@ -124,6 +124,7 @@ class TestCaseNumpy(_ut.TestCase):
         finally:
             self.all_close_opts = old_opts
 
+    @np.errstate(all="ignore")
     def assertArrayAllClose(self, actual: np.ndarray, desired: np.ndarray,
                             cond: float = 1., msg: Optional[str] = None):
         """Calls numpy.allclose and processes the results like a
@@ -141,6 +142,7 @@ class TestCaseNumpy(_ut.TestCase):
                 msg += f' (cond={cond})'
                 self.fail(msg)
 
+    @np.errstate(all="ignore")
     def assertArrayNotAllClose(self, actual: np.ndarray, desired: np.ndarray,
                                msg: Optional[str] = None):
         """Calls numpy.allclose (so it broadcasts, unlike

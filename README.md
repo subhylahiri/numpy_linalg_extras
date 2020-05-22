@@ -494,6 +494,9 @@ Low rank matrices are not properly tested yet.
 (and a QR based version of `lstsq` for completeness).
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
 * Write other norms.
+* Wrap `memmap` & test.
+* Handle structured arrays & test `fromregex`.
+* Fix tests for numerical ranges, `nd_grids`, `fft`, `random`.
 
 #
 

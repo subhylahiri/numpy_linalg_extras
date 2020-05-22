@@ -4,7 +4,8 @@ import os
 import sys
 import tempfile
 from numbers import Real
-from typing import Sequence
+from typing import Sequence, Tuple
+import unittest
 
 import hypothesis as hy
 import hypothesis.extra.numpy as hn
@@ -22,9 +23,8 @@ hy.settings.register_profile("slow",
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 # hy.settings.load_profile('slow')
 np.set_printoptions(precision=2, threshold=10, edgeitems=2)
-print_full = np.printoptions(precision=None, threshold=sys.maxsize)
 # =============================================================================
-__all__ = ['TestCreation']
+__all__ = ['TestCreation', 'TestRandom']
 # =============================================================================
 # Strategies
 # =============================================================================
@@ -67,6 +67,24 @@ def sliceish(draw: st.DataObject,
         if (stop - start) * step < 0:
             start, stop = stop, start
     return slice(start, stop, step)
+
+
+@st.composite
+def array_indices(draw: st.DataObject,
+                  int_type: type = np.intp) -> (Tuple[int, ...], np.ndarray,
+                                                np.ndarray):
+    """Strategy for array shape and valid index arrays"""
+    shape = draw(some_shape)
+    multi_ind = draw(hn.integer_array_indices(shape, dtype=int_type))
+    ravel_ind = np.ravel_multi_index(multi_ind, shape, mode='wrap')
+    if len(shape) > 0:
+        n = shape[0]
+        m = shape[-1]
+        kmax = min(m, n)
+        k = draw(st.integers(min_value=-kmax, max_value=kmax))
+    else:
+        n, k, m = (0, 0, 0)
+    return shape, multi_ind, ravel_ind, (n, k, m)
 
 
 def ind_func(*inds):
@@ -136,7 +154,7 @@ rnd_others = st.sampled_from(list(rnd_params))
 
 
 # =============================================================================
-# Test BLAS ufuncs
+# Test Array creation
 # =============================================================================
 
 
@@ -188,6 +206,10 @@ class TestWrappers(TestCaseNumpy):
             If `nl_array` is not an lnarray, if it doesn't have the same shape
             as `np_array` or the same values, for ever pair of arrays.
         """
+        if not isinstance(nl_arrays, (tuple, list)):
+            return self.assertArraysMatch(nl_arrays, np_arrays,
+                                          val=val, msg=msg)
+        self.assertEqual(len(nl_arrays), len(np_arrays))
         for nla, npa in zip(nl_arrays, np_arrays):
             self.assertArraysMatch(nla, npa, val=val, msg=msg)
 
@@ -219,7 +241,7 @@ class TestCreation(TestWrappers):
         if func != "copy":
             kwds['dtype'] = array.dtype
         if func == "fromstring":
-            with print_full:
+            with np.printoptions(precision=None, threshold=sys.maxsize):
                 args.append(str(array.ravel())[1:-1])
             kwds['sep'] = ' '
         elif func == "frombuffer":
@@ -247,7 +269,6 @@ class TestCreation(TestWrappers):
         self.assertArraysMatch(nl.require(array, None, requirement),
                                np.require(array, None, requirement))
 
-    @print_full
     @hy.given(hyn.matrices_c)
     def test_fromfile(self, array: np.ndarray):
         hy.assume(np.all(np.isfinite(array)))
@@ -267,6 +288,45 @@ class TestCreation(TestWrappers):
             nl_array = nl.loadtxt(fname, dtype=array.dtype, delimiter=" ")
             self.assertArraysMatch(nl_array, array.squeeze())
 
+            nl_array = nl.genfromtxt(fname, dtype=array.dtype, delimiter=" ")
+            self.assertArraysMatch(nl_array, array.squeeze())
+
+            fname = os.path.join(tmpdir, 'test.npy')
+            np.save(fname, array)
+            nl_array = nl.load(fname)
+            self.assertArraysMatch(nl_array, array)
+
+            fname = os.path.join(tmpdir, 'test.npz')
+            np.savez(fname, x=array, y=2 * array)
+            nl_file = nl.load(fname)
+            self.assertArraysMatch(nl_file['x'], array)
+            self.assertArraysMatch(nl_file['y'], 2 * array)
+            nl_file.close()
+
+    @hy.given(st.data(), array_indices())
+    def test_indexing(self, data, args):
+        shape, mult_ind, ravl_ind, nkm = args
+        # mult_ind = data.draw(hn.integer_array_indices(shape))
+        # ravl_ind = np.ravel_multi_index(mult_ind, shape)
+        hy.note(f"{shape=}, {mult_ind=}, {ravl_ind=}")
+        self.assertArraysMatch(nl.ravel_multi_index(mult_ind, shape,
+                                                    mode='wrap'), ravl_ind)
+        self.assertArraysAllMatch(nl.unravel_index(ravl_ind, shape),
+                                  np.unravel_index(ravl_ind, shape))
+        self.assertArraysAllMatch(nl.indices(shape), np.indices(shape))
+        self.assertArraysAllMatch(nl.diag_indices(shape[0], len(shape)),
+                                  np.diag_indices(shape[0], len(shape)))
+        if len(shape) > 0:
+            n, k, m = nkm
+            hy.note(f"{n=}, {k=}, {m=}")
+            self.assertArraysAllMatch(nl.tril_indices(n, k, m),
+                                      np.tril_indices(n, k, m))
+            self.assertArraysAllMatch(nl.triu_indices(n, k, m),
+                                      np.triu_indices(n, k, m))
+            self.assertArraysAllMatch(nl.mask_indices(n, np.triu, k),
+                                      np.mask_indices(n, np.triu, k))
+
+    @unittest.skip("Freezes")
     @hy.given(numerical_ranges, sliceish(), params['iop'], params['rp'])
     def test_numerical_ranges(self, func: str, slicey: slice, num, base):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
@@ -279,6 +339,7 @@ class TestCreation(TestWrappers):
             args.append(num)
         self.assertArraysMatch(nl_func(*args), np_func(*args))
 
+    @unittest.skip("Freezes")
     @hy.given(st.lists(sliceish(non_empty=True)))
     def test_nd_grids(self, slice_list):
         args = tuple(slice_list)
@@ -292,6 +353,7 @@ class TestCreation(TestWrappers):
         self.assertArraysMatch(nl.r_[meshed], np.r_[meshed])
         self.assertArraysMatch(nl.r_[args], np.r_[args])
 
+    @unittest.skip("Freezes")
     @hy.given(params['ip'], params['rp'])
     def test_fft(self, length, spacing):
         with self.assertRaises(ValueError):
@@ -301,28 +363,8 @@ class TestCreation(TestWrappers):
         self.assertArraysMatch(nl.fft.rfftfreq(length, spacing),
                                np.fft.rfftfreq(length, spacing))
 
-    @hy.given(st.data(), some_shape)
-    def test_indexing(self, data: st.DataObject, shape: Sequence[int]):
-        mult_ind = data.draw(hn.integer_array_indices(shape))
-        ravl_ind = np.ravel_multi_index(mult_ind, shape)
-        self.assertArraysMatch(nl.ravel_multi_index(mult_ind, shape), ravl_ind)
-        self.assertArraysMatch(nl.unravel_index(ravl_ind, shape), mult_ind)
-        self.assertArraysMatch(nl.indices(shape), np.indices(shape))
-        self.assertArraysMatch(nl.diag_indices(shape[0], len(shape)),
-                               np.diag_indices(shape[0], len(shape)))
-        if len(shape) > 0:
-            n = shape[0]
-            m = shape[-1]
-            kmax = min(m, n)
-            k = data.draw(st.integers(min_value=-kmax, max_value=kmax))
-            self.assertArraysMatch(nl.tril_indices(n, k, m),
-                                   np.tril_indices(n, k, m))
-            self.assertArraysMatch(nl.triu_indices(n, k, m),
-                                   np.triu_indices(n, k, m))
-            self.assertArraysMatch(nl.mask_indices(n, np.triu, k),
-                                   np.mask_indices(n, np.triu, k))
 
-
+@unittest.skip("Freezes")
 class TestRandom(TestWrappers):
     """Testing randon number generTION"""
     np_rng: np.random.Generator
@@ -332,25 +374,6 @@ class TestRandom(TestWrappers):
         super().setUp()
         self.np_rng = nl.random.default_rng()
         self.nl_rng = nl.random.default_rng()
-
-    def assertArraysMatch(self, nl_array, np_array, val: bool = False,
-                          msg: str = None):
-        """Assert that array type, shape, value are all correct
-
-        Parameters
-        ----------
-        nl_array : lnarray
-            Array we are testing
-        np_array : ndarray
-            Template array
-
-        Raises
-        ------
-        AssertionError
-            If `nl_array` is not an lnarray, if it doesn't have the same shape
-            as `np_array` or the same values.
-        """
-        super().assertArraysMatch(nl_array, nl.lnarray, val=val, msg=msg)
 
     def assertRandomMatch(self, func: str, args: Sequence[float]):
         """Assert that outputs of random.Generator have correct type shape
@@ -369,6 +392,7 @@ class TestRandom(TestWrappers):
         self.assertArraysMatch(nl_array, np_array, val=False, msg=msg)
         self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
 
+    @hy.given(hyn.vectors, params['iop'])
     def test_random_basic(self, vec: np.ndarray, num: int):
         nl_bytes = self.nl_rng.bytes(num)
         self.assertIsInstance(nl_bytes, bytes)

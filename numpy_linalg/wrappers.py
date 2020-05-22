@@ -189,7 +189,7 @@ class Wrappers:
             return self._converter_check(np_func(*args, **kwargs))
         return self.func_hook(np_func, wrapped)
 
-    def several(self, np_func: _NpFn) -> _MyFn[_Arr]:
+    def many(self, np_func: _NpFn) -> _MyFn[_Arr]:
         """Create version of numpy function with multiple lnarray outputs.
 
         Does not pass through subclasses of `lnarray`
@@ -207,7 +207,30 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            return (self._converter(x) for x in output)
+            return tuple(self._converter(x) for x in output)
+        return self.func_hook(np_func, wrapped)
+
+    def several(self, np_func: _NpFn) -> _MyFn[_Arr]:
+        """Create version of numpy function with one/multiple lnarray outputs.
+
+        Does not pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            A function that returns a tuple of `ndarray`s.
+
+        Returns
+        -------
+        my_func : Callable[...->Array]
+            A function that returns a tuple of `lnarray`s.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            if not isinstance(output, tuple):
+                return self._converter(output)
+            return tuple(self._converter(x) for x in output)
         return self.func_hook(np_func, wrapped)
 
     def some(self, np_func: _NpFn) -> _MyFn[_Arr]:
@@ -229,7 +252,9 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            return (self._converter_check(x) for x in output)
+            if not isinstance(output, tuple):
+                return self._converter_check(output)
+            return tuple(self._converter_check(x) for x in output)
         return self.func_hook(np_func, wrapped)
 
     def sub(self, np_func: _NpFn) -> _MyFn[_Arr]:
@@ -273,7 +298,7 @@ class Wrappers:
             return self._converter_subcheck(np_func(*args, **kwargs))
         return self.func_hook(np_func, wrapped)
 
-    def subseveral(self, np_func: _NpFn) -> _MyFn[_Arr]:
+    def submany(self, np_func: _NpFn) -> _MyFn[_Arr]:
         """Create version of numpy function with multiple lnarray outputs.
 
         Does pass through subclasses of `lnarray`
@@ -291,7 +316,30 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            return (self._converter_sub(x) for x in output)
+            return tuple(self._converter_sub(x) for x in output)
+        return self.func_hook(np_func, wrapped)
+
+    def subseveral(self, np_func: _NpFn) -> _MyFn[_Arr]:
+        """Create version of numpy function with one/multiple lnarray outputs.
+
+        Does pass through subclasses of `lnarray`
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            A function that returns a tuple of `ndarray`s.
+
+        Returns
+        -------
+        my_func : Callable[...->Array]
+            A function that returns a tuple of `lnarray`s.
+        """
+        @_wraps(np_func)
+        def wrapped(*args, **kwargs):
+            output = np_func(*args, **kwargs)
+            if not isinstance(output, tuple):
+                return self._converter_sub(output)
+            return tuple(self._converter_sub(x) for x in output)
         return self.func_hook(np_func, wrapped)
 
     def subsome(self, np_func: _NpFn) -> _MyFn[_Arr]:
@@ -313,7 +361,9 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            return (self._converter_subcheck(x) for x in output)
+            if not isinstance(output, tuple):
+                return self._converter_subcheck(output)
+            return tuple(self._converter_subcheck(x) for x in output)
         return self.func_hook(np_func, wrapped)
 
     def _converter(self, arr: _np.ndarray) -> _Arr:

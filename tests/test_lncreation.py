@@ -3,9 +3,9 @@
 import os
 import sys
 import tempfile
+import unittest
 from numbers import Real
 from typing import Sequence, Tuple
-import unittest
 
 import hypothesis as hy
 import hypothesis.extra.numpy as hn
@@ -19,26 +19,15 @@ from numpy_linalg.testing import TestCaseNumpy, main
 # =============================================================================
 # pylint: disable=missing-function-docstring
 errstate = np.errstate(invalid='ignore')
-hy.settings.register_profile("slow",
+hy.settings.register_profile("slow", deadline=300,
                              suppress_health_check=(hy.HealthCheck.too_slow,))
-# hy.settings.load_profile('slow')
+hy.settings.load_profile('slow')
 np.set_printoptions(precision=2, threshold=10, edgeitems=2)
 # =============================================================================
 __all__ = ['TestCreation', 'TestRandom']
 # =============================================================================
 # Strategies
 # =============================================================================
-some_shape = hn.array_shapes()
-some_dtype = st.one_of(
-        # hn.boolean_dtypes(),
-        hn.integer_dtypes(),
-        hn.unsigned_integer_dtypes(),
-        hn.floating_dtypes(),
-        hn.complex_number_dtypes(),
-        # hn.datetime64_dtypes(),
-        # hn.timedelta64_dtypes(),
-    )
-some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
 
 
 @st.composite
@@ -77,11 +66,9 @@ def array_indices(draw: st.DataObject,
     shape = draw(some_shape)
     multi_ind = draw(hn.integer_array_indices(shape, dtype=int_type))
     ravel_ind = np.ravel_multi_index(multi_ind, shape, mode='wrap')
-    if len(shape) > 0:
-        n = shape[0]
-        m = shape[-1]
-        kmax = min(m, n)
-        k = draw(st.integers(min_value=-kmax, max_value=kmax))
+    if shape:
+        n, m = shape[0], shape[-1]
+        k = draw(st.integers(min_value=-n, max_value=m))
     else:
         n, k, m = (0, 0, 0)
     return shape, multi_ind, ravel_ind, (n, k, m)
@@ -92,49 +79,68 @@ def ind_func(*inds):
     return sum(inds)
 
 
+some_shape = hn.array_shapes(max_dims=4, max_side=20)
+some_dtype = st.one_of(
+        # hn.boolean_dtypes(),
+        hn.integer_dtypes(),
+        hn.unsigned_integer_dtypes(),
+        hn.floating_dtypes(),
+        hn.complex_number_dtypes(),
+        # hn.datetime64_dtypes(),
+        # hn.timedelta64_dtypes(),
+    )
+some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
 # -----------------------------------------------------------------------------
-# creation routines
+# Creation routines
 # -----------------------------------------------------------------------------
 ones_and_zeros = st.sampled_from([
     'empty', 'eye', 'identity', 'ones', 'zeros', 'full'])
 from_existing_data = st.sampled_from([
     'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'asfortranarray',
-    'asarray_chkfinite', 'copy', 'fromfunction', 'fromiter', 'frombuffer',
-    'fromstring',
-])
+    'asarray_chkfinite', 'copy', 'fromfunction', 'frombuffer', 'fromstring'])
 numerical_ranges = st.sampled_from([
     'arange', 'linspace', 'logspace', 'geomspace'])
-indexing = [
-    'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
-    'tril_indices', 'triu_indices', 'indices',
-]
 # -----------------------------------------------------------------------------
-# random numbers
+# Random number generators
 # -----------------------------------------------------------------------------
+# Parameter types:
+# (v)ector of (i)ntegers or (r)eals that are zer(o) and/or (p)ositive
+# Or (m)ean and Cholesky deccomposition of (cov)ariance
 params = {
-    'i': st.integers(),
-    'iop': st.integers(min_value=0),
-    'ip': st.integers(min_value=1),
+    'i': st.integers(min_value=-1000, max_value=1000),
+    'iop': st.integers(min_value=0, max_value=1000),
+    'ip': st.integers(min_value=1, max_value=1000),
     'r': hyn.real_numbers(),
     'rop': hyn.real_numbers(min_value=0),
     'rp': hyn.real_numbers(min_value=1e-5),
-    'p': hyn.real_numbers(min_value=0, max_value=1),
-    'mcov': hyn.broadcastable('(n)(n,n)', 'd', max_dims=0),
+    'p': hyn.real_numbers(min_value=1e-5, max_value=1),
+    'mcov': hyn.broadcastable('(n),(n,n)', 'd', max_dims=0, max_side=20),
 }
 params['vrp'] = hn.arrays(float, params['ip'], elements=params['rp'])
 params['vp'] = hn.arrays(float, params['ip'], elements=params['p'])
 params['viop'] = hn.arrays(int, params['ip'], elements=params['iop'])
-#  grouped by paraneter signature
-rnd_r_rop = st.sampled_from([
+# -----------------------------------------------------------------------------
+# Method names, grouped by paraneter signature
+rnd_methods = {}
+rnd_methods['r_rop'] = st.sampled_from([
     'gumbel', 'laplace', 'logistic', 'lognormal', 'normal', 'vonmises'])
-rnd_rp_rp = st.sampled_from(['beta', 'f', 'wald'])
-rnd_rop = st.sampled_from([
-    'exponential', 'poisson', 'power', 'rayleigh', 'standard_gamma', 'weibull'
-])
-rnd_rp = st.sampled_from(['chisquare', 'pareto', 'standard_t', 'zipf'])
-rnd_p = st.sampled_from(['geometric', 'logseries'])
-rnd_none = st.sampled_from([
+rnd_methods['rp_rp'] = st.sampled_from(['beta', 'f', 'wald'])
+rnd_methods['rop'] = st.sampled_from(['exponential', 'poisson', 'power',
+                                      'rayleigh', 'standard_gamma', 'weibull'])
+rnd_methods['rp'] = st.sampled_from([
+    'chisquare', 'pareto', 'standard_t', 'zipf'])
+rnd_methods['p'] = st.sampled_from(['geometric', 'logseries'])
+rnd_methods['none'] = st.sampled_from([
     'random', 'standard_cauchy', 'standard_exponential', 'standard_normal'])
+# sui generis:
+rnd_methods['others'] = st.sampled_from([
+    'integers', 'binomial', 'gamma', 'hypergeometric', 'negative_binomial',
+    'noncentral_chisquare', 'noncentral_f', 'triangular', 'uniform'])
+# each sample is a vector:
+rnd_methods['multi'] = st.sampled_from([
+    'dirichlet', 'multinomial', 'multivariate_hypergeometric',
+    'multivariate_normal'])
+# signatures of the last two sets
 rnd_params = {
     'integers': ('i', 'i'),
     'binomial': ('iop', 'p'),
@@ -150,8 +156,6 @@ rnd_params = {
     'multivariate_hypergeometric': ('viop', 'iop'),
     'multivariate_normal': ('mcov',),
 }
-rnd_others = st.sampled_from(list(rnd_params))
-
 
 # =============================================================================
 # Test Array creation
@@ -218,8 +222,8 @@ class TestCreation(TestWrappers):
     """Testing array creatin routines"""
 
     @errstate
-    @hy.given(ones_and_zeros, some_shape, st.integers(), some_dtype)
-    def test_ones_and_zeros(self, func, shape, val, dtype):
+    @hy.given(ones_and_zeros, some_shape, params['i'], some_dtype)
+    def test_ones_zeros(self, func, shape, val, dtype):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
         args = [shape]
         if func == "full":
@@ -248,8 +252,6 @@ class TestCreation(TestWrappers):
             args.append(array.tobytes())
         elif func == "fromfunction":
             args.extend([ind_func, array.shape])
-        elif func == "fromiter":
-            args.append(x for x in array.ravel())
         else:
             args.append(array.tolist())
         try:
@@ -258,10 +260,14 @@ class TestCreation(TestWrappers):
             with self.assertRaises(ValueError):
                 nl_func(*args, **kwds)
         else:
-            if func == "fromiter":
-                args = []
-                args.append(x for x in array.ravel())
             self.assertArraysMatch(nl_func(*args, **kwds), np_array, msg=func)
+
+    @errstate
+    @hy.given(hyn.vectors)
+    def test_fromiter(self, array):
+        np_array = np.fromiter((x for x in array), array.dtype)
+        nl_array = nl.fromiter((x for x in array), array.dtype)
+        self.assertArraysMatch(nl_array, np_array)
 
     @errstate
     @hy.given(some_array, st.sampled_from("FCAWOE"))
@@ -270,19 +276,24 @@ class TestCreation(TestWrappers):
                                np.require(array, None, requirement))
 
     @hy.given(hyn.matrices_c)
-    def test_fromfile(self, array: np.ndarray):
-        hy.assume(np.all(np.isfinite(array)))
+    def test_fromfile_b(self, array: np.ndarray):
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.bin')
             array.tofile(fname, "")
             nl_array = nl.fromfile(fname, dtype=array.dtype, sep="")
             self.assertArraysMatch(nl_array, array.ravel())
 
-            fname = os.path.join(tmpdir, 'test.str')
+    @hy.given(hyn.matrices_c)
+    def test_fromfile_a(self, array: np.ndarray):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'test.txt')
             array.tofile(fname, " ")
             nl_array = nl.fromfile(fname, dtype=array.dtype, sep=" ")
             self.assertArraysMatch(nl_array, array.ravel())
 
+    @hy.given(hyn.matrices_c)
+    def test_fromtxt(self, array: np.ndarray):
+        with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.txt')
             np.savetxt(fname, array, delimiter=' ')
             nl_array = nl.loadtxt(fname, dtype=array.dtype, delimiter=" ")
@@ -291,6 +302,9 @@ class TestCreation(TestWrappers):
             nl_array = nl.genfromtxt(fname, dtype=array.dtype, delimiter=" ")
             self.assertArraysMatch(nl_array, array.squeeze())
 
+    @hy.given(hyn.matrices_c)
+    def test_frromload(self, array: np.ndarray):
+        with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.npy')
             np.save(fname, array)
             nl_array = nl.load(fname)
@@ -316,7 +330,7 @@ class TestCreation(TestWrappers):
         self.assertArraysAllMatch(nl.indices(shape), np.indices(shape))
         self.assertArraysAllMatch(nl.diag_indices(shape[0], len(shape)),
                                   np.diag_indices(shape[0], len(shape)))
-        if len(shape) > 0:
+        if shape:
             n, k, m = nkm
             hy.note(f"{n=}, {k=}, {m=}")
             self.assertArraysAllMatch(nl.tril_indices(n, k, m),
@@ -328,7 +342,7 @@ class TestCreation(TestWrappers):
 
     @unittest.skip("Freezes")
     @hy.given(numerical_ranges, sliceish(), params['iop'], params['rp'])
-    def test_numerical_ranges(self, func: str, slicey: slice, num, base):
+    def test_num_ranges(self, func: str, slicey: slice, num, base):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
         args = [slicey.start, slicey.stop]
         if func == "arange":
@@ -355,7 +369,7 @@ class TestCreation(TestWrappers):
 
     @unittest.skip("Freezes")
     @hy.given(params['ip'], params['rp'])
-    def test_fft(self, length, spacing):
+    def test_fft_freq(self, length, spacing):
         with self.assertRaises(ValueError):
             raise ValueError
         self.assertArraysMatch(nl.fft.fftfreq(length, spacing),
@@ -364,7 +378,7 @@ class TestCreation(TestWrappers):
                                np.fft.rfftfreq(length, spacing))
 
 
-@unittest.skip("Freezes")
+# @unittest.skip("Freezes")
 class TestRandom(TestWrappers):
     """Testing randon number generTION"""
     np_rng: np.random.Generator
@@ -375,7 +389,8 @@ class TestRandom(TestWrappers):
         self.np_rng = nl.random.default_rng()
         self.nl_rng = nl.random.default_rng()
 
-    def assertRandomMatch(self, func: str, args: Sequence[float]):
+    def assertRandomMatch(self, func: str, args: Sequence[float],
+                          scalar: bool = True):
         """Assert that outputs of random.Generator have correct type shape
 
         Parameters
@@ -384,20 +399,26 @@ class TestRandom(TestWrappers):
             Name of `Generator` method to test
         args : Sequence[float, ...]
             Arguments for generator method
+        scalar : bool
+            Without a shape parameter, should the output be a scalar?
+            By default: `True`
         """
         np_method = getattr(self.np_rng, func)
         nl_method = getattr(self.nl_rng, func)
         np_array, nl_array = np_method(*args), nl_method(*args)
         msg = f"{func=}, {args=}"
         self.assertArraysMatch(nl_array, np_array, val=False, msg=msg)
-        self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
+        if scalar:
+            self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
 
     @hy.given(hyn.vectors, params['iop'])
-    def test_random_basic(self, vec: np.ndarray, num: int):
+    def test_random_bytes(self, vec: np.ndarray, num: int):
         nl_bytes = self.nl_rng.bytes(num)
         self.assertIsInstance(nl_bytes, bytes)
         self.assertEqual(len(nl_bytes), num)
 
+    @hy.given(hyn.vectors, params['iop'])
+    def test_random_permute(self, vec: np.ndarray, num: int):
         nl_perm = self.nl_rng.permutation(num)
         self.assertIsInstance(nl_perm, nl.lnarray)
         self.assertArrayShape(nl_perm, (num,))
@@ -408,11 +429,15 @@ class TestRandom(TestWrappers):
         self.assertArrayShape(nl_perm, vec.shape)
         self.assertArrayDtype(nl_perm, vec.dtype)
 
+    @hy.given(hyn.vectors, params['iop'])
+    def test_random_choice(self, vec: np.ndarray, num: int):
         nl_choice = self.nl_rng.choice(vec, size=num)
         self.assertIsInstance(nl_choice, nl.lnarray)
         self.assertArrayShape(nl_choice, (num,))
         self.assertArrayDtype(nl_choice, vec.dtype)
 
+    @hy.given(hyn.vectors, params['iop'])
+    def test_random_shuffle(self, vec: np.ndarray, num: int):
         shape, dtype = vec.shape, vec.dtype
         nl_shuffle = self.nl_rng.shuffle(vec)
         self.assertIsNone(nl_shuffle)
@@ -420,44 +445,76 @@ class TestRandom(TestWrappers):
         self.assertArrayShape(vec, shape)
         self.assertArrayDtype(vec, dtype)
 
-    @hy.given(rnd_r_rop, params['r'], params['rop'], some_shape)
+    @hy.given(rnd_methods['r_rop'], params['r'], params['rop'], some_shape)
     def test_random_r_rop(self, func, alpha, beta, shape):
         args = (alpha, beta, shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_rp_rp, params['rp'], params['rp'], some_shape)
+    @hy.given(rnd_methods['rp_rp'], params['rp'], params['rp'], some_shape)
     def test_random_rp_rp(self, func, alpha, beta, shape):
         args = (alpha, beta, shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_rop, params['rop'], some_shape)
+    @hy.given(rnd_methods['rop'], params['rop'], some_shape)
     def test_random_rop(self, func, alpha, shape):
         if func == "power":
             alpha += 1
         args = (alpha, shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_rp, params['rp'], some_shape)
+    @unittest.skip("Freezes")
+    @hy.given(rnd_methods['rp'], params['rp'], some_shape)
     def test_random_rp(self, func, alpha, shape):
         if func == "zipf":
             alpha += 1
         args = (alpha, shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_p, params['p'], some_shape)
+    @hy.given(rnd_methods['p'], params['p'], some_shape)
     def test_random_p(self, func, prob, shape):
         args = (prob, shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_none, some_shape)
+    @hy.given(rnd_methods['none'], some_shape)
     def test_random_none(self, func, shape):
         args = (shape,)
         self.assertRandomMatch(func, args)
 
-    @hy.given(st.data(), rnd_others)
+    @hy.given(st.data(), rnd_methods['others'])
     def test_random_others(self, data: st.DataObject, func: str):
+        hy.note(f"{func=}")
         args = [data.draw(params[s]) for s in rnd_params[func]]
+        if func == "integers":
+            args.sort()
+            hy.assume(args[0] < args[1])
+        elif func == "hypergeometric":
+            hy.assume(args[0] + args[1] > args[2])
+        elif func == "triangular":
+            args.sort()
+            hy.assume(args[0] < args[2])
+        args.append(data.draw(some_shape))
         self.assertRandomMatch(func, args)
+
+    @hy.given(st.data(), rnd_methods['multi'])
+    def test_random_multi(self, data: st.DataObject, func: str):
+        hy.note(f"{func=}")
+        args = [data.draw(params[s]) for s in rnd_params[func]]
+        hy.note(f"{args=}")
+        if func == "multinomial":
+            v_p = args[1].sum()
+            hy.assume(v_p < 1)
+            args[1] = np.r_[args[1], 1 - v_p]
+        elif func == "multivariate_hypergeometric":
+            hy.assume(args[0].sum() >= args[1])
+        elif func == "multivariate_normal":
+            args = list(args[0])
+            upper = np.triu(args[1])
+            diag = np.diagonal(upper).copy()
+            diag[np.abs(diag) < 1e-4] += 1
+            upper[np.diag_indices_from(upper)] = diag
+            args[1] = upper.T @ upper
+        args.append(data.draw(some_shape))
+        self.assertRandomMatch(func, args, scalar=False)
 
 
 # =============================================================================

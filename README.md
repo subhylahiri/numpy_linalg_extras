@@ -257,6 +257,7 @@ to return `lnarray`s [2](#footnotes), namely:
 
 The instances `mgrid`, `ogrid`, `r_`, `c_` return `lnarray`s when subscripted.
 When `r_` and `c_` are used to concatenate, they will convert `ndarray`s to `lnarray`s.
+We haven't tried to make a version of `memmap` yet.
 
 In addition we have the following in submodules:
 * `fft.fftfreq`, `fft.rfftfreq`:
@@ -270,7 +271,7 @@ but not the `RandomState` class.
 
 All of these functions and objects will probably confuse your IDE's autocomplete, etc.
 
-Most of these routines have not been properly tested yet.
+Some of these routines have not been properly tested yet ([See to-dos](#to-dos)).
 
 ## GUfuncs
 
@@ -496,7 +497,7 @@ Low rank matrices are not properly tested yet.
 * Write other norms.
 * Wrap `memmap` & test.
 * Handle structured arrays & test `fromregex`.
-* Fix tests for numerical ranges, `nd_grids`, `fft`, `random`.
+* Fix tests for numerical ranges, `nd_grids`, `fft`, `random_rp`.
 
 #
 

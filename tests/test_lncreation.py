@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from numbers import Real
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Mapping, List
 
 import hypothesis as hy
 import hypothesis.extra.numpy as hn
@@ -30,9 +30,90 @@ __all__ = ['TestCreation', 'TestRandom']
 # =============================================================================
 
 
+def str_sample(*str_list: str) -> st.SearchStrategy[str]:
+    """Strategy for substrings from string"""
+    return st.sampled_from(" ".join(str_list).split(" "))
+
+
+# Pre-defined strategies
+some_shape = hn.array_shapes(max_dims=4, max_side=20)
+some_dtype = st.one_of(
+        # hn.boolean_dtypes(),
+        hn.integer_dtypes(),
+        hn.unsigned_integer_dtypes(),
+        hn.floating_dtypes(),
+        hn.complex_number_dtypes(),
+        # hn.datetime64_dtypes(),
+        # hn.timedelta64_dtypes(),
+    )
+some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
+# -----------------------------------------------------------------------------
+# Creation routines
+# -----------------------------------------------------------------------------
+ones_and_zeros = str_sample('empty eye identity ones zeros full')
+from_existing_data = str_sample(
+    'array asarray asanyarray ascontiguousarray asfortranarray',
+    'asarray_chkfinite copy fromfunction frombuffer fromstring')
+numerical_ranges = str_sample('arange linspace logspace geomspace')
+# -----------------------------------------------------------------------------
+# Random number generators
+# -----------------------------------------------------------------------------
+# Parameter types:
+# (v)ector of (i)ntegers or (r)eals that are zer(o) and/or (p)ositive
+# Or (m)ean and Cholesky deccomposition of (cov)ariance
+params = {
+    'i': st.integers(min_value=-1000, max_value=1000),
+    'iop': st.integers(min_value=0, max_value=1000),
+    'ip': st.integers(min_value=1, max_value=1000),
+    'r': hyn.real_numbers(),
+    'rop': hyn.real_numbers(min_value=0),
+    'rp': hyn.real_numbers(min_value=1e-5),
+    'p': hyn.real_numbers(min_value=1e-5, max_value=1),
+    'mcov': hyn.broadcastable('(n),(n,n)', 'd', max_dims=0, max_side=20),
+}
+params['vrp'] = hn.arrays(float, params['ip'], elements=params['rp'])
+params['vp'] = hn.arrays(float, params['ip'], elements=params['p'])
+params['viop'] = hn.arrays(int, params['ip'], elements=params['iop'])
+# -----------------------------------------------------------------------------
+# Method names, grouped by paraneter signature
+rnd_methods = {
+    'r_rop': str_sample('gumbel laplace logistic lognormal normal vonmises'),
+    'rp_rp': str_sample('beta f wald'),
+    'rop': str_sample('exponential poisson power rayleigh standard_gamma',
+                      'weibull'),
+    'rp': str_sample('chisquare pareto standard_t zipf'),
+    'p': str_sample('geometric logseries'),
+    'none': str_sample('random _cauchy _exponential _normal'),
+    # sui generis:
+    'others': str_sample('integers binomial gamma hypergeometric',
+                         'negative_binomial _chisquare _f triangular uniform'),
+    # each sample is a vector:
+    'multi': str_sample('dirichlet multinomial _hypergeometric _normal'),
+}
+# signatures of the last two sets
+rnd_params = {
+    'integers': ('i', 'i'),
+    'binomial': ('iop', 'p'),
+    'gamma': ('rop', 'rop'),
+    'hypergeometric': ('iop', 'iop', 'iop'),
+    'negative_binomial': ('rp', 'p'),
+    'noncentral_chisquare': ('rp', 'rop'),
+    'noncentral_f': ('rp', 'rp', 'rop'),
+    'triangular': ('r', 'r', 'r'),
+    'uniform': ('r', 'r'),
+    'dirichlet': ('vrp',),
+    'multinomial': ('iop', 'vp'),
+    'multivariate_hypergeometric': ('viop', 'iop'),
+    'multivariate_normal': ('mcov',),
+}
+# -----------------------------------------------------------------------------
+# Composite strategies
+# -----------------------------------------------------------------------------
+
+
 @st.composite
 def sliceish(draw: st.DataObject,
-             stgy: st.SearchStrategy[float] = hyn.real_numbers(min_value=1e-5),
+             stgy: st.SearchStrategy[float] = params['rp'],
              non_empty: bool = False) -> slice:
     """Strategy for a [start:stop:step] slice, not necessarily ints
 
@@ -59,9 +140,9 @@ def sliceish(draw: st.DataObject,
 
 
 @st.composite
-def array_indices(draw: st.DataObject,
-                  int_type: type = np.intp) -> (Tuple[int, ...], np.ndarray,
-                                                np.ndarray):
+def array_inds(draw: st.DataObject,
+               int_type: type = np.intp
+               ) -> (Tuple[int, ...], np.ndarray, np.ndarray, Tuple[int, ...]):
     """Strategy for array shape and valid index arrays"""
     shape = draw(some_shape)
     multi_ind = draw(hn.integer_array_indices(shape, dtype=int_type))
@@ -74,88 +155,40 @@ def array_indices(draw: st.DataObject,
     return shape, multi_ind, ravel_ind, (n, k, m)
 
 
-def ind_func(*inds):
-    """to test fromfunction"""
-    return sum(inds)
+@st.composite
+def func_params(draw: st.DataObject,
+                func_group: str,
+                func_prefix: str = '',
+                func_sigs: Mapping[str, Sequence[str]] = rnd_params,
+                func_sts: Mapping[str, st.SearchStrategy[str]] = rnd_methods,
+                param_sts: Mapping[str, st.SearchStrategy[Real]] = params,
+                ) -> (str, List[Real]):
+    """Strategy for Generator method name and parameters"""
+    func = draw(func_sts[func_group])
+    if func.startswith('_'):
+        func = func_prefix + func
+    args = [draw(param_sts[s]) for s in func_sigs[func]]
+    return func, args
 
 
-some_shape = hn.array_shapes(max_dims=4, max_side=20)
-some_dtype = st.one_of(
-        # hn.boolean_dtypes(),
-        hn.integer_dtypes(),
-        hn.unsigned_integer_dtypes(),
-        hn.floating_dtypes(),
-        hn.complex_number_dtypes(),
-        # hn.datetime64_dtypes(),
-        # hn.timedelta64_dtypes(),
-    )
-some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
-# -----------------------------------------------------------------------------
-# Creation routines
-# -----------------------------------------------------------------------------
-ones_and_zeros = st.sampled_from([
-    'empty', 'eye', 'identity', 'ones', 'zeros', 'full'])
-from_existing_data = st.sampled_from([
-    'array', 'asarray', 'asanyarray', 'ascontiguousarray', 'asfortranarray',
-    'asarray_chkfinite', 'copy', 'fromfunction', 'frombuffer', 'fromstring'])
-numerical_ranges = st.sampled_from([
-    'arange', 'linspace', 'logspace', 'geomspace'])
-# -----------------------------------------------------------------------------
-# Random number generators
-# -----------------------------------------------------------------------------
-# Parameter types:
-# (v)ector of (i)ntegers or (r)eals that are zer(o) and/or (p)ositive
-# Or (m)ean and Cholesky deccomposition of (cov)ariance
-params = {
-    'i': st.integers(min_value=-1000, max_value=1000),
-    'iop': st.integers(min_value=0, max_value=1000),
-    'ip': st.integers(min_value=1, max_value=1000),
-    'r': hyn.real_numbers(),
-    'rop': hyn.real_numbers(min_value=0),
-    'rp': hyn.real_numbers(min_value=1e-5),
-    'p': hyn.real_numbers(min_value=1e-5, max_value=1),
-    'mcov': hyn.broadcastable('(n),(n,n)', 'd', max_dims=0, max_side=20),
-}
-params['vrp'] = hn.arrays(float, params['ip'], elements=params['rp'])
-params['vp'] = hn.arrays(float, params['ip'], elements=params['p'])
-params['viop'] = hn.arrays(int, params['ip'], elements=params['iop'])
-# -----------------------------------------------------------------------------
-# Method names, grouped by paraneter signature
-rnd_methods = {}
-rnd_methods['r_rop'] = st.sampled_from([
-    'gumbel', 'laplace', 'logistic', 'lognormal', 'normal', 'vonmises'])
-rnd_methods['rp_rp'] = st.sampled_from(['beta', 'f', 'wald'])
-rnd_methods['rop'] = st.sampled_from(['exponential', 'poisson', 'power',
-                                      'rayleigh', 'standard_gamma', 'weibull'])
-rnd_methods['rp'] = st.sampled_from([
-    'chisquare', 'pareto', 'standard_t', 'zipf'])
-rnd_methods['p'] = st.sampled_from(['geometric', 'logseries'])
-rnd_methods['none'] = st.sampled_from([
-    'random', 'standard_cauchy', 'standard_exponential', 'standard_normal'])
-# sui generis:
-rnd_methods['others'] = st.sampled_from([
-    'integers', 'binomial', 'gamma', 'hypergeometric', 'negative_binomial',
-    'noncentral_chisquare', 'noncentral_f', 'triangular', 'uniform'])
-# each sample is a vector:
-rnd_methods['multi'] = st.sampled_from([
-    'dirichlet', 'multinomial', 'multivariate_hypergeometric',
-    'multivariate_normal'])
-# signatures of the last two sets
-rnd_params = {
-    'integers': ('i', 'i'),
-    'binomial': ('iop', 'p'),
-    'gamma': ('rop', 'rop'),
-    'hypergeometric': ('iop', 'iop', 'iop'),
-    'negative_binomial': ('rp', 'p'),
-    'noncentral_chisquare': ('rp', 'rop'),
-    'noncentral_f': ('rp', 'rp', 'rop'),
-    'triangular': ('r', 'r', 'r'),
-    'uniform': ('r', 'r'),
-    'dirichlet': ('vrp',),
-    'multinomial': ('iop', 'vp'),
-    'multivariate_hypergeometric': ('viop', 'iop'),
-    'multivariate_normal': ('mcov',),
-}
+@st.composite
+def func_param_set(draw: st.DataObject,
+                   fun_group: str,
+                   fun_prefix: str = 'standard',
+                   fun_sts: Mapping[str, st.SearchStrategy[str]] = rnd_methods,
+                   param_sts: Mapping[str, st.SearchStrategy[Real]] = params,
+                   ) -> (str, List[Real]):
+    """Strategy for Generator method name and parameters"""
+    func = draw(fun_sts[fun_group])
+    if func.startswith('_'):
+        func = fun_prefix + func
+    if fun_group == 'none':
+        return func
+    args = [draw(param_sts[s]) for s in fun_group.split('_')]
+    if func in {"power", "zipf"}:
+        args[0] += 1
+    return func, args
+
 
 # =============================================================================
 # Test Array creation
@@ -251,7 +284,7 @@ class TestCreation(TestWrappers):
         elif func == "frombuffer":
             args.append(array.tobytes())
         elif func == "fromfunction":
-            args.extend([ind_func, array.shape])
+            args.extend([lambda *args: sum(args), array.shape])
         else:
             args.append(array.tolist())
         try:
@@ -317,7 +350,7 @@ class TestCreation(TestWrappers):
             self.assertArraysMatch(nl_file['y'], 2 * array)
             nl_file.close()
 
-    @hy.given(st.data(), array_indices())
+    @hy.given(st.data(), array_inds())
     def test_indexing(self, data, args):
         shape, mult_ind, ravl_ind, nkm = args
         # mult_ind = data.draw(hn.integer_array_indices(shape))
@@ -406,7 +439,7 @@ class TestRandom(TestWrappers):
         np_method = getattr(self.np_rng, func)
         nl_method = getattr(self.nl_rng, func)
         np_array, nl_array = np_method(*args), nl_method(*args)
-        msg = f"{func=}, {args=}"
+        msg = f"{func=}, {args=}, shape={np_array.shape}"
         self.assertArraysMatch(nl_array, np_array, val=False, msg=msg)
         if scalar:
             self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
@@ -445,45 +478,53 @@ class TestRandom(TestWrappers):
         self.assertArrayShape(vec, shape)
         self.assertArrayDtype(vec, dtype)
 
-    @hy.given(rnd_methods['r_rop'], params['r'], params['rop'], some_shape)
-    def test_random_r_rop(self, func, alpha, beta, shape):
-        args = (alpha, beta, shape)
+    @hy.given(func_param_set('r_rop'), some_shape)
+    def test_random_r_rop(self, func_args, shape):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_methods['rp_rp'], params['rp'], params['rp'], some_shape)
-    def test_random_rp_rp(self, func, alpha, beta, shape):
-        args = (alpha, beta, shape)
+    @hy.given(func_param_set('rp_rp'), some_shape)
+    def test_random_rp_rp(self, func_args, shape):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_methods['rop'], params['rop'], some_shape)
-    def test_random_rop(self, func, alpha, shape):
-        if func == "power":
-            alpha += 1
-        args = (alpha, shape)
+    @hy.given(func_param_set('rop'), some_shape)
+    def test_random_rop(self, func_args, shape):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
     @unittest.skip("Freezes")
-    @hy.given(rnd_methods['rp'], params['rp'], some_shape)
-    def test_random_rp(self, func, alpha, shape):
-        if func == "zipf":
-            alpha += 1
-        args = (alpha, shape)
+    @hy.given(func_param_set('rp'), some_shape)
+    def test_random_rp(self, func_args, shape):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_methods['p'], params['p'], some_shape)
-    def test_random_p(self, func, prob, shape):
-        args = (prob, shape)
+    @hy.given(func_param_set('p'), some_shape)
+    def test_random_p(self, func_args, shape):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(rnd_methods['none'], some_shape)
+    @hy.given(func_param_set('none'), some_shape)
     def test_random_none(self, func, shape):
+        hy.note(f"{func=}, {shape=}.")
         args = (shape,)
         self.assertRandomMatch(func, args)
 
-    @hy.given(st.data(), rnd_methods['others'])
-    def test_random_others(self, data: st.DataObject, func: str):
-        hy.note(f"{func=}")
-        args = [data.draw(params[s]) for s in rnd_params[func]]
+    @hy.given(func_params('others', 'noncentral'), some_shape)
+    def test_random_others(self, func_args: Tuple[str, List[Real]],
+                           shape: Tuple[int, ...]):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
         if func == "integers":
             args.sort()
             hy.assume(args[0] < args[1])
@@ -492,14 +533,15 @@ class TestRandom(TestWrappers):
         elif func == "triangular":
             args.sort()
             hy.assume(args[0] < args[2])
-        args.append(data.draw(some_shape))
+        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(st.data(), rnd_methods['multi'])
-    def test_random_multi(self, data: st.DataObject, func: str):
-        hy.note(f"{func=}")
-        args = [data.draw(params[s]) for s in rnd_params[func]]
-        hy.note(f"{args=}")
+    @hy.given(func_params('multi', 'multivariate'), some_shape)
+    @hy.settings(deadline=None)
+    def test_random_multi(self, func_args: Tuple[str, List[Real]],
+                          shape: Tuple[int, ...]):
+        func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
         if func == "multinomial":
             v_p = args[1].sum()
             hy.assume(v_p < 1)
@@ -508,12 +550,13 @@ class TestRandom(TestWrappers):
             hy.assume(args[0].sum() >= args[1])
         elif func == "multivariate_normal":
             args = list(args[0])
-            upper = np.triu(args[1])
-            diag = np.diagonal(upper).copy()
-            diag[np.abs(diag) < 1e-4] += 1
-            upper[np.diag_indices_from(upper)] = diag
-            args[1] = upper.T @ upper
-        args.append(data.draw(some_shape))
+            lower = np.tril(args[1])
+            # in a future version, np.diagonal will return a writable view
+            diag = np.diagonal(lower).copy()
+            diag[np.abs(diag) < 1e-3] += 1
+            lower[np.diag_indices_from(lower)] = diag
+            args[1] = lower @ lower.T
+        args.append(shape)
         self.assertRandomMatch(func, args, scalar=False)
 
 

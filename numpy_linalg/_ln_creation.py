@@ -4,12 +4,12 @@
 # @author: subhy
 # module:_creation_ln
 # =============================================================================
-"""
-Numpy's array creation routines, adapted to produce `lnarray`s instead of
+"""Numpy's array creation routines, adapted to produce `lnarray`s instead of
 `numpy.ndarray`s.
 
 See `numpy` documentation for array creation routines.
 This module doesn't include any record arrays or char/string stuff.
+
 To use some other array class, change the arguments of `Wrappers`.
 """
 from functools import wraps
@@ -42,7 +42,9 @@ wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
 
 @wr.set_module("numpy_linalg")
 class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
-    """
+    """Wrapped version of numpy.lib.index_tricks.nd_grid adapted to produce
+    `lnarray`s instead of `numpy.ndarray`s.
+
     See Also
     --------
     numpy.mgrid
@@ -57,7 +59,9 @@ ogrid = LnNdGrid(np.ogrid)
 
 @wr.set_module("numpy_linalg")
 class LnAxisConcatenator(wr.WrappedSubscriptable, wrappers=wrap, method="sub"):
-    """
+    """Wrapped version of numpy.lib.index_tricks.AxisConcatenator adapted to
+    produce `lnarray`s instead of `numpy.ndarray`s.
+
     See Also
     --------
     numpy.r_
@@ -72,11 +76,13 @@ c_ = LnAxisConcatenator(np.c_)
 
 @wr.set_module("numpy_linalg")
 class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
-    """
+    """Wrapped version of numpy.lib.npyio.NpzFile adapted to produce
+    `lnarray`s instead of `numpy.ndarray`s.
+
     See Also
     --------
     numpy.load
-    numpy.lib/npyio.NpzFile
+    numpy.lib.npyio.NpzFile
     """
     _obj: npio.NpzFile
 
@@ -84,7 +90,8 @@ class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
 @wr.set_module("numpy_linalg")
 @wraps(np.load)
 def load(*args, **kwargs) -> Union[lnarray, LnNpzFile]:
-    """Wrapped version of numpy.load
+    """Wrapped version of numpy.load adapted to produce `lnarray`s instead of
+    `numpy.ndarray`s.
     """
     result = wr_load(*args, **kwargs)
     if isinstance(result, npio.NpzFile):

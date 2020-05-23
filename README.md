@@ -497,7 +497,6 @@ Low rank matrices are not properly tested yet.
 * Write other norms.
 * Wrap `memmap` & test.
 * Handle structured arrays & test `fromregex`.
-* Fix tests for numerical ranges, `nd_grids`, `fft`, `random_rp`.
 
 #
 

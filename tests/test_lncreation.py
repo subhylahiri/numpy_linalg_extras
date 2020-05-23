@@ -3,7 +3,6 @@
 import os
 import sys
 import tempfile
-import unittest
 from numbers import Real
 from typing import Sequence, Tuple, Mapping, List
 
@@ -86,8 +85,9 @@ rnd_methods = {
     'r_rop': str_sample('gumbel laplace logistic lognormal normal vonmises'),
     'rp_rp': str_sample('beta f wald'),
     'rop': str_sample('exponential poisson power rayleigh _gamma weibull'),
-    'rp': str_sample('chisquare pareto standard_t'),
+    # zipf needs care when choosing parameters
     # 'rp': str_sample('chisquare pareto standard_t zipf'),
+    'rp': str_sample('chisquare pareto standard_t'),
     'p': str_sample('geometric logseries'),
     'none': str_sample('random _cauchy _exponential _normal'),
     # sui generis:
@@ -519,11 +519,12 @@ class TestRandom(TestWrappers):
         args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @unittest.skip("Freezes")
-    @hy.given(params['rp'], some_shape)
+    @hy.given(st.floats(min_value=1.1, max_value=100, allow_nan=False,
+                        allow_infinity=False),
+              hn.array_shapes(max_dims=2, max_side=10))
     def test_random_zipf(self, alpha, shape):
         func = 'zipf'
-        args = [alpha + 1.5]
+        args = [alpha]
         hy.note(f"{func=}, {args=}, {shape=}.")
         args.append(shape)
         self.assertRandomMatch(func, args)

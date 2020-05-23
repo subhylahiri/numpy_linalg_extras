@@ -18,7 +18,7 @@ from numpy_linalg.testing import TestCaseNumpy, main
 
 # =============================================================================
 # pylint: disable=missing-function-docstring
-errstate = np.errstate(invalid='ignore')
+errstate = np.errstate(invalid='ignore', over='ignore', under='ignore')
 hy.settings.register_profile("slow", deadline=300,
                              suppress_health_check=(hy.HealthCheck.too_slow,))
 hy.settings.load_profile('slow')
@@ -28,6 +28,12 @@ __all__ = ['TestCreation', 'TestRandom']
 # =============================================================================
 # Strategies
 # =============================================================================
+
+
+def swap_ab(seq: Sequence) -> Sequence:
+    """Swap first two elements of sequence
+    """
+    return seq[1::-1] + seq[2:]
 
 
 def str_sample(*str_list: str) -> st.SearchStrategy[str]:
@@ -53,7 +59,7 @@ some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
 ones_and_zeros = str_sample('empty eye identity ones zeros full')
 from_existing_data = str_sample(
     'array asarray asanyarray ascontiguousarray asfortranarray',
-    'asarray_chkfinite copy fromfunction frombuffer fromstring')
+    'asarray_chkfinite copy frombuffer fromstring')
 numerical_ranges = str_sample('arange linspace logspace geomspace')
 # -----------------------------------------------------------------------------
 # Random number generators
@@ -62,9 +68,9 @@ numerical_ranges = str_sample('arange linspace logspace geomspace')
 # (v)ector of (i)ntegers or (r)eals that are zer(o) and/or (p)ositive
 # Or (m)ean and Cholesky deccomposition of (cov)ariance
 params = {
-    'i': st.integers(min_value=-1000, max_value=1000),
-    'iop': st.integers(min_value=0, max_value=1000),
-    'ip': st.integers(min_value=1, max_value=1000),
+    'i': st.integers(min_value=-100, max_value=100),
+    'iop': st.integers(min_value=0, max_value=100),
+    'ip': st.integers(min_value=1, max_value=100),
     'r': hyn.real_numbers(),
     'rop': hyn.real_numbers(min_value=0),
     'rp': hyn.real_numbers(min_value=1e-5),
@@ -79,9 +85,9 @@ params['viop'] = hn.arrays(int, params['ip'], elements=params['iop'])
 rnd_methods = {
     'r_rop': str_sample('gumbel laplace logistic lognormal normal vonmises'),
     'rp_rp': str_sample('beta f wald'),
-    'rop': str_sample('exponential poisson power rayleigh standard_gamma',
-                      'weibull'),
-    'rp': str_sample('chisquare pareto standard_t zipf'),
+    'rop': str_sample('exponential poisson power rayleigh _gamma weibull'),
+    'rp': str_sample('chisquare pareto standard_t'),
+    # 'rp': str_sample('chisquare pareto standard_t zipf'),
     'p': str_sample('geometric logseries'),
     'none': str_sample('random _cauchy _exponential _normal'),
     # sui generis:
@@ -133,6 +139,7 @@ def sliceish(draw: st.DataObject,
     """
     start, stop, step = draw(stgy), draw(stgy), draw(stgy)
     hy.assume(step != 0)
+    hy.assume(abs(stop - start) / step < 100)
     if non_empty:
         if (stop - start) * step < 0:
             start, stop = stop, start
@@ -212,6 +219,10 @@ class TestWrappers(TestCaseNumpy):
             Array we are testing
         np_array : ndarray
             Template array
+        val : bool, optional
+            Should we check array vallues>, by default True
+        msg : str, optional
+            Text for error message, by default None
 
         Raises
         ------
@@ -283,8 +294,6 @@ class TestCreation(TestWrappers):
             kwds['sep'] = ' '
         elif func == "frombuffer":
             args.append(array.tobytes())
-        elif func == "fromfunction":
-            args.extend([lambda *args: sum(args), array.shape])
         else:
             args.append(array.tolist())
         try:
@@ -294,6 +303,13 @@ class TestCreation(TestWrappers):
                 nl_func(*args, **kwds)
         else:
             self.assertArraysMatch(nl_func(*args, **kwds), np_array, msg=func)
+
+    @errstate
+    @hy.given(some_shape, some_dtype)
+    def test_fromfunc(self, shape, dtype):
+        np_array = np.fromfunction(lambda *args: sum(args), shape, dtype=dtype)
+        nl_array = nl.fromfunction(lambda *args: sum(args), shape, dtype=dtype)
+        self.assertArraysMatch(nl_array, np_array)
 
     @errstate
     @hy.given(hyn.vectors)
@@ -317,7 +333,7 @@ class TestCreation(TestWrappers):
             self.assertArraysMatch(nl_array, array.ravel())
 
     @hy.given(hyn.matrices_c)
-    def test_fromfile_a(self, array: np.ndarray):
+    def test_fromfile_t(self, array: np.ndarray):
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.txt')
             array.tofile(fname, " ")
@@ -336,7 +352,7 @@ class TestCreation(TestWrappers):
             self.assertArraysMatch(nl_array, array.squeeze())
 
     @hy.given(hyn.matrices_c)
-    def test_frromload(self, array: np.ndarray):
+    def test_fromload(self, array: np.ndarray):
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.npy')
             np.save(fname, array)
@@ -353,8 +369,6 @@ class TestCreation(TestWrappers):
     @hy.given(st.data(), array_inds())
     def test_indexing(self, data, args):
         shape, mult_ind, ravl_ind, nkm = args
-        # mult_ind = data.draw(hn.integer_array_indices(shape))
-        # ravl_ind = np.ravel_multi_index(mult_ind, shape)
         hy.note(f"{shape=}, {mult_ind=}, {ravl_ind=}")
         self.assertArraysMatch(nl.ravel_multi_index(mult_ind, shape,
                                                     mode='wrap'), ravl_ind)
@@ -373,7 +387,7 @@ class TestCreation(TestWrappers):
             self.assertArraysAllMatch(nl.mask_indices(n, np.triu, k),
                                       np.mask_indices(n, np.triu, k))
 
-    @unittest.skip("Freezes")
+    @errstate
     @hy.given(numerical_ranges, sliceish(), params['iop'], params['rp'])
     def test_num_ranges(self, func: str, slicey: slice, num, base):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
@@ -386,21 +400,20 @@ class TestCreation(TestWrappers):
             args.append(num)
         self.assertArraysMatch(nl_func(*args), np_func(*args))
 
-    @unittest.skip("Freezes")
-    @hy.given(st.lists(sliceish(non_empty=True)))
+    @hy.given(st.lists(sliceish(non_empty=True), min_size=1, max_size=4))
     def test_nd_grids(self, slice_list):
         args = tuple(slice_list)
         meshed = nl.mgrid[args]
         opened = nl.ogrid[args]
         self.assertArraysMatch(meshed, np.mgrid[args])
         self.assertArraysAllMatch(opened, np.ogrid[args])
+        opened = swap_ab(opened)
         meshed = tuple(meshed)
-        self.assertArraysAllMatch(nl.meshgrid(*opened[::-1]), meshed[::-1])
+        self.assertArraysAllMatch(nl.meshgrid(*opened), swap_ab(meshed))
         self.assertArraysMatch(nl.c_[meshed], np.c_[meshed])
         self.assertArraysMatch(nl.r_[meshed], np.r_[meshed])
         self.assertArraysMatch(nl.r_[args], np.r_[args])
 
-    @unittest.skip("Freezes")
     @hy.given(params['ip'], params['rp'])
     def test_fft_freq(self, length, spacing):
         with self.assertRaises(ValueError):
@@ -413,7 +426,7 @@ class TestCreation(TestWrappers):
 
 # @unittest.skip("Freezes")
 class TestRandom(TestWrappers):
-    """Testing randon number generTION"""
+    """Testing randon number generation"""
     np_rng: np.random.Generator
     nl_rng: nl.random.LnGenerator
 
@@ -424,7 +437,7 @@ class TestRandom(TestWrappers):
 
     def assertRandomMatch(self, func: str, args: Sequence[float],
                           scalar: bool = True):
-        """Assert that outputs of random.Generator have correct type shape
+        """Assert outputs of random.Generator have correct type, shape, etc.
 
         Parameters
         ----------
@@ -499,10 +512,18 @@ class TestRandom(TestWrappers):
         args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @unittest.skip("Freezes")
     @hy.given(func_param_set('rp'), some_shape)
     def test_random_rp(self, func_args, shape):
         func, args = func_args
+        hy.note(f"{func=}, {args=}, {shape=}.")
+        args.append(shape)
+        self.assertRandomMatch(func, args)
+
+    @unittest.skip("Freezes")
+    @hy.given(params['rp'], some_shape)
+    def test_random_zipf(self, alpha, shape):
+        func = 'zipf'
+        args = [alpha + 1.5]
         hy.note(f"{func=}, {args=}, {shape=}.")
         args.append(shape)
         self.assertRandomMatch(func, args)

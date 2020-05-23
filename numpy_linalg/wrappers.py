@@ -228,7 +228,7 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            if not isinstance(output, tuple):
+            if self._check_single(output):
                 return self._converter(output)
             return tuple(self._converter(x) for x in output)
         return self.func_hook(np_func, wrapped)
@@ -252,7 +252,7 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            if not isinstance(output, tuple):
+            if self._check_single(output):
                 return self._converter_check(output)
             return tuple(self._converter_check(x) for x in output)
         return self.func_hook(np_func, wrapped)
@@ -337,7 +337,7 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            if not isinstance(output, tuple):
+            if self._check_single(output):
                 return self._converter_sub(output)
             return tuple(self._converter_sub(x) for x in output)
         return self.func_hook(np_func, wrapped)
@@ -361,7 +361,7 @@ class Wrappers:
         @_wraps(np_func)
         def wrapped(*args, **kwargs):
             output = np_func(*args, **kwargs)
-            if not isinstance(output, tuple):
+            if self._check_single(output):
                 return self._converter_subcheck(output)
             return tuple(self._converter_subcheck(x) for x in output)
         return self.func_hook(np_func, wrapped)
@@ -370,19 +370,30 @@ class Wrappers:
         return arr.view(self._arr_cls)
 
     def _converter_check(self, arr: _np.ndarray) -> _Arr:
-        if isinstance(arr, _np.ndarray):
+        if self._check_base(arr):
             return self._converter(arr)
         return arr
 
     def _converter_sub(self, arr: _np.ndarray) -> _Arr:
-        if isinstance(arr, self._arr_cls):
-            return arr
-        return self._converter(arr)
-
-    def _converter_subcheck(self, arr: _np.ndarray) -> _Arr:
-        if isinstance(arr, _np.ndarray) and not isinstance(arr, self._arr_cls):
+        if self._check_nosub(arr):
             return self._converter(arr)
         return arr
+
+    def _converter_subcheck(self, arr: _np.ndarray) -> _Arr:
+        if self._check_base(arr) and self._check_nosub(arr):
+            return self._converter(arr)
+        return arr
+
+    @staticmethod
+    def _check_single(output):
+        return not isinstance(output, (list, tuple))
+
+    @staticmethod
+    def _check_base(output):
+        return isinstance(output, _np.ndarray)
+
+    def _check_nosub(self, output):
+        return not isinstance(output, self._arr_cls)
 
 
 class DeprecatedWrappers(Wrappers):

@@ -157,6 +157,23 @@ class TestCaseNumpy(_ut.TestCase):
                 msg.replace("not all close", "are all close")
                 self.fail(msg)
 
+    @np.errstate(all="ignore")
+    def assertStructArrayClose(self, actual: np.ndarray, desired: np.ndarray,
+                               cond: float = 1., msg: Optional[str] = None):
+        """Calls numpy.allclose on fields of structured arrays.
+
+        It broadcasts, unlike numpy.testing.assert_allclose.
+        It adjusts the tolerances according to the `desired.dtype`'s eps.
+        The original tolerances are for `np.float64`.
+        """
+        # __unittest = True
+        if desired.dtype.names is None:
+            self.assertArrayAllClose(actual, desired, cond=cond, msg=msg)
+        else:
+            for name in desired.dtype.names:
+                self.assertArrayAllClose(actual[name], desired[name],
+                                         cond=cond, msg=f"{msg} field={name}")
+
     def assertArrayEqual(self, actual: np.ndarray, desired: np.ndarray,
                          msg=None):
         """Calls numpy.all(numpy.equal(...)) and processes the results like a

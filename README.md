@@ -496,7 +496,6 @@ Low rank matrices are not properly tested yet.
 * Allow `invarray`/`pinvarray` to save/use LU/QR/SVD factors/inverse.
 * Write other norms.
 * Wrap `memmap` & test.
-* Handle structured arrays & test `fromregex`.
 
 #
 

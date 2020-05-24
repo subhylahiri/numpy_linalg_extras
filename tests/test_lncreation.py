@@ -1,10 +1,11 @@
 """Test array creation routines
 """
 import os
+import re
 import sys
 import tempfile
 from numbers import Real
-from typing import Sequence, Tuple, Mapping, List
+from typing import List, Mapping, Sequence, Tuple, Union
 
 import hypothesis as hy
 import hypothesis.extra.numpy as hn
@@ -40,17 +41,52 @@ def str_sample(*str_list: str) -> st.SearchStrategy[str]:
     return st.sampled_from(" ".join(str_list).split(" "))
 
 
+def dtype_str(dtype: np.dtype) -> (List[str], re.Pattern):
+    """Format string and regex for structured dtype"""
+    format, regexp = [], []
+    for name in dtype.names:
+        sctype = dtype.fields[name][0]
+        fmt = f'{name}: '
+        rex = re.escape(f'{name}: ')
+        if np.issubsctype(sctype, np.integer):
+            fmt += '%d'
+            rex += '([-0-9]+)'
+        elif np.issubsctype(sctype, np.floating):
+            fmt += '%.11e'
+            rex += '([-0-9.e+]+|-?inf|nan)'
+        elif np.issubsctype(sctype, np.complexfloating):
+            fmt += '%r'
+            rex += '\\(?([-0-9.e+ ]*[+-]?[-0-9.e+ ]+j)\\)?'
+        else:
+            raise ValueError(f"unknown dtype: {sctype}")
+        fmt += ','
+        format.append(fmt)
+        rex += ','
+        regexp.append(rex)
+    return format, re.compile(" ".join(regexp))
+
+
 # Pre-defined strategies
 some_shape = hn.array_shapes(max_dims=4, max_side=20)
+simple_shape = hn.array_shapes(max_dims=2, max_side=10)
 some_dtype = st.one_of(
-        # hn.boolean_dtypes(),
-        hn.integer_dtypes(),
-        hn.unsigned_integer_dtypes(),
-        hn.floating_dtypes(),
-        hn.complex_number_dtypes(),
-        # hn.datetime64_dtypes(),
-        # hn.timedelta64_dtypes(),
-    )
+    # hn.boolean_dtypes(),
+    hn.integer_dtypes(),
+    hn.unsigned_integer_dtypes(),
+    hn.floating_dtypes(),
+    hn.complex_number_dtypes(),
+    # hn.datetime64_dtypes(),
+    # hn.timedelta64_dtypes(),
+)
+real_dtype = st.one_of(
+    # hn.boolean_dtypes(),
+    hn.integer_dtypes(),
+    hn.unsigned_integer_dtypes(),
+    hn.floating_dtypes(),
+    # hn.complex_number_dtypes(),
+    # hn.datetime64_dtypes(),
+    # hn.timedelta64_dtypes(),
+)
 some_array = hn.arrays(dtype=some_dtype, shape=some_shape)
 # -----------------------------------------------------------------------------
 # Creation routines
@@ -75,6 +111,8 @@ params = {
     'rp': hyn.real_numbers(min_value=1e-5),
     'p': hyn.real_numbers(min_value=1e-5, max_value=1),
     'mcov': hyn.broadcastable('(n),(n,n)', 'd', max_dims=0, max_side=20),
+    'z': hyn.real_numbers(min_value=1.1, max_value=100),
+    'none':  st.none(),
 }
 params['vrp'] = hn.arrays(float, params['ip'], elements=params['rp'])
 params['vp'] = hn.arrays(float, params['ip'], elements=params['p'])
@@ -82,18 +120,18 @@ params['viop'] = hn.arrays(int, params['ip'], elements=params['iop'])
 # -----------------------------------------------------------------------------
 # Method names, grouped by paraneter signature
 rnd_methods = {
+    # ('_' -> 'standard_'):
     'r_rop': str_sample('gumbel laplace logistic lognormal normal vonmises'),
     'rp_rp': str_sample('beta f wald'),
-    'rop': str_sample('exponential poisson power rayleigh _gamma weibull'),
-    # zipf needs care when choosing parameters
-    # 'rp': str_sample('chisquare pareto standard_t zipf'),
-    'rp': str_sample('chisquare pareto standard_t'),
+    'rop': str_sample('exponential poisson rayleigh _gamma weibull'),
+    'rp': str_sample('chisquare pareto _t'),
     'p': str_sample('geometric logseries'),
+    'z': str_sample('power zipf'),
     'none': str_sample('random _cauchy _exponential _normal'),
-    # sui generis:
+    # sui generis ('_' -> 'noncentral_'):
     'others': str_sample('integers binomial gamma hypergeometric',
                          'negative_binomial _chisquare _f triangular uniform'),
-    # each sample is a vector:
+    # each sample is a vector ('_' -> 'multivariate_'):
     'multi': str_sample('dirichlet multinomial _hypergeometric _normal'),
 }
 # signatures of the last two sets
@@ -147,6 +185,18 @@ def sliceish(draw: st.DataObject,
 
 
 @st.composite
+def struct_array(draw: st.DataObject,
+                 subdtype: st.SearchStrategy[np.dtype],
+                 shape: st.SearchStrategy[Tuple[int, ...]],
+                 **kwargs) -> st.SearchStrategy[np.ndarray]:
+    """Strategy for structured arrays (1-level only)"""
+    dtype = draw(hn.array_dtypes(subdtype, **kwargs))
+    if dtype.names is not None:
+        hy.assume(all(x.isascii() and '%' not in x for x in dtype.names))
+    return draw(hn.arrays(dtype, shape))
+
+
+@st.composite
 def array_inds(draw: st.DataObject,
                int_type: type = np.intp
                ) -> (Tuple[int, ...], np.ndarray, np.ndarray, Tuple[int, ...]):
@@ -165,35 +215,23 @@ def array_inds(draw: st.DataObject,
 @st.composite
 def func_params(draw: st.DataObject,
                 func_group: str,
-                func_prefix: str = '',
-                func_sigs: Mapping[str, Sequence[str]] = rnd_params,
+                func_prefix: str = 'standard',
                 func_sts: Mapping[str, st.SearchStrategy[str]] = rnd_methods,
+                func_sigs: Mapping[str, Sequence[str]] = rnd_params,
                 param_sts: Mapping[str, st.SearchStrategy[Real]] = params,
-                ) -> (str, List[Real]):
+                ) -> (str, List[Union[Real, Tuple[int, ...]]]):
     """Strategy for Generator method name and parameters"""
     func = draw(func_sts[func_group])
     if func.startswith('_'):
         func = func_prefix + func
-    args = [draw(param_sts[s]) for s in func_sigs[func]]
-    return func, args
-
-
-@st.composite
-def func_param_set(draw: st.DataObject,
-                   fun_group: str,
-                   fun_prefix: str = 'standard',
-                   fun_sts: Mapping[str, st.SearchStrategy[str]] = rnd_methods,
-                   param_sts: Mapping[str, st.SearchStrategy[Real]] = params,
-                   ) -> (str, List[Real]):
-    """Strategy for Generator method name and parameters"""
-    func = draw(fun_sts[fun_group])
-    if func.startswith('_'):
-        func = fun_prefix + func
-    if fun_group == 'none':
-        return func
-    args = [draw(param_sts[s]) for s in fun_group.split('_')]
-    if func in {"power", "zipf"}:
-        args[0] += 1
+    sig = func_sigs.get(func, func_group.split('_'))
+    args = [draw(param_sts[s]) for s in sig]
+    if func == 'zipf':
+        shape = draw(simple_shape)
+    else:
+        shape = draw(some_shape)
+    hy.note(f"{func=}, {args=}, {shape=}.")
+    args.append(shape)
     return func, args
 
 
@@ -234,7 +272,10 @@ class TestWrappers(TestCaseNumpy):
         self.assertArrayShape(nl_array, np_array.shape, msg=msg)
         self.assertArrayDtype(nl_array, np_array.dtype, msg=msg)
         if val:
-            self.assertArrayAllClose(nl_array, np_array, msg=msg)
+            if np_array.dtype.names is None:
+                self.assertArrayAllClose(nl_array, np_array, msg=msg)
+            else:
+                self.assertStructArrayClose(nl_array, np_array, msg=msg)
 
     def assertArraysAllMatch(self, nl_arrays: Sequence[nl.lnarray],
                              np_arrays: Sequence[np.ndarray],
@@ -350,6 +391,16 @@ class TestCreation(TestWrappers):
 
             nl_array = nl.genfromtxt(fname, dtype=array.dtype, delimiter=" ")
             self.assertArraysMatch(nl_array, array.squeeze())
+
+    @hy.given(struct_array(real_dtype, simple_shape, min_size=2))
+    def test_fromregex(self, array: np.ndarray):
+        # numpy.complex_ can't convert strings, needs extra step via np.complex
+        format, pattern = dtype_str(array.dtype)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'test.txt')
+            np.savetxt(fname, array.ravel(), delimiter=' ', fmt=format)
+            nl_arrray = nl.fromregex(fname, pattern, array.dtype)
+            self.assertArraysMatch(nl_arrray, array.ravel())
 
     @hy.given(hyn.matrices_c)
     def test_fromload(self, array: np.ndarray):
@@ -491,62 +542,46 @@ class TestRandom(TestWrappers):
         self.assertArrayShape(vec, shape)
         self.assertArrayDtype(vec, dtype)
 
-    @hy.given(func_param_set('r_rop'), some_shape)
-    def test_random_r_rop(self, func_args, shape):
+    @hy.given(func_params('r_rop'))
+    def test_random_r_rop(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(func_param_set('rp_rp'), some_shape)
-    def test_random_rp_rp(self, func_args, shape):
+    @hy.given(func_params('rp_rp'))
+    def test_random_rp_rp(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(func_param_set('rop'), some_shape)
-    def test_random_rop(self, func_args, shape):
+    @hy.given(func_params('rop'))
+    def test_random_rop(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(func_param_set('rp'), some_shape)
-    def test_random_rp(self, func_args, shape):
+    @hy.given(func_params('rp'))
+    def test_random_rp(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(st.floats(min_value=1.1, max_value=100, allow_nan=False,
-                        allow_infinity=False),
-              hn.array_shapes(max_dims=2, max_side=10))
-    def test_random_zipf(self, alpha, shape):
-        func = 'zipf'
-        args = [alpha]
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
-        self.assertRandomMatch(func, args)
-
-    @hy.given(func_param_set('p'), some_shape)
-    def test_random_p(self, func_args, shape):
+    @hy.given(func_params('z'))
+    def test_random_z(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(func_param_set('none'), some_shape)
-    def test_random_none(self, func, shape):
-        hy.note(f"{func=}, {shape=}.")
-        args = (shape,)
-        self.assertRandomMatch(func, args)
-
-    @hy.given(func_params('others', 'noncentral'), some_shape)
-    def test_random_others(self, func_args: Tuple[str, List[Real]],
-                           shape: Tuple[int, ...]):
+    @hy.given(func_params('p'))
+    def test_random_p(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
+        self.assertRandomMatch(func, args)
+
+    @hy.given(func_params('none'))
+    def test_random_none(self, func_args):
+        func, args = func_args
+        args = args[-1:]
+        self.assertRandomMatch(func, args)
+
+    @hy.given(func_params('others', 'noncentral'))
+    def test_random_others(self, func_args):
+        func, args = func_args
+        shape = args.pop(-1)
         if func == "integers":
             args.sort()
             hy.assume(args[0] < args[1])
@@ -558,12 +593,11 @@ class TestRandom(TestWrappers):
         args.append(shape)
         self.assertRandomMatch(func, args)
 
-    @hy.given(func_params('multi', 'multivariate'), some_shape)
+    @hy.given(func_params('multi', 'multivariate'))
     @hy.settings(deadline=None)
-    def test_random_multi(self, func_args: Tuple[str, List[Real]],
-                          shape: Tuple[int, ...]):
+    def test_random_multi(self, func_args):
         func, args = func_args
-        hy.note(f"{func=}, {args=}, {shape=}.")
+        shape = args.pop(-1)
         if func == "multinomial":
             v_p = args[1].sum()
             hy.assume(v_p < 1)

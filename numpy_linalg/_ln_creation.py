@@ -21,19 +21,16 @@ from . import wrappers as wr
 from ._lnarray import lnarray
 # =============================================================================
 __all__ = [
-    'empty', 'eye', 'identity', 'ones', 'zeros', 'full',
-    'empty_like', 'ones_like', 'zeros_like', 'full_like',
-    'array', 'asarray', 'asanyarray', 'ascontiguousarray',
-    'asfortranarray', 'asarray_chkfinite', 'copy', 'require',
-    'load', 'loadtxt', 'genfromtxt', 'fromfile', 'fromregex',
-    'frombuffer', 'fromstring', 'fromfunction', 'fromiter',
+    'empty', 'eye', 'identity', 'ones', 'zeros', 'full', 'array', 'asarray',
+    'asanyarray', 'ascontiguousarray', 'asfortranarray', 'asarray_chkfinite',
+    'asfarray', 'copy', 'require', 'load', 'loadtxt', 'genfromtxt', 'fromfile',
+    'fromregex', 'frombuffer', 'fromstring', 'fromfunction', 'fromiter',
     'arange', 'linspace', 'logspace', 'geomspace', 'meshgrid',
     'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
     'tril_indices', 'triu_indices', 'indices', 'mgrid', 'ogrid', 'r_', 'c_',
 ]
 wrap = wr.Wrappers(lnarray, "numpy_linalg",
                    {'ndarray': "lnarray", 'NpzFile': "LnNpzFile"})
-wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
 
 # =========================================================================
 # Classes
@@ -125,13 +122,6 @@ def load(*args, **kwargs) -> Union[lnarray, LnNpzFile]:
 # =========================================================================
 # Ones and zeros
 # =========================================================================
-
-# existing arrrays
-empty_like = wrapd.sub(np.empty_like)
-ones_like = wrapd.sub(np.ones_like)
-zeros_like = wrapd.sub(np.zeros_like)
-full_like = wrapd.sub(np.full_like)
-# new arrays
 empty = wrap.one(np.empty)
 eye = wrap.one(np.eye)
 identity = wrap.one(np.identity)
@@ -148,6 +138,7 @@ asanyarray = wrap.sub(np.asanyarray)
 ascontiguousarray = wrap.one(np.ascontiguousarray)
 asfortranarray = wrap.one(np.asfortranarray)
 asarray_chkfinite = wrap.one(np.asarray_chkfinite)
+asfarray = wrap.one(np.asfarray)
 copy = wrap.one(np.copy)
 require = wrap.sub(np.require)
 fromfunction = wrap.one(np.fromfunction)

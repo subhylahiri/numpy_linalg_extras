@@ -24,7 +24,8 @@ __all__ = [
     'repeat', 'delete', 'insert', 'append', 'resize', 'trim_zeros', 'unique',
     'flip', 'fliplr', 'flipud', 'roll', 'rot90', 'ix_', 'fill_diagonal',
     'diag_indices_from', 'tril_indices_from', 'triu_indices_from',
-    'asfarray', 'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander',
+    'diag', 'diagflat', 'tri', 'tril', 'triu', 'vander',
+    'empty_like', 'ones_like', 'zeros_like', 'full_like',
 ]
 wrap = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
 # =========================================================================
@@ -107,10 +108,16 @@ triu_indices_from = wrap.several(np.triu_indices_from)
 # =========================================================================
 # Building matrices
 # =========================================================================
-asfarray = wrap.one(np.asfarray)
 diag = wrap.one(np.diag)
 diagflat = wrap.one(np.diagflat)
 tri = wrap.one(np.tri)
 tril = wrap.one(np.tril)
 triu = wrap.one(np.triu)
 vander = wrap.one(np.vander)
+# =============================================s============================
+# Ones and zeros
+# =========================================================================
+empty_like = wrap.sub(np.empty_like)
+ones_like = wrap.sub(np.ones_like)
+zeros_like = wrap.sub(np.zeros_like)
+full_like = wrap.sub(np.full_like)

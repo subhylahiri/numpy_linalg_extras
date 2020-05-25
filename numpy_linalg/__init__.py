@@ -92,41 +92,41 @@ from . import random
 from . import fft
 from ._ln_creation import (
     mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
-    empty_like, ones_like, zeros_like, full_like, array, asarray, asanyarray,
-    ascontiguousarray, asfortranarray, asarray_chkfinite, copy, require,
-    load, loadtxt, genfromtxt, fromfile, fromregex, frombuffer, fromstring,
-    fromfunction, fromiter, arange, linspace, logspace, geomspace, meshgrid,
-    ravel_multi_index, unravel_index, mask_indices, diag_indices,
-    tril_indices, triu_indices, indices,)
+    array, asarray, asanyarray, ascontiguousarray, asfortranarray,
+    asarray_chkfinite, asfarray, copy, require, load, loadtxt, genfromtxt,
+    fromfile, fromregex, frombuffer, fromstring, fromfunction, fromiter,
+    arange, linspace, logspace, geomspace, meshgrid,
+    ravel_multi_index, unravel_index, mask_indices, diag_indices, tril_indices,
+    triu_indices, indices)
 from ._ln_manipulation import (
-    asfarray, diag, diagflat, tri, tril, triu, vander, ix_, fill_diagonal,
+    diag, diagflat, tri, tril, triu, vander, ix_, fill_diagonal,
     diag_indices_from, tril_indices_from, triu_indices_from,
     reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
     broadcast_to, broadcast_arrays, squeeze, concatenate, stack, column_stack,
     dstack, hstack, vstack, block, split, array_split, dsplit, hsplit, vsplit,
     tile, repeat, delete, insert, append, resize, trim_zeros, unique, flip,
-    fliplr, flipud, roll, rot90)
+    fliplr, flipud, roll, rot90, empty_like, ones_like, zeros_like, full_like)
 
 from . import version
 __version__ = version.max_version(
-    "0.2.0", gufuncs, wrappers, random, _lnarray, _linalg)
+    "0.2.0", gufuncs, wrappers, convert, _lnarray, _linalg)
 
-assert any((True, gufuncs, wrappers, convert, fft, random, norm))
+assert any((True, gufuncs, wrappers, convert, fft, random))
 assert any((True, lnarray, pinvarray, invarray))
 assert any((True, transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-            matmul, solve, rsolve, lstsq, rlstsq, matldiv, matrdiv))
+            matldiv, matrdiv, matmul, solve, rsolve, lstsq, rlstsq, norm))
 assert any((
     True, mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
-    empty_like, ones_like, zeros_like, full_like, array, asarray, asanyarray,
-    ascontiguousarray, asfortranarray, asarray_chkfinite, copy, require,
-    load, loadtxt, genfromtxt, fromfile, fromregex, frombuffer, fromstring,
-    fromfunction, fromiter, arange, linspace, logspace, geomspace, meshgrid,
-    ravel_multi_index, unravel_index, mask_indices, diag_indices,
-    tril_indices, triu_indices, indices,))
+    array, asarray, asanyarray, ascontiguousarray, asfortranarray, asfarray,
+    asarray_chkfinite, copy, require, load, loadtxt, genfromtxt, fromfile,
+    fromregex, frombuffer, fromstring, fromfunction, fromiter, indices,
+    arange, linspace, logspace, geomspace, meshgrid, ravel_multi_index,
+    unravel_index, mask_indices, diag_indices, tril_indices, triu_indices))
 assert any((
     True, broadcast_to, broadcast_arrays, expand_dims, squeeze, flattish,
     reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
-    asfarray, diag, diagflat, vander, tri, tril, triu, ix_,
+    diag, diagflat, vander, tri, tril, triu, ix_,
+    empty_like, ones_like, zeros_like, full_like,
     fill_diagonal, diag_indices_from, tril_indices_from, triu_indices_from,
     concatenate, stack, column_stack, dstack, hstack, vstack, block,
     split, array_split, dsplit, hsplit, vsplit, tile, repeat, delete, insert,

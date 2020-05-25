@@ -249,8 +249,8 @@ This module has versions of `NumPy`'s array creation routines that have been wra
 to return `lnarray`s [2](#footnotes). 
 These are those functions that return arrays from non-array inputs, namely:  
 `empty`, `eye`, `identity`, `ones`, `zeros`, `full`,
-`array`, `asarray`, `asanyarray`, `ascontiguousarray`,
-`asfortranarray`, `asarray_chkfinite`, `copy`, `require`, `load`, `loadtxt`, `genfromtxt`,
+`array`, `asarray`, `asanyarray`, `ascontiguousarray`, `asfarray`, `asfortranarray`, `asarray_chkfinite`, 
+`copy`, `require`, `load`, `loadtxt`, `genfromtxt`,
 `fromfile`, `fromregex`, `frombuffer`, `fromstring`, `fromfunction`, `fromiter`,
 `arange`, `linspace`, `logspace`, `geomspace`, `meshgrid`,
 `ravel_multi_index`, `unravel_index`, `diag_indices`, `mask_indices`,
@@ -503,7 +503,8 @@ Low rank matrices are not properly tested yet.
 1. This package previously used a custom `gufunc` for `matmul`, 
     but as of v1.16 `NumPy` does this so we use that instead.
 2. This package currently also has wrapped versions of `NumPy`'s array manipulation routines, 
-    but as of `NumPy` v1.17, the `__array_function__` protocol has removed their need. 
+    but as of `NumPy` v1.17, the `__array_function__` protocol has removed their need.
+    When called with an `lnarray` parameter, the numpy functions now return `lnarray`s.
     Technically, they can be thought of as array creation routines when called with 
     array-like parameters, but we will rely on the `numpy` versions in the future. 
     The implementations in this package now issue deprecation warnings.

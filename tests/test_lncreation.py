@@ -66,6 +66,16 @@ def dtype_str(dtype: np.dtype) -> (List[str], re.Pattern):
     return format, re.compile(" ".join(regexp))
 
 
+def make_cov(cholesky: np.ndarray) -> np.ndarray:
+    """Make a covariance matrix from its Cholesky decomposition"""
+    lower = np.tril(cholesky)
+    # in a future version, np.diagonal will return a writable view
+    diag = np.diagonal(lower).copy()
+    diag[np.abs(diag) < 1e-3] = 1
+    lower[np.diag_indices_from(lower)] = diag
+    return lower @ lower.T
+
+
 # Pre-defined strategies
 some_shape = hn.array_shapes(max_dims=4, max_side=20)
 simple_shape = hn.array_shapes(max_dims=2, max_side=10)
@@ -230,7 +240,6 @@ def func_params(draw: st.DataObject,
         shape = draw(simple_shape)
     else:
         shape = draw(some_shape)
-    hy.note(f"{func=}, {args=}, {shape=}.")
     args.append(shape)
     return func, args
 
@@ -319,7 +328,7 @@ class TestCreation(TestWrappers):
             args = [shape[0]]
         kwds = {'dtype': dtype}
         self.assertArraysMatch(nl_func(*args, **kwds), np_func(*args, **kwds),
-                               func != "empty", msg=func)
+                               func != "empty", f"{func}(*{args},**{kwds})")
 
     @errstate
     @hy.given(from_existing_data, hyn.vectors)
@@ -343,7 +352,8 @@ class TestCreation(TestWrappers):
             with self.assertRaises(ValueError):
                 nl_func(*args, **kwds)
         else:
-            self.assertArraysMatch(nl_func(*args, **kwds), np_array, msg=func)
+            self.assertArraysMatch(nl_func(*args, **kwds), np_array,
+                                   msg=f"{func}(*{args},**{kwds})")
 
     @errstate
     @hy.given(some_shape, some_dtype)
@@ -412,15 +422,13 @@ class TestCreation(TestWrappers):
 
             fname = os.path.join(tmpdir, 'test.npz')
             np.savez(fname, x=array, y=2 * array)
-            nl_file = nl.load(fname)
-            self.assertArraysMatch(nl_file['x'], array)
-            self.assertArraysMatch(nl_file['y'], 2 * array)
-            nl_file.close()
+            with nl.load(fname) as nl_file:
+                self.assertArraysMatch(nl_file['x'], array)
+                self.assertArraysMatch(nl_file['y'], 2 * array)
 
-    @hy.given(st.data(), array_inds())
-    def test_indexing(self, data, args):
+    @hy.given(array_inds())
+    def test_indexing(self, args):
         shape, mult_ind, ravl_ind, nkm = args
-        hy.note(f"{shape=}, {mult_ind=}, {ravl_ind=}")
         self.assertArraysMatch(nl.ravel_multi_index(mult_ind, shape,
                                                     mode='wrap'), ravl_ind)
         self.assertArraysAllMatch(nl.unravel_index(ravl_ind, shape),
@@ -430,7 +438,6 @@ class TestCreation(TestWrappers):
                                   np.diag_indices(shape[0], len(shape)))
         if shape:
             n, k, m = nkm
-            hy.note(f"{n=}, {k=}, {m=}")
             self.assertArraysAllMatch(nl.tril_indices(n, k, m),
                                       np.tril_indices(n, k, m))
             self.assertArraysAllMatch(nl.triu_indices(n, k, m),
@@ -440,7 +447,7 @@ class TestCreation(TestWrappers):
 
     @errstate
     @hy.given(numerical_ranges, sliceish(), params['iop'], params['rp'])
-    def test_num_ranges(self, func: str, slicey: slice, num, base):
+    def test_num_ranges(self, func: str, slicey: slice, num: int, base: float):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
         args = [slicey.start, slicey.stop]
         if func == "arange":
@@ -503,7 +510,7 @@ class TestRandom(TestWrappers):
         np_method = getattr(self.np_rng, func)
         nl_method = getattr(self.nl_rng, func)
         np_array, nl_array = np_method(*args), nl_method(*args)
-        msg = f"{func=}, {args=}, shape={np_array.shape}"
+        msg = f"func={func}, args={args[:-1]}, shape={args[-1]}"
         self.assertArraysMatch(nl_array, np_array, val=False, msg=msg)
         if scalar:
             self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
@@ -581,38 +588,29 @@ class TestRandom(TestWrappers):
     @hy.given(func_params('others', 'noncentral'))
     def test_random_others(self, func_args):
         func, args = func_args
-        shape = args.pop(-1)
         if func == "integers":
-            args.sort()
+            args = sorted(args[:-1]) + args[-1:]
             hy.assume(args[0] < args[1])
         elif func == "hypergeometric":
+            if args[0] + args[1] <= args[2]:
+                args = sorted(args[:-1], reverse=True) + args[-1:]
             hy.assume(args[0] + args[1] > args[2])
         elif func == "triangular":
-            args.sort()
+            args = sorted(args[:-1]) + args[-1:]
             hy.assume(args[0] < args[2])
-        args.append(shape)
         self.assertRandomMatch(func, args)
 
     @hy.given(func_params('multi', 'multivariate'))
     @hy.settings(deadline=None)
     def test_random_multi(self, func_args):
         func, args = func_args
-        shape = args.pop(-1)
         if func == "multinomial":
-            v_p = args[1].sum()
-            hy.assume(v_p < 1)
-            args[1] = np.r_[args[1], 1 - v_p]
+            args[1] /= args[1].sum()
         elif func == "multivariate_hypergeometric":
             hy.assume(args[0].sum() >= args[1])
         elif func == "multivariate_normal":
-            args = list(args[0])
-            lower = np.tril(args[1])
-            # in a future version, np.diagonal will return a writable view
-            diag = np.diagonal(lower).copy()
-            diag[np.abs(diag) < 1e-3] += 1
-            lower[np.diag_indices_from(lower)] = diag
-            args[1] = lower @ lower.T
-        args.append(shape)
+            args = list(args[0]) + args[1:]
+            args[1] = make_cov(args[1])
         self.assertRandomMatch(func, args, scalar=False)
 
 

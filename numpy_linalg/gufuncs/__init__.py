@@ -82,13 +82,6 @@ array_return_shape
 fam
     Module with variables for determining the behaviour of
     `pinvarrays` and `invarrays` in linear algebraic functions:
-MatmulOperatorsMixin
-    Mixin class that uses `matmul` from here to define @ operators. Deprecated.
-LNArrayOperatorsMixin
-    Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
-    from here to define @ operators. Deprecated.
-vec
-    Module of functions for dealing with vector arguments. Deprecated.
 """
 from . import _gufuncs_cloop
 from . import _gufuncs_blas
@@ -108,17 +101,14 @@ from ._gufuncs_qr_lstsq import (
 from . import _families as fam
 from ._util import make_errobj, unbroadcast_factors
 from ._util import return_shape, array_return_shape
-from ._util import MatmulOperatorsMixin, LNArrayOperatorsMixin
-from . import _vectors as vec
 
 from ..version import max_version as _version
 __version__ = _version("0.2.0", _gufuncs_blas, _gufuncs_cloop,
-                       _gufuncs_lu_solve, _gufuncs_qr_lstsq, vec, fam)
+                       _gufuncs_lu_solve, _gufuncs_qr_lstsq, fam)
 
 # fool pyflakes
 assert any((True, norm, rtrue_divide, matmul, rmatmul))
 assert any((True, make_errobj, unbroadcast_factors))
-assert any((True, MatmulOperatorsMixin, LNArrayOperatorsMixin))
 assert any((True, return_shape, array_return_shape))
 assert any((True, solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve,
             lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv))

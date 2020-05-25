@@ -166,7 +166,7 @@ class TestPinvarray(TestCaseNumpy):
         self.assertIsInstance(m_bs_p.pinv, la.lnarray)
         self.assertIsInstance(2 * m_bs_p, la.pinvarray)
         self.assertIsInstance((2 * m_bs_p).pinv, la.lnarray)
-        pout = la.pinvarray(la.empty_like(m_bs))
+        pout = la.pinvarray(np.empty_like(m_bs))
         np.multiply(2, m_bs_p, pout)
         self.assertIsInstance(pout, la.pinvarray)
         self.assertIsInstance(pout.pinv, la.lnarray)
@@ -209,7 +209,7 @@ class TestPinvarray(TestCaseNumpy):
                                  gf.lstsq(m_bs, high), cond=cond)
         self.assertArrayAllClose(gf.matmul(m_sb, m_bs.pinv.t),
                                  gf.rlstsq(m_sb, m_bs.t), cond=cond)
-        xpout = la.pinvarray(la.empty_like(m_bs))
+        xpout = la.pinvarray(np.empty_like(m_bs))
         m_bs_p = np.multiply(m_bs.pinv, 2, out=xpout)
         self.assertArrayAllClose(m_bs_p.pinv, xpout.pinv)
         self.assertArrayAllClose(m_bs_p.pinv, m_bs / 2)

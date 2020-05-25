@@ -153,8 +153,8 @@ class lnarray(np.ndarray):
         are converted to `lnarrays`.
 
         See </reference/arrays.classes.html#numpy.class.__array_function__> at
-        <https://numpy.org/doc/stable/>
-        for a description of the protocol and parameters.
+        <https://numpy.org/doc/stable/> for a description of the protocol and
+        parameters.
         """
         if not all(issubclass(t, lnarray) for t in types):
             return NotImplemented

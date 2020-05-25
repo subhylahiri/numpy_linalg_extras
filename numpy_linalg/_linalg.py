@@ -118,8 +118,8 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
         Numbers are with respect to the final shape.
         .. deprecated:: 0.3.0
             Passing multiple axis arguments rather than a tuple of them is
-            deprecated to match the behaviour in NumPy 1.18. This function
-            will be replaced by a wrapped version of  `numpy.expand_dims`.
+            deprecated to match the behaviour in NumPy 1.18. This will raise
+            an error in version 0.4.0.
 
     Returns
     -------
@@ -134,8 +134,8 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
         return arr
     if len(axis) == 1:
         return np.expand_dims(arr, axis[0]).view(type(arr))
-    warn("Pass a tuple of ints to expand_dims rather than multiple arguments.",
-         DeprecationWarning)
+    warn("Pass a tuple of ints to expand_dims rather than multiple arguments."
+         + " This will aise an error in version 0.4.0.", DeprecationWarning)
     new_dim = arr.ndim + len(axis)
     if any(axs >= new_dim or arr < -new_dim for axs in axis):
         raise ValueError(f'Axes out of range for {new_dim}-array: {axis}')

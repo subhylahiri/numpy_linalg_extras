@@ -22,17 +22,9 @@ return_shape
     Shape of result of broadcasted matrix multiplication, from shapes.
 array_return_shape
     Shape of result of broadcasted matrix multiplication, from arrays.
-MatmulOperatorsMixin
-    Mixin class that uses `matmul` from here to define @ operators. Deprecated.
-LNArrayOperatorsMixin
-    Subclass of `numpy.lib.mixins.NDArrayOperatorsMixin` that uses `matmul`
-    from here to define @ operators. Deprecated.
 """
 from typing import Tuple, Optional, Dict, Any
 import numpy as np
-import numpy.lib.mixins as mix
-from numpy.lib.mixins import _numeric_methods
-from ._families import matmul
 
 # =============================================================================
 # Error handling
@@ -109,36 +101,6 @@ def unbroadcast_factors(original, *factors):
     shrink = [orig == 1 for orig in original]
     slc = tuple(np.where(shrink, slice(1), slice(None)))
     return tuple(fac[slc].squeeze(squeeze) for fac in factors)
-
-
-# =============================================================================
-# Mixin for linear algebra operators
-# =============================================================================
-
-
-class MatmulOperatorsMixin():
-    """Mixin for defining __matmul__ special methods via gufuncs
-
-    .. deprecated:: 0.2.0
-          `MatmulOperatorsMixin` will be removed in numpy_linalg 0.3.0, it is
-          replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
-          latter now uses the `matmul` gufunc rendering this mixin obsolete.
-    """
-    __matmul__, __rmatmul__, __imatmul__ = _numeric_methods(matmul, 'matmul')
-
-
-class LNArrayOperatorsMixin(mix.NDArrayOperatorsMixin):
-    """Mixin for defining operator special methods via __array_ufunc__
-
-    .. deprecated:: 0.2.0
-          `LNArrayOperatorsMixin` will be removed in numpy_linalg 0.3.0, it
-          is replaced by `numpy.lib.mixins.NDArrayOperatorsMixin` because the
-          latter now uses the `matmul` gufunc rendering this mixin obsolete.
-
-    See also
-    --------
-    `numpy.lib.mixins.NDArrayOperatorsMixin` : base class.
-    """
 
 
 # =============================================================================

@@ -137,8 +137,8 @@ def conv_in_out(converter: Preparer[MyArray, BaseArray],
     """
     outputs = kwds.pop('out', None)
     if outputs:
-        if not isinstance(output, tuple):
-            output = (output,)
+        if not isinstance(outputs, tuple):
+            outputs = (outputs,)
         out_args, conv_out = conv_input(converter, obj_typ, outputs)
         kwds['out'] = tuple(out_args)
     else:

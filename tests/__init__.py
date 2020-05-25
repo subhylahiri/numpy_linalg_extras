@@ -4,10 +4,10 @@
 import os
 from numpy_linalg.testing import load_tests_helper
 from . import (test_gufunc, test_gulusolve, test_guqrlqpinv, test_guqrlstsq,
-               test_linalg, test_lnarray, test_creation)
+               test_linalg, test_lnarray, test_lncreation)
 
 assert any((True, test_gufunc, test_gulusolve, test_guqrlqpinv, test_guqrlstsq,
-            test_linalg, test_lnarray, test_creation))
+            test_linalg, test_lnarray, test_lncreation))
 
 
 def load_tests(loader, standard_tests, pattern):

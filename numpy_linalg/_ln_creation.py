@@ -100,6 +100,13 @@ class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
     """
     _obj: npio.NpzFile
 
+    def __enter__(self):
+        self._obj = self._obj.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self._obj.__exit__(exc_type, exc_val, exc_tb)
+
 
 wr_load = wrap.check(np.load)
 

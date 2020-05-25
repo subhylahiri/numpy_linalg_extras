@@ -547,7 +547,10 @@ class WrappedClass:
         self._wrappers.func_hook(obj, self)
 
     def __getattr__(self, attr: str) -> _MyFn[_Arr]:
-        return self._wrap(getattr(self._obj, attr))
+        obj_attr = getattr(self._obj, attr)
+        if callable(obj_attr):
+            return self._wrap(obj_attr)
+        return obj_attr
 
     def __dir__(self):
         return dir(self._obj)

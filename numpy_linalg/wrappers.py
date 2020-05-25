@@ -59,7 +59,7 @@ from ._lnarray import lnarray
 
 wrap = wr.Wrappers(lnarray, "numpy_linalg")
 
-@wr.set_module("numpy_linalg")
+@wrap.decorate(np.lib.index_tricks.nd_grid)
 class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
     \"\"\"
     See Also
@@ -120,11 +120,16 @@ class Wrappers:
     """
     _arr_cls: _ty.Type[_Arr]
     _mod_name: _ty.Optional[str]
+    _doc_replace: _ty.Dict[str, str]
 
     def __init__(self, array_type: _ty.Type[_Arr] = _np.ndarray,
-                 module: _ty.Optional[str] = None):
+                 module: _ty.Optional[str] = None,
+                 doc_replace: _ty.Optional[_ty.Dict[str, str]] = None):
         self._arr_cls = array_type
         self._mod_name = module
+        self._doc_replace = doc_replace
+        if self._doc_replace is None:
+            self._doc_replace = {'ndarray': self._arr_cls.__name__}
 
     def func_hook(self, np_func: _NpFn, wrapped: _MyFn[_Arr]) -> _MyFn[_Arr]:
         """This method is called on the wrapped function before returning
@@ -143,10 +148,27 @@ class Wrappers:
         """
         doc = getattr(np_func, '__doc__', None)
         if doc is not None:
-            wrapped.__doc__ = doc.replace('ndarray', self._arr_cls.__name__)
+            for key, val in self._doc_replace.items():
+                doc = doc.replace(key, val)
+            wrapped.__doc__ = doc
+        annotations = getattr(np_func, '__annotations__', None)
+        if annotations is not None:
+            wrapped.__annotations__ = annotations
         if self._mod_name is not None:
             wrapped.__module__ = self._mod_name
         return wrapped
+
+    def decorate(self, np_func: _NpFn):
+        """Create a decorator to set the __module__ attribute
+
+        Parameters
+        ----------
+        np_func : Callable[...->ndarray]
+            The `numpy` function being wrapped.
+        """
+        def decorator(thing):
+            return self.func_hook(np_func, thing)
+        return decorator
 
     def one(self, np_func: _NpFn) -> _MyFn[_Arr]:
         """Create version of numpy function with single lnarray output.

@@ -12,7 +12,6 @@ This module doesn't include any record arrays or char/string stuff.
 
 To use some other array class, change the arguments of `Wrappers`.
 """
-from functools import wraps
 from typing import Union
 
 import numpy as np
@@ -32,7 +31,8 @@ __all__ = [
     'ravel_multi_index', 'unravel_index', 'diag_indices', 'mask_indices',
     'tril_indices', 'triu_indices', 'indices', 'mgrid', 'ogrid', 'r_', 'c_',
 ]
-wrap = wr.Wrappers(lnarray, "numpy_linalg")
+wrap = wr.Wrappers(lnarray, "numpy_linalg",
+                   {'ndarray': "lnarray", 'NpzFile': "LnNpzFile"})
 wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
 
 # =========================================================================
@@ -40,10 +40,15 @@ wrapd = wr.DeprecatedWrappers(lnarray, "numpy_linalg")
 # =========================================================================
 
 
-@wr.set_module("numpy_linalg")
+@wrap.decorate(np.lib.index_tricks.nd_grid)
 class LnNdGrid(wr.WrappedSubscriptable, wrappers=wrap, method="several"):
     """Wrapped version of numpy.lib.index_tricks.nd_grid adapted to produce
     `lnarray`s instead of `numpy.ndarray`s.
+
+    Parameters
+    ----------
+    obj : numpy.lib.index_tricks.nd_grid
+        The intance being wrapped.
 
     See Also
     --------
@@ -57,27 +62,36 @@ mgrid = LnNdGrid(np.mgrid)
 ogrid = LnNdGrid(np.ogrid)
 
 
-@wr.set_module("numpy_linalg")
 class LnAxisConcatenator(wr.WrappedSubscriptable, wrappers=wrap, method="sub"):
     """Wrapped version of numpy.lib.index_tricks.AxisConcatenator adapted to
     produce `lnarray`s instead of `numpy.ndarray`s.
+
+    Parameters
+    ----------
+    obj : numpy.lib.index_tricks.AxisConcatenator
+        The intance being wrapped.
 
     See Also
     --------
     numpy.r_
     numpy.c_
     """
-    obj: np.lib.index_tricks.AxisConcatenator
+    _obj: np.lib.index_tricks.AxisConcatenator
 
 
 r_ = LnAxisConcatenator(np.r_)
 c_ = LnAxisConcatenator(np.c_)
 
 
-@wr.set_module("numpy_linalg")
+@wrap.decorate(npio.NpzFile)
 class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
     """Wrapped version of numpy.lib.npyio.NpzFile adapted to produce
     `lnarray`s instead of `numpy.ndarray`s.
+
+    Parameters
+    ----------
+    obj : numpy.lib.npyio.NpzFile
+        The intance being wrapped.
 
     See Also
     --------
@@ -87,8 +101,10 @@ class LnNpzFile(wr.WrappedSubscriptable, wrappers=wrap, method="check"):
     _obj: npio.NpzFile
 
 
-@wr.set_module("numpy_linalg")
-@wraps(np.load)
+wr_load = wrap.check(np.load)
+
+
+@wrap.decorate(np.load)
 def load(*args, **kwargs) -> Union[lnarray, LnNpzFile]:
     """Wrapped version of numpy.load adapted to produce `lnarray`s instead of
     `numpy.ndarray`s.
@@ -132,13 +148,12 @@ fromiter = wrap.one(np.fromiter)
 frombuffer = wrap.one(np.frombuffer)
 fromstring = wrap.one(np.fromstring)
 # -----------------------------------------------------------------------------
-# input/outpu
+# input/output
 # -----------------------------------------------------------------------------
 fromregex = wrap.one(np.fromregex)
 fromfile = wrap.one(np.fromfile)
 loadtxt = wrap.one(np.loadtxt)
 genfromtxt = wrap.one(np.genfromtxt)
-wr_load = wrap.check(np.load)
 
 # =========================================================================
 # Numerical ranges

@@ -246,7 +246,8 @@ The following are not defined:
 ## Array creation
 
 This module has versions of `NumPy`'s array creation routines that have been wrapped
-to return `lnarray`s [2](#footnotes), namely:  
+to return `lnarray`s [2](#footnotes). 
+These are those functions that return arrays from non-array inputs, namely:  
 `empty`, `eye`, `identity`, `ones`, `zeros`, `full`,
 `array`, `asarray`, `asanyarray`, `ascontiguousarray`,
 `asfortranarray`, `asarray_chkfinite`, `copy`, `require`, `load`, `loadtxt`, `genfromtxt`,
@@ -254,24 +255,22 @@ to return `lnarray`s [2](#footnotes), namely:
 `arange`, `linspace`, `logspace`, `geomspace`, `meshgrid`,
 `ravel_multi_index`, `unravel_index`, `diag_indices`, `mask_indices`,
 `tril_indices`, `triu_indices`, `indices`, `mgrid`, `ogrid`, `r_`, `c_`.
+All except for `memmap`, which can still be view-cast to an `lnarray`.
 
 The instances `mgrid`, `ogrid`, `r_`, `c_` return `lnarray`s when subscripted.
 When `r_` and `c_` are used to concatenate, they will convert `ndarray`s to `lnarray`s.
-We haven't tried to make a version of `memmap` yet.
 
 In addition we have the following in submodules:
 * `fft.fftfreq`, `fft.rfftfreq`:
     These are wrapped versions of the `numpy` functions.
 * `random.default_rng`:
-    This returns a version of `numpy.random.Generator` 
-    whose methods return `lnarray`s instead of `ndarrays`.
+    This returns a version of `numpy.random.Generator` whose methods return `lnarray`s 
+    instead of `ndarrays`.
 
 The `random` module also has wrapped versions of the legacy functions in `numpy.random`, 
 but not the `RandomState` class.
 
 All of these functions and objects will probably confuse your IDE's autocomplete, etc.
-
-Some of these routines have not been properly tested yet ([See to-dos](#to-dos)).
 
 ## GUfuncs
 
@@ -503,9 +502,11 @@ Low rank matrices are not properly tested yet.
 
 1. This package previously used a custom `gufunc` for `matmul`, 
     but as of v1.16 `NumPy` does this so we use that instead.
-2. This package currently also has wrapped versions of `NumPy`'s array manipulation
-    routines, but as of `NumPy` v1.17, the `__array_function__` protocol has removed
-    their need. They now issue deprecation warnings.
+2. This package currently also has wrapped versions of `NumPy`'s array manipulation routines, 
+    but as of `NumPy` v1.17, the `__array_function__` protocol has removed their need. 
+    Technically, they can be thought of as array creation routines when called with 
+    array-like parameters, but we will rely on the `numpy` versions in the future. 
+    The implementations in this package now issue deprecation warnings.
 
 [dont-invert-matrix]: <https://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/> "Blog post about matrix inversion."
 

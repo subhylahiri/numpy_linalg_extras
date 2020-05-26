@@ -66,11 +66,11 @@ class TestShape(TestCaseNumpy):
         self.assertArrayShape(gf.rmatmul(v_b, m_sb), wide[:-1])
         self.assertArrayShape(gf.rmatmul(v_b, v_b), ())
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a)', 'd'))
     def test_functions_solve(self, arrays):
-        m_ss, m_sb, m_bs = arrays[:-2]
-        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
-        smol, wide, tall = [arr.shape for arr in arrays[:-2]]
+        m_ss, m_sb, m_bs = arrays[:-1]
+        v_s = hn.core_only(arrays[-1], dims=1)
+        smol, wide, tall = [arr.shape for arr in arrays[:-1]]
         hy.assume(hn.all_well_behaved(m_ss))
 
         # with self.subTest('solve'):

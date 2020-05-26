@@ -346,7 +346,9 @@ qr_modes = {'reduced': (gf.qr_m, gf.qr_n),
 
 
 @set_module('numpy_linalg')
-def qr(arr: np.ndarray, mode: str = 'reduced', *args,
+def qr(arr: np.ndarray, mode: str = 'reduced',
+       out1: ty.Optional[np.ndarray] = None,
+       out2: ty.Optional[np.ndarray] = None,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """QR decomposition.
 
@@ -382,8 +384,9 @@ def qr(arr: np.ndarray, mode: str = 'reduced', *args,
         raise ValueError('Modes known to qr: reduced, complete, r, raw.\n'
                          + 'Unknown mode: ' + mode)
     ufunc = qr_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
+    out = kwds.pop('out', (out1, out2)[:ufunc.nout])
     gf.make_errobj("QR failed: rank deficient?", kwds)
-    return ufunc(arr, *args, **kwds)
+    return ufunc(arr, out=out, **kwds)
 
 
 lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
@@ -393,7 +396,9 @@ lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
 
 
 @set_module('numpy_linalg')
-def lq(arr: np.ndarray, mode: str = 'reduced', *args,
+def lq(arr: np.ndarray, mode: str = 'reduced',
+       out1: ty.Optional[np.ndarray] = None,
+       out2: ty.Optional[np.ndarray] = None,
        **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ decomposition.
 
@@ -429,12 +434,15 @@ def lq(arr: np.ndarray, mode: str = 'reduced', *args,
         raise ValueError('Modes known to lq: reduced, complete, l, raw.\n'
                          + 'Unknown mode: ' + mode)
     ufunc = lq_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
+    out = kwds.pop('out', (out1, out2)[:ufunc.nout])
     gf.make_errobj("LQ failed: rank deficient?", kwds)
-    return ufunc(arr, *args, **kwds)
+    return ufunc(arr, out=out, **kwds)
 
 
 @set_module('numpy_linalg')
-def lqr(arr: np.ndarray, mode: str = 'reduced', *args,
+def lqr(arr: np.ndarray, mode: str = 'reduced',
+        out1: ty.Optional[np.ndarray] = None,
+        out2: ty.Optional[np.ndarray] = None,
         **kwds) -> ty.Tuple[np.ndarray, ...]:
     """LQ/QR decomposition.
 
@@ -472,9 +480,9 @@ def lqr(arr: np.ndarray, mode: str = 'reduced', *args,
     """
     if arr.shape[-2] < arr.shape[-1]:
         mode = 'l' if mode.lower() == 'r' else mode
-        return lq(arr, mode, *args, **kwds)
+        return lq(arr, mode, out1, out2, **kwds)
     mode = 'r' if mode.lower() == 'l' else mode
-    return qr(arr, mode, *args, **kwds)
+    return qr(arr, mode, out1, out2, **kwds)
 
 
 lu_modes = {'separate': (gf.lu_m, gf.lu_n),
@@ -482,8 +490,11 @@ lu_modes = {'separate': (gf.lu_m, gf.lu_n),
 
 
 @set_module('numpy_linalg')
-def lu(arr: np.ndarray, mode: str = 'separate', *args,
-       **kwds) -> ty.Tuple[np.ndarray, ...]:
+def lu(arr: np.ndarray, mode: str = 'separate',
+       out1: ty.Optional[np.ndarray] = None,
+       out2: ty.Optional[np.ndarray] = None,
+       out3: ty.Optional[np.ndarray] = None,
+       **kwds) -> ty.Tuple[np.ndarray, np.ndarray]:
     """LU decomposition.
 
     Factor a matrix as `A = PLU` with `P` a permutation matrix,
@@ -516,5 +527,6 @@ def lu(arr: np.ndarray, mode: str = 'separate', *args,
         raise ValueError('Modes known to lu: separate, raw.\n'
                          + 'Unknown mode: ' + mode)
     ufunc = lu_modes[mode][arr.shape[-2] > arr.shape[-1]]
+    out = kwds.pop('out', (out1, out2, out3)[:ufunc.nout])
     gf.make_errobj("LU failed: rank deficient?", kwds)
-    return ufunc(arr, *args, **kwds)
+    return ufunc(arr, out=out, **kwds)

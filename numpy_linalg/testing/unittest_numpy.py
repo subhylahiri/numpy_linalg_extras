@@ -36,7 +36,7 @@ invalid_err
 """
 import contextlib as _cx
 import unittest as _ut
-from typing import Optional, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 import numpy as np
 
@@ -107,17 +107,17 @@ class TestCaseNumpy(_ut.TestCase):
         self.addTypeEqualityFunc(np.ndarray, self.assertArrayAllClose)
 
     @_cx.contextmanager
-    def _adjusted_tols(self, array: np.ndarray, cond: float = 1.):
+    def _adjusted_tols(self, arr: np.ndarray, cond: float = 1.):
         """Adjusting all_close tolerances for dtype"""
         try:
             cond = cond if np.isfinite(cond) else 1.
             old_opts = self.all_close_opts.copy()
-            if np.issubdtype(array.dtype, np.inexact):
-                epsratio = np.finfo(array.dtype).eps / np.finfo(np.float64).eps
+            if np.issubdtype(arr.dtype, np.inexact):
+                epsratio = np.finfo(arr.dtype).eps / np.finfo(np.float64).eps
                 # single/double epsratio ~ 5.6e8
                 self.all_close_opts['rtol'] *= epsratio * cond
                 self.all_close_opts['atol'] *= epsratio * cond
-            elif np.issubdtype(array.dtype, np.integer):
+            elif np.issubdtype(arr.dtype, np.integer):
                 self.all_close_opts['rtol'] = 0
                 self.all_close_opts['atol'] = 0.5
             yield
@@ -228,12 +228,12 @@ class TestCaseNumpy(_ut.TestCase):
         if np.any(actual > desired):
             self.fail(msg)
 
-    def assertArrayShape(self, array: np.ndarray, shape: Tuple[int, ...],
+    def assertArrayShape(self, arr: np.ndarray, shape: Tuple[int, ...],
                          msg: Optional[str] = None):
         """Calls self.assertEqual(array.shape, shape).
         """
         # __unittest = True
-        self.assertEqual(array.shape, shape, msg)
+        self.assertEqual(arr.shape, shape, msg)
 
     def assertArrayShapesAre(self, arrays: Tuple[np.ndarray, ...],
                              shapes: Tuple[Tuple[int, ...], ...],
@@ -241,13 +241,14 @@ class TestCaseNumpy(_ut.TestCase):
         """Calls self.assertEqual(array.shape, shape).
         """
         # __unittest = True
-        for array, shape in zip(arrays, shapes):
-            self.assertEqual(array.shape, shape, msg)
+        for arr, shape in zip(arrays, shapes):
+            self.assertEqual(arr.shape, shape, msg)
 
     def assertArrayDtype(self,
                          array_dtype: Union[np.ndarray, np.dtype, type, str],
                          dtype: Union[np.dtype, type, str],
                          msg: Optional[str] = None):
+        """Check dtype of an array"""
         if hasattr(array_dtype, 'dtype'):
             array_dtype = array_dtype.dtype
         if not np.issubsctype(array_dtype, dtype):
@@ -281,22 +282,10 @@ def miss_str(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
         Largest mismatch: <maximum devation> with dtype=<scalar type>,
         or: <relative-max dev> = <tolerance> * <max dev relative to tolerance>'
     """
-    shape = np.broadcast(left, right).shape
-    thresh = atol + rtol * np.abs(np.broadcast_to(right, shape))
-    mismatch = np.abs(left - right)
-    mask = mismatch > thresh
-    mis_frac = np.full_like(mismatch, np.NINF)
-    mis_frac[mask] = (np.log(mismatch[mask]) - np.log(thresh[mask]))/np.log(10)
+    thresh, mismatch, mis_frac = _discrepancy(left, right, atol, rtol)
 
-    if equal_nan:
-        argmax = np.nanargmax
-    else:
-        argmax = np.argmax
-    if np.all(np.isnan(mismatch)) or np.all(np.isnan(mis_frac)):
-        def argmax(val):
-            return 0
-    a_ind = np.unravel_index(argmax(mismatch), mismatch.shape)
-    r_ind = np.unravel_index(argmax(mis_frac), mis_frac.shape)
+    a_ind = np.unravel_index(_argmax(mismatch, equal_nan), mismatch.shape)
+    r_ind = np.unravel_index(_argmax(mis_frac, equal_nan), mis_frac.shape)
 
     a_worst, r_worst = mismatch[a_ind], mismatch[r_ind]
     thresh, mis_f = thresh[r_ind], mis_frac[r_ind]
@@ -305,6 +294,29 @@ def miss_str(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
     return f"""Arrays not all close.
     Largest mismatch: {a_worst:.2g} at {a_ind} with dtype={dtype},
     or: {r_worst:.2g} = {thresh:.2g} * 1e{mis_f:.1f} at {r_ind}."""
+
+
+@np.errstate(all="ignore")
+def _discrepancy(left: np.ndarray, right: np.ndarray, atol: float = 1e-8,
+                 rtol: float = 1e-5) -> (np.ndarray, np.ndarray, np.ndarray):
+    """Evaluate discrepancy"""
+    shape = np.broadcast(left, right).shape
+    thresh = atol + rtol * np.abs(np.broadcast_to(right, shape))
+    mismatch = np.abs(left - right)
+    mask = mismatch > thresh
+    mis_frac = np.full_like(mismatch, np.NINF)
+    mis_frac[mask] = (np.log(mismatch[mask]) - np.log(thresh[mask]))/np.log(10)
+    return thresh, mismatch, mis_frac
+
+
+@np.errstate(all="ignore")
+def _argmax(val: np.ndarray, equal_nan: bool = True) -> int:
+    """Dummy function that always returns zero"""
+    if np.all(np.isnan(val)):
+        return 0
+    if equal_nan:
+        return np.nanargmax(val)
+    return np.argmax(val)
 
 
 # =============================================================================
@@ -365,12 +377,85 @@ def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
         return _split_signature(inputs), _split_signature(outputs)
     signature = signature.lstrip('(').rstrip(')').replace('->', ',')
     arrays = []
-    for array in signature.split('),('):
-        if array:
-            arrays.append(tuple(array.split(',')))
+    for arr in signature.split('),('):
+        if arr:
+            arrays.append(tuple(arr.split(',')))
         else:
             arrays.append(())
     return tuple(arrays)
+
+
+def _broads_cores(sigs_in: List[Tuple[str]],
+                  shapes: Tuple[Tuple[int, ...]],
+                  msg: str) -> (List[Tuple[int, ...]], List[Tuple[int, ...]]):
+    """Extract broadcast and core shapes of arrays
+
+    Parameters
+    ----------
+    sigs_in : Tuple[str, ...]
+        Core signatures of input arrays
+    shapes : Tuple[int, ...]
+        Shapes of input arrays
+    msg : str
+        Potential error message
+
+    Returns
+    -------
+    broads : List[Tuple[int, ...]]
+        Broadcast shape of input arrays
+    cores : List[Tuple[int, ...]]
+        Core shape of input arrays
+
+    Raises
+    ------
+    ValueError
+        If arrays do not have enough dimensions.
+    """
+    dims = [len(sig) for sig in sigs_in]
+    broads, cores = [], []
+    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
+        raise ValueError('Core array does not have enough ' + msg)
+    for shape, dim in zip(shapes, dims):
+        if dim:
+            broads.append(shape[:-dim])
+            cores.append(shape[-dim:])
+        else:
+            broads.append(shape)
+            cores.append(())
+    return broads, cores
+
+
+def _core_sizes(sigs_in: List[Tuple[str, ...]],
+                cores: List[Tuple[int, ...]],
+                msg: str) -> Dict[str, int]:
+    """Extract value of each size variable
+
+    Parameters
+    ----------
+    sigs_in : List[Tuple[str, ...]]
+        Signatures of input arrays
+    cores : List[Tuple[int, ...]]
+        Core shapes of input arrays
+    msg : str
+        Potential error message
+
+    Returns
+    -------
+    sizes : Dict[str, int]
+        Values of each size variable
+
+    Raises
+    ------
+    ValueError
+        [description]
+    """
+    sizes = {}
+    for sig, core in zip(sigs_in, cores):
+        for name, siz in zip(sig, core):
+            sizes.setdefault(name, siz)
+            if sizes[name] != siz:
+                raise ValueError('Array mismatch in its core ' + msg)
+    return sizes
 
 
 def return_shape(signature: str,
@@ -397,22 +482,8 @@ def return_shape(signature: str,
     """
     msg = (f'dimensions: Shape: {shapes}. Signature: {signature}.')
     sigs_in, sigs_out = _split_signature(signature)
-    dims = [len(sig) for sig in sigs_in]
-    broads, cores, sizes = [], [], {}
-    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
-        raise ValueError('Core array does not have enough ' + msg)
-    for shape, dim in zip(shapes, dims):
-        if dim:
-            broads.append(shape[:-dim])
-            cores.append(shape[-dim:])
-        else:
-            broads.append(shape)
-            cores.append(())
-    for sig, core in zip(sigs_in, cores):
-        for name, siz in zip(sig, core):
-            sizes.setdefault(name, siz)
-            if sizes[name] != siz:
-                raise ValueError('Array mismatch in its core ' + msg)
+    broads, cores = _broads_cores(sigs_in, shapes, msg)
+    sizes = _core_sizes(sigs_in, cores, msg)
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:
@@ -443,4 +514,4 @@ def array_return_shape(signature: str,
     ValueError
         If `arrays.shape`s do not match signatures.
     """
-    return return_shape(signature, *(array.shape for array in arrays))
+    return return_shape(signature, *(arr.shape for arr in arrays))

@@ -23,7 +23,8 @@ return_shape
 array_return_shape
     Shape of result of broadcasted matrix multiplication, from arrays.
 """
-from typing import Tuple, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
 # =============================================================================
@@ -108,7 +109,7 @@ def unbroadcast_factors(original, *factors):
 # =============================================================================
 
 
-def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
+def _split_signature(signature: str) -> List[Tuple[str, ...]]:
     """Convert text signature into tuples of axes size names
 
     Parameters
@@ -118,21 +119,94 @@ def _split_signature(signature: str) -> Tuple[Tuple[str, ...], ...]:
 
     Returns
     -------
-    axes_sizes : Tuple[Tuple[str, ...], ...]
-        Tuples of core axes sizes as string variablr names,
-        e.g. `(('a','b'),('b','c'),('a','c'))`
+    axes_sizes : List[Tuple[str, ...], ...]
+        Tuples of core axes sizes as string variable names,
+        e.g. `[('a','b'),('b','c'),('a','c')]`
     """
     if '->' in signature:
         inputs, outputs = signature.split('->')
         return _split_signature(inputs), _split_signature(outputs)
-    signature = signature.lstrip('(').rstrip(')').replace('->', ',')
+    signature = signature.lstrip('(').rstrip(')')
     arrays = []
-    for array in signature.split('),('):
-        if array:
-            arrays.append(tuple(array.split(',')))
+    for arr in signature.split('),('):
+        if arr:
+            arrays.append(tuple(arr.split(',')))
         else:
             arrays.append(())
-    return tuple(arrays)
+    return arrays
+
+
+def _broads_cores(sigs_in: List[Tuple[str]],
+                  shapes: Tuple[Tuple[int, ...]],
+                  msg: str) -> (List[Tuple[int, ...]], List[Tuple[int, ...]]):
+    """Extract broadcast and core shapes of arrays
+
+    Parameters
+    ----------
+    sigs_in : Tuple[str, ...]
+        Core signatures of input arrays
+    shapes : Tuple[int, ...]
+        Shapes of input arrays
+    msg : str
+        Potential error message
+
+    Returns
+    -------
+    broads : List[Tuple[int, ...]]
+        Broadcast shape of input arrays
+    cores : List[Tuple[int, ...]]
+        Core shape of input arrays
+
+    Raises
+    ------
+    ValueError
+        If arrays do not have enough dimensions.
+    """
+    dims = [len(sig) for sig in sigs_in]
+    broads, cores = [], []
+    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
+        raise ValueError('Core array does not have enough ' + msg)
+    for shape, dim in zip(shapes, dims):
+        if dim:
+            broads.append(shape[:-dim])
+            cores.append(shape[-dim:])
+        else:
+            broads.append(shape)
+            cores.append(())
+    return broads, cores
+
+
+def _core_sizes(sigs_in: List[Tuple[str, ...]],
+                cores: List[Tuple[int, ...]],
+                msg: str) -> Dict[str, int]:
+    """Extract value of each size variable
+
+    Parameters
+    ----------
+    sigs_in : List[Tuple[str, ...]]
+        Signatures of input arrays
+    cores : List[Tuple[int, ...]]
+        Core shapes of input arrays
+    msg : str
+        Potential error message
+
+    Returns
+    -------
+    sizes : Dict[str, int]
+        Values of each size variable
+
+    Raises
+    ------
+    ValueError
+        [description]
+    """
+    sizes = {}
+    for sig, core in zip(sigs_in, cores):
+        for name, siz in zip(sig, core):
+            sizes.setdefault(name, siz)
+            if sizes[name] != siz:
+                raise ValueError('Array mismatch in its core ' + msg)
+    return sizes
 
 
 def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
@@ -158,22 +232,8 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
     """
     msg = (f'dimensions: Shape: {shapes}. Signature: {signature}.')
     sigs_in, sigs_out = _split_signature(signature)
-    dims = [len(sig) for sig in sigs_in]
-    broads, cores, sizes = [], [], {}
-    if any(len(shape) < dim for shape, dim in zip(shapes, dims)):
-        raise ValueError('Core array does not have enough ' + msg)
-    for shape, dim in zip(shapes, dims):
-        if dim:
-            broads.append(shape[:-dim])
-            cores.append(shape[-dim:])
-        else:
-            broads.append(shape)
-            cores.append(())
-    for sig, core in zip(sigs_in, cores):
-        for name, siz in zip(sig, core):
-            sizes.setdefault(name, siz)
-            if sizes[name] != siz:
-                raise ValueError('Array mismatch in its core ' + msg)
+    broads, cores = _broads_cores(sigs_in, shapes, msg)
+    sizes = _core_sizes(sigs_in, cores, msg)
     broad_out = np.broadcast(*(np.empty(broad) for broad in broads)).shape
     shapes_out = []
     for sig in sigs_out:
@@ -203,4 +263,4 @@ def array_return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
     ValueError
         If `arrays.shape`s do not match signatures.
     """
-    return return_shape(signature, *(array.shape for array in arrays))
+    return return_shape(signature, *(arr.shape for arr in arrays))

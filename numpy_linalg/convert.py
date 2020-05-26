@@ -114,7 +114,7 @@ def conv_input(converter: Preparer[MyArray, BaseArray],
 def conv_in_out(converter: Preparer[MyArray, BaseArray],
                 obj_typ: _ty.Type[MyArray],
                 kwds: ArgDict,
-                conv_out: BoolList) -> (OutTuple[BaseArray], BoolList):
+                cv_out: BoolList) -> (OutTuple[BaseArray], BoolList):
     """Process the out keyword in an __array_ufunc__ method.
 
     Parameters
@@ -125,35 +125,35 @@ def conv_in_out(converter: Preparer[MyArray, BaseArray],
         The type of object that needs converting.
     kwds : Dict[str, Any]
         Dict of key word inputs to ufunc
-    conv_out : List[bool]
+    cv_out : List[bool]
         List of bools for converting outputs. Should have the correct length.
 
     Returns
     -------
     out : Tuple[ndarray|None, ...]
         New tuple of inputs to ufunc (or ``out`` argument) with conversions.
-    conv_out : List[bool]
+    cv_out : List[bool]
         List of bools telling us if each output was converted.
     """
     outputs = kwds.pop('out', None)
     if outputs:
         if not isinstance(outputs, tuple):
             outputs = (outputs,)
-        out_args, conv_out = conv_input(converter, obj_typ, outputs)
+        out_args, cv_out = conv_input(converter, obj_typ, outputs)
         kwds['out'] = tuple(out_args)
     else:
-        outputs = (None,) * len(conv_out)
-    return outputs, conv_out
+        outputs = (None,) * len(cv_out)
+    return outputs, cv_out
 
 
 def _conv_in(converter: Preparer[MyArray, BaseArray],
              obj_typ: _ty.Type[MyArray],
              tup: ArgsIn,
-             *conv_out) -> (OutTuple[BaseArray], BoolList):
+             *cv_out) -> (OutTuple[BaseArray], BoolList):
     """Call one of conv_input or conv_in_out"""
     if isinstance(tup, tuple):
         return conv_input(converter, obj_typ, tup)
-    return conv_in_out(converter, obj_typ, tup, *conv_out)
+    return conv_in_out(converter, obj_typ, tup, *cv_out)
 
 
 def prepare_via_view(std_array: _ty.Type[BaseArray] = _np.ndarray
@@ -194,7 +194,7 @@ def prepare_via_attr(attr: str) -> Preparer[MyArray, BaseArray]:
 
 def conv_in_view(obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *conv_out) -> (OutTuple[_np.ndarray], BoolList):
+                 *cv_out) -> (OutTuple[_np.ndarray], BoolList):
     """Process inputs in an __array_ufunc__ method using view method.
 
     If the second argument is a tuple, we assume we are processing the ufunc's
@@ -207,7 +207,7 @@ def conv_in_view(obj_typ: _ty.Type[MyArray],
     tup : Tuple[ndarray|MyArray, ...], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
         Dict of key word inputs to ufunc
-    conv_out : Sequence[bool], optional
+    cv_out : Sequence[bool], optional
         List of bools for converting outputs. Should have the correct length.
 
     Returns
@@ -217,13 +217,13 @@ def conv_in_view(obj_typ: _ty.Type[MyArray],
     conv : List[bool]
         List of bools telling us if each input was converted.
     """
-    return _conv_in(prepare_via_view(), obj_typ, tup, *conv_out)
+    return _conv_in(prepare_via_view(), obj_typ, tup, *cv_out)
 
 
 def conv_in_attr(attr: str,
                  obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *conv_out: bool) -> (OutTuple[BaseArray], BoolList):
+                 *cv_out: bool) -> (OutTuple[BaseArray], BoolList):
     """Process inputs in an __array_ufunc__ method using an attribute.
 
     If the third argument is a tuple, we assume we are processing the ufunc's
@@ -238,7 +238,7 @@ def conv_in_attr(attr: str,
     tup : Tuple[ndarray|MyArray, ...], Dict[str, Any]
         Tuple of inputs to ufunc (or ``out`` argument)
         Dict of key word inputs to ufunc
-    conv_out : Sequence[bool], optional
+    cv_out : Sequence[bool], optional
         List of bools for converting outputs. Should have the correct length.
 
     Returns
@@ -248,7 +248,7 @@ def conv_in_attr(attr: str,
     conv : List[bool]
         List of bools telling us if each input was converted.
     """
-    return _conv_in(prepare_via_attr(attr), obj_typ, tup, *conv_out)
+    return _conv_in(prepare_via_attr(attr), obj_typ, tup, *cv_out)
 
 
 # ======================================================================

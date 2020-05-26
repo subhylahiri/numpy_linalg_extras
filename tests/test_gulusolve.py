@@ -376,9 +376,9 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rlu_solve(v_b, x_f, i_p)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(a)', 'd'))
     def test_rsolve_flexible_signature_with_vectors(self, arrays):
-        m_ss, m_sb, m_bb, m_bs = arrays[:-1]
+        m_ss, m_sb, m_bb = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_well_behaved(m_ss))
@@ -394,13 +394,12 @@ class TestSolveVectors(TestCaseNumpy):
             # This would succeed/broadcast error if interpreted as vM:
             gfl.rsolve(m_sb[y_one], m_ss[off_b])
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a),(a)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(a)', 'd'))
     def test_rsolve_lu_flexible_signature_with_vectors(self, arrays):
-        m_ss, m_sb, m_bb, m_bs = arrays[:-1]
+        m_ss, m_sb, m_bb = arrays[:-1]
         v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_well_behaved(m_ss))
-        off_b, y_one = utn.make_off_by_one(m_ss, m_sb)
 
         # with self.subTest('rsolve_lu'):
         self.assertArrayShapesAre(
@@ -414,9 +413,9 @@ class TestSolveVectors(TestCaseNumpy):
             # This would succeed/broadcast error if interpreted as vM:
             gfl.rsolve_lu(m_sb, m_ss)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a),(a),(b)', 'd'))
+    @hy.given(hn.broadcastable('(a,a),(a,b),(a),(b)', 'd'))
     def test_rlu_solve_flexible_signature_with_vectors(self, arrays):
-        m_ss, m_sb, m_bs = arrays[:-2]
+        m_ss, m_sb = arrays[:-2]
         v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
         hy.assume(hn.nonsquare(m_sb))
         hy.assume(hn.all_well_behaved(m_ss))

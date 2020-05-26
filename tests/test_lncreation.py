@@ -5,7 +5,7 @@ import re
 import sys
 import tempfile
 from numbers import Real
-from typing import List, Mapping, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple, Union
 
 import hypothesis as hy
 import hypothesis.extra.numpy as hn
@@ -41,9 +41,15 @@ def str_sample(*str_list: str) -> st.SearchStrategy[str]:
     return st.sampled_from(" ".join(str_list).split(" "))
 
 
+def valid_field(name: str) -> bool:
+    """Is it a valid field name for a structured dtype?"""
+    return (name.isascii() and
+            all(ord(letter) > 31 and ord(letter) != 127 for letter in name))
+
+
 def dtype_str(dtype: np.dtype) -> (List[str], re.Pattern):
     """Format string and regex for structured dtype"""
-    format, regexp = [], []
+    format_, regexp = [], []
     for name in dtype.names:
         sctype = dtype.fields[name][0]
         fmt = f'{name}: '
@@ -60,10 +66,10 @@ def dtype_str(dtype: np.dtype) -> (List[str], re.Pattern):
         else:
             raise ValueError(f"unknown dtype: {sctype}")
         fmt += ','
-        format.append(fmt)
+        format_.append(fmt)
         rex += ','
         regexp.append(rex)
-    return format, re.compile(" ".join(regexp))
+    return format_, re.compile(" ".join(regexp))
 
 
 def make_cov(cholesky: np.ndarray) -> np.ndarray:
@@ -167,7 +173,7 @@ rnd_params = {
 
 @st.composite
 def sliceish(draw: st.DataObject,
-             stgy: st.SearchStrategy[float] = params['rp'],
+             st_code: str = 'rp',
              non_empty: bool = False) -> slice:
     """Strategy for a [start:stop:step] slice, not necessarily ints
 
@@ -185,6 +191,7 @@ def sliceish(draw: st.DataObject,
         slice with parameters start, stop, step that are of whatever type
         given by `num_st`.
     """
+    stgy = params[st_code]
     start, stop, step = draw(stgy), draw(stgy), draw(stgy)
     hy.assume(step != 0)
     hy.assume(abs(stop - start) / step < 100)
@@ -196,13 +203,13 @@ def sliceish(draw: st.DataObject,
 
 @st.composite
 def struct_array(draw: st.DataObject,
-                 subdtype: st.SearchStrategy[np.dtype],
-                 shape: st.SearchStrategy[Tuple[int, ...]],
+                 subdtype: st.SearchStrategy[np.dtype] = some_dtype,
+                 shape: st.SearchStrategy[Tuple[int, ...]] = some_shape,
                  **kwargs) -> st.SearchStrategy[np.ndarray]:
     """Strategy for structured arrays (1-level only)"""
     dtype = draw(hn.array_dtypes(subdtype, **kwargs))
     if dtype.names is not None:
-        hy.assume(all(x.isascii() and '%' not in x for x in dtype.names))
+        hy.assume(all(valid_field(x) for x in dtype.names))
     return draw(hn.arrays(dtype, shape))
 
 
@@ -215,27 +222,24 @@ def array_inds(draw: st.DataObject,
     multi_ind = draw(hn.integer_array_indices(shape, dtype=int_type))
     ravel_ind = np.ravel_multi_index(multi_ind, shape, mode='wrap')
     if shape:
-        n, m = shape[0], shape[-1]
-        k = draw(st.integers(min_value=-n, max_value=m))
+        rows, cols = shape[0], shape[-1]
+        diag = draw(st.integers(min_value=-rows, max_value=cols))
     else:
-        n, k, m = (0, 0, 0)
-    return shape, multi_ind, ravel_ind, (n, k, m)
+        rows, diag, cols = (0, 0, 0)
+    return shape, multi_ind, ravel_ind, (rows, diag, cols)
 
 
 @st.composite
 def func_params(draw: st.DataObject,
-                func_group: str,
+                func_group: str = '',
                 func_prefix: str = 'standard',
-                func_sts: Mapping[str, st.SearchStrategy[str]] = rnd_methods,
-                func_sigs: Mapping[str, Sequence[str]] = rnd_params,
-                param_sts: Mapping[str, st.SearchStrategy[Real]] = params,
                 ) -> (str, List[Union[Real, Tuple[int, ...]]]):
     """Strategy for Generator method name and parameters"""
-    func = draw(func_sts[func_group])
+    func = draw(rnd_methods[func_group])
     if func.startswith('_'):
         func = func_prefix + func
-    sig = func_sigs.get(func, func_group.split('_'))
-    args = [draw(param_sts[s]) for s in sig]
+    sig = rnd_params.get(func, func_group.split('_'))
+    args = [draw(params[s]) for s in sig]
     if func == 'zipf':
         shape = draw(simple_shape)
     else:
@@ -277,43 +281,23 @@ class TestWrappers(TestCaseNumpy):
             If `nl_array` is not an lnarray, if it doesn't have the same shape
             as `np_array` or the same values.
         """
-        self.assertIsInstance(nl_array, nl.lnarray, msg=msg)
-        self.assertArrayShape(nl_array, np_array.shape, msg=msg)
-        self.assertArrayDtype(nl_array, np_array.dtype, msg=msg)
-        if val:
-            if np_array.dtype.names is None:
-                self.assertArrayAllClose(nl_array, np_array, msg=msg)
-            else:
-                self.assertStructArrayClose(nl_array, np_array, msg=msg)
-
-    def assertArraysAllMatch(self, nl_arrays: Sequence[nl.lnarray],
-                             np_arrays: Sequence[np.ndarray],
-                             val: bool = True, msg: str = None):
-        """Assert that array type, shape, value are all correct
-
-        Parameters
-        ----------
-        nl_arrays : Sequence[lnarray]
-            Arrays we are testing
-        np_arrays : Sequence[ndarray]
-            Template arrays
-
-        Raises
-        ------
-        AssertionError
-            If `nl_array` is not an lnarray, if it doesn't have the same shape
-            as `np_array` or the same values, for ever pair of arrays.
-        """
-        if not isinstance(nl_arrays, (tuple, list)):
-            return self.assertArraysMatch(nl_arrays, np_arrays,
-                                          val=val, msg=msg)
-        self.assertEqual(len(nl_arrays), len(np_arrays))
-        for nla, npa in zip(nl_arrays, np_arrays):
-            self.assertArraysMatch(nla, npa, val=val, msg=msg)
+        if isinstance(nl_array, (tuple, list)):
+            self.assertEqual(len(nl_array), len(np_array))
+            for nla, npa in zip(nl_array, np_array):
+                self.assertArraysMatch(nla, npa, val=val, msg=msg)
+        else:
+            self.assertIsInstance(nl_array, nl.lnarray, msg=msg)
+            self.assertArrayShape(nl_array, np_array.shape, msg=msg)
+            self.assertArrayDtype(nl_array, np_array.dtype, msg=msg)
+            if val:
+                if np_array.dtype.names is None:
+                    self.assertArrayAllClose(nl_array, np_array, msg=msg)
+                else:
+                    self.assertStructArrayClose(nl_array, np_array, msg=msg)
 
 
 class TestCreation(TestWrappers):
-    """Testing array creatin routines"""
+    """Testing array creation routines"""
 
     @errstate
     @hy.given(ones_and_zeros, some_shape, params['i'], some_dtype)
@@ -405,10 +389,10 @@ class TestCreation(TestWrappers):
     @hy.given(struct_array(real_dtype, simple_shape, min_size=2))
     def test_fromregex(self, array: np.ndarray):
         # numpy.complex_ can't convert strings, needs extra step via np.complex
-        format, pattern = dtype_str(array.dtype)
+        fmt, pattern = dtype_str(array.dtype)
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test.txt')
-            np.savetxt(fname, array.ravel(), delimiter=' ', fmt=format)
+            np.savetxt(fname, array.ravel(), delimiter=' ', fmt=fmt)
             nl_arrray = nl.fromregex(fname, pattern, array.dtype)
             self.assertArraysMatch(nl_arrray, array.ravel())
 
@@ -426,27 +410,27 @@ class TestCreation(TestWrappers):
                 self.assertArraysMatch(nl_file['x'], array)
                 self.assertArraysMatch(nl_file['y'], 2 * array)
 
-    @hy.given(array_inds())
+    @hy.given(array_inds(np.intp))
     def test_indexing(self, args):
         shape, mult_ind, ravl_ind, nkm = args
         self.assertArraysMatch(nl.ravel_multi_index(mult_ind, shape,
                                                     mode='wrap'), ravl_ind)
-        self.assertArraysAllMatch(nl.unravel_index(ravl_ind, shape),
-                                  np.unravel_index(ravl_ind, shape))
-        self.assertArraysAllMatch(nl.indices(shape), np.indices(shape))
-        self.assertArraysAllMatch(nl.diag_indices(shape[0], len(shape)),
-                                  np.diag_indices(shape[0], len(shape)))
+        self.assertArraysMatch(nl.unravel_index(ravl_ind, shape),
+                               np.unravel_index(ravl_ind, shape))
+        self.assertArraysMatch(nl.indices(shape), np.indices(shape))
+        self.assertArraysMatch(nl.diag_indices(shape[0], len(shape)),
+                               np.diag_indices(shape[0], len(shape)))
         if shape:
-            n, k, m = nkm
-            self.assertArraysAllMatch(nl.tril_indices(n, k, m),
-                                      np.tril_indices(n, k, m))
-            self.assertArraysAllMatch(nl.triu_indices(n, k, m),
-                                      np.triu_indices(n, k, m))
-            self.assertArraysAllMatch(nl.mask_indices(n, np.triu, k),
-                                      np.mask_indices(n, np.triu, k))
+            rows, diag, cols = nkm
+            self.assertArraysMatch(nl.tril_indices(rows, diag, cols),
+                                   np.tril_indices(rows, diag, cols))
+            self.assertArraysMatch(nl.triu_indices(rows, diag, cols),
+                                   np.triu_indices(rows, diag, cols))
+            self.assertArraysMatch(nl.mask_indices(rows, np.triu, diag),
+                                   np.mask_indices(rows, np.triu, diag))
 
     @errstate
-    @hy.given(numerical_ranges, sliceish(), params['iop'], params['rp'])
+    @hy.given(numerical_ranges, sliceish('rp'), params['iop'], params['rp'])
     def test_num_ranges(self, func: str, slicey: slice, num: int, base: float):
         np_func, nl_func = getattr(np, func), getattr(nl, func)
         args = [slicey.start, slicey.stop]
@@ -458,16 +442,16 @@ class TestCreation(TestWrappers):
             args.append(num)
         self.assertArraysMatch(nl_func(*args), np_func(*args))
 
-    @hy.given(st.lists(sliceish(non_empty=True), min_size=1, max_size=4))
+    @hy.given(st.lists(sliceish('rp', non_empty=True), min_size=1, max_size=4))
     def test_nd_grids(self, slice_list):
         args = tuple(slice_list)
         meshed = nl.mgrid[args]
         opened = nl.ogrid[args]
         self.assertArraysMatch(meshed, np.mgrid[args])
-        self.assertArraysAllMatch(opened, np.ogrid[args])
+        self.assertArraysMatch(opened, np.ogrid[args])
         opened = swap_ab(opened)
         meshed = tuple(meshed)
-        self.assertArraysAllMatch(nl.meshgrid(*opened), swap_ab(meshed))
+        self.assertArraysMatch(nl.meshgrid(*opened), swap_ab(meshed))
         self.assertArraysMatch(nl.c_[meshed], np.c_[meshed])
         self.assertArraysMatch(nl.r_[meshed], np.r_[meshed])
         self.assertArraysMatch(nl.r_[args], np.r_[args])
@@ -482,7 +466,6 @@ class TestCreation(TestWrappers):
                                np.fft.rfftfreq(length, spacing))
 
 
-# @unittest.skip("Freezes")
 class TestRandom(TestWrappers):
     """Testing randon number generation"""
     np_rng: np.random.Generator
@@ -515,8 +498,8 @@ class TestRandom(TestWrappers):
         if scalar:
             self.assertIsInstance(nl_method(*args[:-1]), Real, msg=msg)
 
-    @hy.given(hyn.vectors, params['iop'])
-    def test_random_bytes(self, vec: np.ndarray, num: int):
+    @hy.given(params['iop'])
+    def test_random_bytes(self, num: int):
         nl_bytes = self.nl_rng.bytes(num)
         self.assertIsInstance(nl_bytes, bytes)
         self.assertEqual(len(nl_bytes), num)
@@ -540,8 +523,8 @@ class TestRandom(TestWrappers):
         self.assertArrayShape(nl_choice, (num,))
         self.assertArrayDtype(nl_choice, vec.dtype)
 
-    @hy.given(hyn.vectors, params['iop'])
-    def test_random_shuffle(self, vec: np.ndarray, num: int):
+    @hy.given(hyn.vectors)
+    def test_random_shuffle(self, vec: np.ndarray):
         shape, dtype = vec.shape, vec.dtype
         nl_shuffle = self.nl_rng.shuffle(vec)
         self.assertIsNone(nl_shuffle)

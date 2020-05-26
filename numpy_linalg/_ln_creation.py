@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Created on Tue Dec  5 02:46:29 2017
-# @author: subhy
-# module:_creation_ln
-# =============================================================================
 """Numpy's array creation routines, adapted to produce `lnarray`s instead of
 `numpy.ndarray`s.
 
@@ -112,6 +108,11 @@ wr_load = wrap.check(np.load)
 def load(*args, **kwargs) -> Union[lnarray, LnNpzFile]:
     """Wrapped version of numpy.load adapted to produce `lnarray`s instead of
     `numpy.ndarray`s.
+
+    See Also
+    --------
+    numpy.load
+    numpy.lib.npyio.NpzFile
     """
     result = wr_load(*args, **kwargs)
     if isinstance(result, npio.NpzFile):

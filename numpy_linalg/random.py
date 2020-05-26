@@ -70,7 +70,7 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="check"):
 
     Parameters
     ----------
-    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
+    set_seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
         The argument of `numpy.random.default_rng`. By default `None`.
 
     See Also
@@ -79,8 +79,8 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="check"):
     """
     _obj: _pr.Generator
 
-    def __init__(self, seed=None):
-        super().__init__(_pr.default_rng(seed))
+    def __init__(self, set_seed=None):
+        super().__init__(_pr.default_rng(set_seed))
 
     def __getattr__(self, attr):
         if attr in {"bit_generator", "shuffle", "bytes"}:
@@ -88,12 +88,12 @@ class LnGenerator(_wr.WrappedClass, wrappers=_wrap, method="check"):
         return super().__getattr__(attr)
 
 
-def default_rng(seed=None) -> LnGenerator:
+def default_rng(set_seed=None) -> LnGenerator:
     """Create a random number generator that returns lnarrays
 
     Parameters
     ----------
-    seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
+    set_seed : {None, int, SeedSequence, BitGenerator, Generator}, optional
         The argument of `numpy.random.default_rng`. By default `None`.
 
     Returns
@@ -105,7 +105,7 @@ def default_rng(seed=None) -> LnGenerator:
     --------
     numpy.random.default_rng
     """
-    return LnGenerator(seed)
+    return LnGenerator(set_seed)
 
 
 # =========================================================================

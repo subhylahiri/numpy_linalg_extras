@@ -86,9 +86,9 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.broadcast_err):
             gfl.rlstsq(*utn.make_bad_broadcast(m_bb, la.transpose(m_bs)))
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
+    @hy.given(hn.broadcastable('(a,b),(b,b),(b,a)', 'd'), qr_funcs)
     def test_lstsq_qr_returns_expected_shape_tall(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_sb, m_bb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_well_behaved(m_bs))
         tall = m_bs.shape
@@ -125,9 +125,9 @@ class TestLstsqShape(TestCaseNumpy):
         expect = utn.array_return_shape('(m,n),(p,n)->(m,p)', m_ss, m_bs)
         self.assertArrayShape(gfl.rqr_lstsq(m_ss, x_f, tau), expect)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', 'd'), qr_funcs)
     def test_lstsq_qr_returns_expected_shape_wide(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_ss, m_sb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_well_behaved(m_sb))
         wide = m_sb.shape
@@ -143,9 +143,9 @@ class TestLstsqShape(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.broadcast_err):
             fun(*utn.make_bad_broadcast(m_sb, m_ss))
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), qr_funcs)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b)', 'd'), qr_funcs)
     def test_qr_lstsq_returns_expected_shape_wide(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_ss, m_sb, m_bb = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_well_behaved(m_sb))
 
@@ -164,9 +164,9 @@ class TestLstsqShape(TestCaseNumpy):
         expect = utn.array_return_shape('(m,n),(p,n)->(m,p)', m_bb, m_sb)
         self.assertArrayShape(gfl.rqr_lstsq(m_bb, x_f, tau), expect)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,a)', 'd'), rqr_funcs)
     def test_rlstsq_qr_returns_expected_shape_tall(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_ss, m_sb, m_bs = arrays
         hy.assume(hn.tall(m_bs))
         hy.assume(hn.all_well_behaved(m_bs))
         tall = m_bs.shape
@@ -205,7 +205,7 @@ class TestLstsqShape(TestCaseNumpy):
 
     @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', 'd'), rqr_funcs)
     def test_rlstsq_qr_returns_expected_shape_wide(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        _, m_sb, m_bb, m_bs = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_well_behaved(m_sb))
         wide = m_sb.shape
@@ -343,11 +343,11 @@ class TestLstsqQRVectors(TestCaseNumpy):
             # This would succeed/broadcast error if interpreted as Mv:
             fun(m_sb[off_b], m_bs[y_one])
 
-    @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), qr_funcs)
+    @hy.given(hn.broadcastable('(a,b),(b,a),(a)', 'd'), qr_funcs)
     def test_lstsq_qr_flexible_signature_with_vectors_vm(self, arrays, fun):
-        m_sb, m_bs = arrays[:-2]
-        wide, tall = [arr.shape for arr in arrays[:-2]]
-        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
+        m_sb, m_bs = arrays[:-1]
+        wide = m_sb.shape
+        v_s = hn.core_only(*arrays[-1], dims=1)
         hy.assume(hn.wide(m_sb))
         hy.assume(la.norm(v_s) > 0.)
 
@@ -367,11 +367,11 @@ class TestLstsqQRVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             fun(v_s, v_b)
 
-    @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), rqr_funcs)
+    @hy.given(hn.broadcastable('(a,b),(b,a),(b)', 'd'), rqr_funcs)
     def test_rlstsq_qr_flexible_signature_with_vectors_mv(self, arrays, fun):
-        m_sb, m_bs = arrays[:-2]
-        wide, tall = [arr.shape for arr in arrays[:-2]]
-        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
+        m_sb, m_bs = arrays[:-1]
+        wide = m_sb.shape
+        v_b = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.wide(m_sb))
         hy.assume(la.norm(v_b) > 0.)
 
@@ -438,14 +438,13 @@ class TestQRLstsqVectors(TestCaseNumpy):
             # This would succeed/broadcast error if interpreted as Mv:
             gfl.qr_lstsq(x_f[off_b], tau[off_b], m_bs[y_one])
 
-    @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), qr_funcs)
+    @hy.given(hn.broadcastable('(a,b),(b,a),(a)', 'd'), qr_funcs)
     def test_qr_lstsq_flexible_signature_with_vectors_vm(self, arrays, fun):
-        m_sb, m_bs = hn.core_only(*arrays[:-2])
-        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
-        wide, tall = [arr.shape[-2:] for arr in arrays[:-2]]
+        m_sb, m_bs = hn.core_only(*arrays[:-1])
+        v_s = hn.core_only(arrays[-1], dims=1)
+        wide, tall = [arr.shape[-2:] for arr in arrays[:-1]]
         hy.assume(hn.wide(m_sb))
         hy.assume(la.norm(v_s) > 0.)
-        off_b, y_one = utn.make_off_by_one(m_sb, m_bs)
 
         _, x_f, tau = fun(v_s, m_sb)
         self.assertArrayShape(gfl.qr_lstsq(x_f, tau, m_sb), utn.drop(wide))
@@ -455,8 +454,9 @@ class TestQRLstsqVectors(TestCaseNumpy):
             gfl.qr_lstsq(x_f, tau, m_bs)
         self.assertArrayShape(gfl.qr_lstsq(x_f, tau, v_s), wide[:-2])
 
-        m_sb, m_bs = arrays[:-2]
-        wide, tall = [arr.shape for arr in arrays[:-2]]
+        # with broadcasting
+        m_sb, m_bs = arrays[:-1]
+        wide, tall = [arr.shape for arr in arrays[:-1]]
 
         _, x_f, tau = fun(v_s, m_sb)
         x_f, tau = unbroadcast_factors(v_s, x_f, tau)
@@ -476,11 +476,11 @@ class TestQRLstsqVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.rqr_lstsq(v_b, x_f, tau)
 
-    @hy.given(hn.broadcastable('(a,b),(b,a),(a),(b)', 'd'), rqr_funcs)
+    @hy.given(hn.broadcastable('(a,b),(b,a),(a)', 'd'), rqr_funcs)
     def test_rqr_lstsq_flexible_signature_with_vectors_mv(self, arrays, fun):
-        m_sb, m_bs = hn.core_only(*arrays[:-2])
-        v_s, v_b = hn.core_only(*arrays[-2:], dims=1)
-        wide, tall = [arr.shape[-2:] for arr in arrays[:-2]]
+        m_sb, m_bs = hn.core_only(*arrays[:-1])
+        v_s = hn.core_only(arrays[-1], dims=1)
+        wide, tall = [arr.shape[-2:] for arr in arrays[:-1]]
         hy.assume(hn.wide(m_sb))
         hy.assume(la.norm(v_s) > 0.)
 
@@ -492,8 +492,8 @@ class TestQRLstsqVectors(TestCaseNumpy):
             gfl.qr_lstsq(x_f, tau, m_bs)
         self.assertArrayShape(gfl.rqr_lstsq(v_s, x_f, tau), tall[:-2])
 
-        m_sb, m_bs = arrays[:-2]
-        wide, tall = [arr.shape for arr in arrays[:-2]]
+        m_sb, m_bs = arrays[:-1]
+        wide, tall = [arr.shape for arr in arrays[:-1]]
 
         _, x_f, tau = fun(m_bs, v_s)
         x_f, tau = unbroadcast_factors(v_s, x_f, tau)

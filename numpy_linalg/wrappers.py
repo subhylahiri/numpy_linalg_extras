@@ -454,8 +454,7 @@ class DeprecatedWrappers(Wrappers):
 
 
 def wrap_module(file_name: str, funcs: _ty.List[str], wrapper: str = 'one',
-                parent: str = 'numpy', imps: str = '', internal: bool = True,
-                module: str = "numpy_linalg"):
+                **kwargs):
     """Create a wrapped version of a numpy module
 
     This function can be used to create (the first draft of) a module file that
@@ -478,22 +477,26 @@ def wrap_module(file_name: str, funcs: _ty.List[str], wrapper: str = 'one',
     module : str = 'numpy_linalg'
         Name of module from which these functions will be imported.
     """
-    with open(file_name + '.py', 'w') as f:
-        f.write(f'"""Wrapped version of module {parent}\n')
-        f.write('"""\n')
-        f.write(imps + '\n')
-        f.write(f'import {parent} as _pr\n')
+    imps = kwargs.pop('imps', '')
+    parent = kwargs.pop('parent', 'numpy')
+    module = kwargs.pop('module', 'numpy_linalg')
+    internal = kwargs.pop('internal', True)
+    with open(file_name + '.py', 'w') as fid:
+        fid.write(f'"""Wrapped version of module {parent}\n')
+        fid.write('"""\n')
+        fid.write(imps + '\n')
+        fid.write(f'import {parent} as _pr\n')
         package = '.' if internal else 'numpy_linalg'
-        f.write(f'from {package} import wrappers as _wr\n')
+        fid.write(f'from {package} import wrappers as _wr\n')
         package = '._lnarray' if internal else 'numpy_linalg'
-        f.write(f'from {package} import lnarray as _array\n\n')
-        f.write('__all__ = [\n')
+        fid.write(f'from {package} import lnarray as _array\n\n')
+        fid.write('__all__ = [\n')
         for fun in funcs:
-            f.write(f"    '{fun}',\n")
-        f.write(']\n\n')
-        f.write(f'_wrap = _wr.Wrappers(_array, "{module}")\n\n')
+            fid.write(f"    '{fun}',\n")
+        fid.write(']\n\n')
+        fid.write(f'_wrap = _wr.Wrappers(_array, "{module}")\n\n')
         for fun in funcs:
-            f.write(f"{fun} = _wrap.{wrapper}(_pr.{fun})\n")
+            fid.write(f"{fun} = _wrap.{wrapper}(_pr.{fun})\n")
 
 
 # =============================================================================
@@ -583,3 +586,13 @@ class WrappedSubscriptable(WrappedClass):
 
     def __getitem__(self, key) -> _Arr:
         return self._get(key)
+
+    def __setitem__(self, key, value):
+        if not hasattr(self._obj, '__setitem__'):
+            raise AttributeError(f"{type(self).__name__} items cannot be set")
+        self._obj.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        if not hasattr(self._obj, '__delitem__'):
+            raise AttributeError(f"{type(self).__name__} items not deletable")
+        self._obj.__delitem__(key)

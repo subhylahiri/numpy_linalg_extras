@@ -51,7 +51,7 @@ nonsquare
 """
 import collections.abc
 from numbers import Number
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union, Optional
 
 import hypothesis.extra.numpy as hyn
 import hypothesis.strategies as st
@@ -82,6 +82,11 @@ CodeStrategy = Union[None, str, Sequence[str], st.SearchStrategy[str]]
 # =============================================================================
 # Strategies for Hypothesis generated test examples
 # =============================================================================
+_DEFAULT_INTS = {'min_value': -1e10, 'max_value': 1e10}
+_DEFAULT_REALS = {'allow_infinity': False, 'allow_nan': False, 'width': 64,
+                  'exclude_min': False, 'exclude_max': False, **_DEFAULT_INTS}
+_DEFAULT_SHAPE = {'min_dims': 0, 'max_dims': 3, 'min_side': 1, 'max_side': 5,
+                  'base_shape': ()}
 
 
 def _extract_kwds(kwds: dict, **defaults) -> dict:
@@ -92,45 +97,30 @@ def _extract_kwds(kwds: dict, **defaults) -> dict:
     return extracted
 
 
-def _default_opts(kind: str) -> dict:
-    """Get default options for dtype/shape strategies"""
-    # Lapack functions raise runtime warnings if passed inf or nan, so exclude
-    if kind == "dtype":
-        return {'min_value': -1e10, 'max_value': 1e10, 'allow_infinity': False,
-                'allow_nan': False, 'exclude_min': False, 'exclude_max': False}
-    if kind == "shape":
-        return {'min_dims': 0, 'max_dims': 3, 'min_side': 1, 'max_side': 5,
-                'base_shape': ()}
-    raise ValueError(f"Unknown option kind: {kind}")
-
-
 def integers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
-    This is a wrapper for `hypothesis.strategies.integers` that ignores
-    irrelevant keywords, instead of raising an exception.
+    This is a wrapper for `hypothesis.strategies.integers` that has different
+    defaults and ignores irrelevant keywords, instead of raising an exception.
 
     See Also
     --------
     `hypothesis.strategies.integers`
     """
-    min_value = kwds.get('min_value', None)
-    max_value = kwds.get('max_value', None)
-    return st.integers(min_value=min_value, max_value=max_value)
+    return st.integers(**_extract_kwds(kwds, **_DEFAULT_INTS))
 
 
 def real_numbers(**kwds) -> st.SearchStrategy[float]:
     """Strategy to generate real numbers of specified width
 
-    This is a wrapper for `hypothesis.strategies.floats` with changed defaults
+    This is a wrapper for `hypothesis.strategies.floats` that has different
+    defaults and ignores irrelevant keywords, instead of raising an exception.
 
     See Also
     --------
     `hypothesis.strategies.floats`
    """
-    opts = _default_opts("dtype")
-    opts.update(kwds)
-    return st.floats(**opts)
+    return st.floats(**_extract_kwds(kwds, **_DEFAULT_REALS))
 
 
 def complex_numbers(**kwds) -> st.SearchStrategy[complex]:
@@ -163,7 +153,7 @@ _DTYPES = {
 
 
 @st.composite
-def numeric_dtypes(draw, code_st: CodeStrategy = None,
+def numeric_dtypes(draw: st.DataObject, code_st: CodeStrategy = None,
                    **kwds) -> Tuple[np.dtype, Number]:
     """Strategy to generate dtypes codes
 
@@ -199,7 +189,8 @@ def numeric_dtypes(draw, code_st: CodeStrategy = None,
 
 
 @st.composite
-def signature_shapes(draw, signature: str, **kwds) -> Tuple[Shape, ...]:
+def signature_shapes(draw: st.DataObject, signature: str,
+                     **kwds) -> Tuple[Shape, ...]:
     """Create a hypothesis strategy for a tuple of shapes with the signature
 
     Parameters
@@ -219,19 +210,20 @@ def signature_shapes(draw, signature: str, **kwds) -> Tuple[Shape, ...]:
     --------
     `hypothesis.extra.numpy.arrays`
     """
-    opts = _default_opts("shape")
-    opts.update(kwds)
+    opts = _extract_kwds(kwds, **_DEFAULT_SHAPE)
     opts['signature'] = signature + '->()'
     return draw(hyn.mutually_broadcastable_shapes(**opts)).input_shapes
 
 
 @st.composite
-def _arrays_args(draw, signature: str, code_st: CodeStrategy,
-                 kwds: dict) -> Tuple[np.dtype, Tuple[Shape, ...], Number]:
+def _arrays_args(draw: st.DataObject, signature: str, code_st: CodeStrategy,
+                 kwds: Optional[dict] = None
+                 ) -> Tuple[np.dtype, Tuple[Shape, ...], Number]:
     """Generate inputs for hyn.arrays strategy
     """
-    num_opts = _extract_kwds(kwds, **_default_opts("dtype"))
-    shape_opts = _extract_kwds(kwds, **_default_opts("shape"))
+    kwds = {} if kwds is None else kwds
+    num_opts = _extract_kwds(kwds, **_DEFAULT_REALS)
+    shape_opts = _extract_kwds(kwds, **_DEFAULT_SHAPE)
     if kwds:
         raise ValueError(f"Unknown keywords: {list(kwds)}")
     dtype, elements = draw(numeric_dtypes(code_st, **num_opts))
@@ -484,14 +476,14 @@ def all_well_behaved(*matrices: np.ndarray) -> bool:
 # -----------------------------------------------------------------------------
 
 
-def wide(array: np.ndarray) -> bool:
+def wide(arr: np.ndarray) -> bool:
     """Check if it is an array of wide matrices.
 
     By `numpy.linalg`'s broadcasting rules, these are the last two axes.
 
     Parameters
     ----------
-    array : np.ndarray
+    arr : np.ndarray
         matrix (or array of them) whose shape we are checking.
 
     Returns
@@ -499,17 +491,17 @@ def wide(array: np.ndarray) -> bool:
     wide : bool
         Is it a wide (array of) matrix?
     """
-    return array.shape[-2] < array.shape[-1]
+    return arr.shape[-2] < arr.shape[-1]
 
 
-def tall(array: np.ndarray) -> bool:
+def tall(arr: np.ndarray) -> bool:
     """Check if it is an array of tall matrices.
 
     By `numpy.linalg`'s broadcasting rules, these are the last two axes.
 
     Parameters
     ----------
-    array : np.ndarray
+    arr : np.ndarray
         matrix (or array of them) whose shape we are checking.
 
     Returns
@@ -517,17 +509,17 @@ def tall(array: np.ndarray) -> bool:
     tall : bool
         Is it a tall (array of) matrix?
     """
-    return array.shape[-2] > array.shape[-1]
+    return arr.shape[-2] > arr.shape[-1]
 
 
-def nonsquare(array: np.ndarray) -> bool:
+def nonsquare(arr: np.ndarray) -> bool:
     """Check if it is an array of non-square matrices.
 
     By `numpy.linalg`'s broadcasting rules, these are the last two axes.
 
     Parameters
     ----------
-    array : np.ndarray
+    arr : np.ndarray
         matrix (or array of them) whose shape we are checking.
 
     Returns
@@ -535,4 +527,4 @@ def nonsquare(array: np.ndarray) -> bool:
     nonsquare : bool
         Is it a non-square (array of) matrix?
     """
-    return array.shape[-2] != array.shape[-1]
+    return arr.shape[-2] != arr.shape[-1]

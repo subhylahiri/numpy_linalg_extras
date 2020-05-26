@@ -2,6 +2,17 @@
 
 ### v0.2.0
 
+- Requires NumPy 1.17
+- Implements the `__array_function__` protocol for `lnarray`.
+- Deprecated array manipulation routines (the numpy functions can be used instead).
+- Deprecated multiple axis parameters in favour of a tuple for `expand_dims`, to match NumPy 1.18.
+- Wrapped versions of input/output routines from NumPy (except `memmap`).
+- Uses `hypothesis` to generate examples for unit tests.
+- Unit tests for array creation routines.
+- Removed everything deprecated in previous version.
+
+### v0.2.0
+
 - Requires Python 3.7
 - Requires NumPy 1.16
 - The `gufuncs` for matrix multiplication and division can handle vectors.

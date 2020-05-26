@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Created on Thu Dec  7 17:20:43 2017
-# @author: Subhy
-# package: linalg_tricks
-# =============================================================================
 """Linear algebra routines.
 
 This package contains classes and functions that make the syntax for linear
@@ -109,7 +105,7 @@ from ._ln_manipulation import (
 
 from . import version
 __version__ = version.max_version(
-    "0.2.0", gufuncs, wrappers, convert, _lnarray, _linalg)
+    "0.3.0", gufuncs, wrappers, convert, _lnarray, _linalg)
 
 assert any((True, gufuncs, wrappers, convert, fft, random))
 assert any((True, lnarray, pinvarray, invarray))

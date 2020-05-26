@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 # =============================================================================
-# Created on Sat Sep  1 20:35:47 2018
-#
-# @author: subhy
-# =============================================================================
 """
 Generalized ufunc versions of `numpy.linalg` routines:
 
@@ -103,7 +99,7 @@ from ._util import make_errobj, unbroadcast_factors
 from ._util import return_shape, array_return_shape
 
 from ..version import max_version as _version
-__version__ = _version("0.2.0", _gufuncs_blas, _gufuncs_cloop,
+__version__ = _version("0.3.0", _gufuncs_blas, _gufuncs_cloop,
                        _gufuncs_lu_solve, _gufuncs_qr_lstsq, fam)
 
 # fool pyflakes

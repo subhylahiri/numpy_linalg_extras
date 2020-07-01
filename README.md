@@ -180,6 +180,8 @@ The following implement operators/properties of the classes above.
     Treat multi-dim array as a stack of scalars.
 * `flattish`:
     Flatten a subset of axes.
+* `unflattish`:
+    Fold an axis.
 * `expand_dims`:
     Add new singleton axes.    
 

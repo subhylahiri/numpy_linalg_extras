@@ -30,6 +30,8 @@ invarray
     `lnarray.inv` on the rhs instead.
 flattish
     Flatten a subset of axes.
+unflattish
+    Fold an axis.
 expand_dims
     Add new singleton axes.
 transpose
@@ -79,7 +81,7 @@ Examples
 from . import _lnarray, _linalg
 from ._lnarray import lnarray, pinvarray, invarray
 from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-                      matldiv, matrdiv, flattish, expand_dims)
+                      matldiv, matrdiv, flattish, unflattish, expand_dims)
 from .gufuncs import matmul, solve, rsolve, lstsq, rlstsq, norm
 from . import gufuncs
 from . import wrappers
@@ -110,7 +112,8 @@ __version__ = version.max_version(
 assert any((True, gufuncs, wrappers, convert, fft, random))
 assert any((True, lnarray, pinvarray, invarray))
 assert any((True, transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-            matldiv, matrdiv, matmul, solve, rsolve, lstsq, rlstsq, norm))
+            flattish, unflattish, expand_dims, matldiv, matrdiv,
+            matmul, solve, rsolve, lstsq, rlstsq, norm))
 assert any((
     True, mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,
     array, asarray, asanyarray, ascontiguousarray, asfortranarray, asfarray,
@@ -119,10 +122,9 @@ assert any((
     arange, linspace, logspace, geomspace, meshgrid, ravel_multi_index,
     unravel_index, mask_indices, diag_indices, tril_indices, triu_indices))
 assert any((
-    True, broadcast_to, broadcast_arrays, expand_dims, squeeze, flattish,
-    reshape, moveaxis, rollaxis, swapaxes, atleast_1d, atleast_2d, atleast_3d,
-    diag, diagflat, vander, tri, tril, triu, ix_,
-    empty_like, ones_like, zeros_like, full_like,
+    True, broadcast_to, broadcast_arrays, squeeze, reshape, moveaxis, rollaxis,
+    swapaxes, atleast_1d, atleast_2d, atleast_3d, ix_, diag, diagflat, vander,
+    tri, tril, triu, empty_like, ones_like, zeros_like, full_like,
     fill_diagonal, diag_indices_from, tril_indices_from, triu_indices_from,
     concatenate, stack, column_stack, dstack, hstack, vstack, block,
     split, array_split, dsplit, hsplit, vsplit, tile, repeat, delete, insert,

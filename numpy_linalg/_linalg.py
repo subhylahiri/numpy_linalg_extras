@@ -49,6 +49,7 @@ from .wrappers import set_module
 
 __all__ = [
     'flattish',
+    'unflattish',
     'expand_dims',
     'transpose',
     'dagger',
@@ -75,7 +76,8 @@ __all__ = [
 
 
 @set_module('numpy_linalg')
-def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
+def flattish(arr: np.ndarray, start: int = 0, stop: ty.Optional[int] = None
+             ) -> np.ndarray:
     """Partial flattening.
 
     Flattens those axes in the range [start:stop).
@@ -93,12 +95,54 @@ def flattish(arr: np.ndarray, start: int = 0, stop: int = None) -> np.ndarray:
     -------
     new_arr : np.ndarray (...,L,M*N*...*P*Q,R,...)
         Partially flattened array.
+
+    Raises
+    ------
+    ValueError
+        If `start > stop`.
     """
     if stop is None:
         stop = arr.ndim
     newshape = arr.shape[:start] + (-1,) + arr.shape[stop:]
     if len(newshape) > arr.ndim + 1:
-        raise ValueError("start={} > stop={}".format(start, stop))
+        raise ValueError(f"start={start} > stop={stop}")
+    return np.reshape(arr, newshape)
+
+
+@set_module('numpy_linalg')
+def unflattish(arr: np.ndarray, axis: int, shape: ty.Tuple[int, ...]
+               ) -> np.ndarray:
+    """Partial unflattening.
+
+    Folds an `axis` into `shape`.
+
+    Parameters
+    ----------
+    arr : np.ndarray (...,L,M*N*...*P*Q,R,...)
+        Array to be partially folded.
+    axis : int
+        Axis to be folded.
+    shape : Tuple[int, ...]
+        Shape to fold `axis` into. One element can be -1, like `numpy.reshape`.
+
+    Returns
+    -------
+    new_arr : np.ndarray (...,L,M,N,...,P,Q,R,...)
+        Partially unflattened array.
+
+    Raises
+    ------
+    ValueError
+        If multiple elements of `shape` are -1.
+        If `arr.shape[axis] != prod(shape)` (unless one element is -1).
+    """
+    minus_one = np.count_nonzero([siz == -1 for siz in shape])
+    if minus_one > 1:
+        raise ValueError(f"Axis size {arr.shape[axis]} cannot fold to {shape}")
+    if minus_one == 0 and np.prod(shape) != arr.shape[axis]:
+        raise ValueError(f"Axis size {arr.shape[axis]} cannot fold to {shape}")
+    axis %= arr.ndim
+    newshape = arr.shape[:axis] + shape + arr.shape[axis+1:]
     return np.reshape(arr, newshape)
 
 
@@ -126,6 +170,11 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     new_arr : np.ndarray (...,L,1,M,1,N,...,P,1,Q,...)
         Expanded array.
 
+    Raises
+    ------
+    ValueError
+        If any axes are out of range or repeated.
+
     See Also
     --------
     numpy.expand_dims
@@ -133,24 +182,23 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     if len(axis) == 0:
         return arr
     if len(axis) == 1:
-        return np.expand_dims(arr, axis[0]).view(type(arr))
+        return np.expand_dims(arr, axis[0])
     warn("Pass a tuple of ints to expand_dims rather than multiple arguments."
          + " This will aise an error in version 0.4.0.", DeprecationWarning)
     new_dim = arr.ndim + len(axis)
     if any(axs >= new_dim or arr < -new_dim for axs in axis):
         raise ValueError(f'Axes out of range for {new_dim}-array: {axis}')
-    axes_sort = tuple(np.sort(np.mod(axis, arr.ndim + len(axis))))
-    axes_same = np.flatnonzero(np.diff(axes_sort) == 0)
-    if axes_same.size > 0:
-        raise ValueError(f'repeated axis, arguments: {axes_same}')
+    axes_sort = tuple(np.sort(np.mod(axis, new_dim)))
+    if len(axes_sort) > len(set(axes_sort)):
+        raise ValueError(f'repeated axis, arguments: {axes_sort}')
     return expand_dims(expand_dims(arr, axes_sort[0]), *axes_sort[1:])
 
 
 @set_module('numpy_linalg')
 def transpose(arr: np.ndarray) -> np.ndarray:
-    """Transpose last two indices.
+    """Transpose last two axes.
 
-    Transposing last two indices fits better with `np.linalg`'s broadcasting,
+    Transposing last two axes fits better with `numpy.linalg`'s broadcasting,
     which treats multi-dim arrays as stacks of matrices.
 
     Parameters

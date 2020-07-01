@@ -183,6 +183,28 @@ class lnarray(np.ndarray):
         """
         return la.flattish(self, start, stop)
 
+    def unflattish(self, axis: int, shape: Tuple[int, ...]) -> lnarray:
+        """Partial unflattening.
+
+        Folds an `axis` into `shape`.
+
+        See Also
+        --------
+        numpy_linalg.unflattish
+        """
+        return la.unflattish(self, axis, shape)
+
+    def moveaxis(self, source: Axes, destination: Axes) -> lnarray:
+        """Move axes of an array to new positions.
+
+        Other axes remain in their original order.
+
+        See Also
+        --------
+        numpy.moveaxis
+        """
+        return np.moveaxis(self, source, destination)
+
     def expand_dims(self, *axis) -> lnarray:
         """Expand the shape of the array with length one axes
 
@@ -860,3 +882,4 @@ class invarray(pinvarray):
 
 
 Arrayish = Union[np.ndarray, lnarray, pinvarray, invarray]
+Axes = Union[int, Sequence[int]]

@@ -108,7 +108,7 @@ def conv_input(converter: Preparer[MyArray, BaseArray],
         else:
             out.append(obj)
             conv.append(False)
-    return out, conv
+    return tuple(out), conv
 
 
 def conv_in_out(converter: Preparer[MyArray, BaseArray],
@@ -151,7 +151,7 @@ def _conv_in(converter: Preparer[MyArray, BaseArray],
              tup: ArgsIn,
              *cv_out) -> (OutTuple[BaseArray], BoolList):
     """Call one of conv_input or conv_in_out"""
-    if isinstance(tup, tuple):
+    if isinstance(tup, (tuple, list)):
         return conv_input(converter, obj_typ, tup)
     return conv_in_out(converter, obj_typ, tup, *cv_out)
 

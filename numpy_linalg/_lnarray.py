@@ -161,17 +161,18 @@ class lnarray(np.ndarray):
         if func in _TUPLE_FUNCS:
             args = list(args)
             args[0], _ = conv_in_view(lnarray, args[0])
-        elif func == np.block:
+        elif func == np.block:  # pylint: disable=comparison-with-callable
             args = list(args)
             args[0] = _nested_func(args[0],
-                                   lambda x: conv_in_view(lnarray, (x,))[0])
+                                   lambda x: conv_in_view(lnarray, (x,))[0][0])
         else:
             args, _ = conv_in_view(lnarray, args)
         outs, conv_out = conv_in_view(lnarray, kwargs, ())
+        # pylint: disable=no-member
         result = super().__array_function__(func, (), tuple(args), kwargs)
         return conv_out_view(self, result, outs, conv_out)
 
-    def flattish(self, start: int, stop: int) -> lnarray:
+    def flattish(self, start: int = 0, stop: Optional[int] = None) -> lnarray:
         """Partial flattening.
 
         Flattens those axes in the range [start:stop)

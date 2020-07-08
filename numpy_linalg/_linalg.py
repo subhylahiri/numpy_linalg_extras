@@ -49,7 +49,7 @@ from .wrappers import set_module
 
 __all__ = [
     'flattish',
-    'unflattish',
+    'foldaxis',
     'expand_dims',
     'transpose',
     'dagger',
@@ -110,8 +110,8 @@ def flattish(arr: np.ndarray, start: int = 0, stop: ty.Optional[int] = None
 
 
 @set_module('numpy_linalg')
-def unflattish(arr: np.ndarray, axis: int, shape: ty.Tuple[int, ...]
-               ) -> np.ndarray:
+def foldaxis(arr: np.ndarray, axis: int, shape: ty.Tuple[int, ...]
+             ) -> np.ndarray:
     """Partial unflattening.
 
     Folds an `axis` into `shape`.
@@ -186,7 +186,7 @@ def expand_dims(arr: np.ndarray, *axis) -> np.ndarray:
     warn("Pass a tuple of ints to expand_dims rather than multiple arguments."
          + " This will aise an error in version 0.4.0.", DeprecationWarning)
     new_dim = arr.ndim + len(axis)
-    if any(axs >= new_dim or arr < -new_dim for axs in axis):
+    if any(axs >= new_dim or axs < -new_dim for axs in axis):
         raise ValueError(f'Axes out of range for {new_dim}-array: {axis}')
     axes_sort = tuple(np.sort(np.mod(axis, new_dim)))
     if len(axes_sort) > len(set(axes_sort)):

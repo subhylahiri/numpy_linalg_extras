@@ -30,7 +30,7 @@ invarray
     `lnarray.inv` on the rhs instead.
 flattish
     Flatten a subset of axes.
-unflattish
+foldaxis
     Fold an axis.
 expand_dims
     Add new singleton axes.
@@ -81,7 +81,7 @@ Examples
 from . import _lnarray, _linalg
 from ._lnarray import lnarray, pinvarray, invarray
 from ._linalg import (transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-                      matldiv, matrdiv, flattish, unflattish, expand_dims)
+                      matldiv, matrdiv, flattish, foldaxis, expand_dims)
 from .gufuncs import matmul, solve, rsolve, lstsq, rlstsq, norm
 from . import gufuncs
 from . import wrappers
@@ -112,7 +112,7 @@ __version__ = version.max_version(
 assert any((True, gufuncs, wrappers, convert, fft, random))
 assert any((True, lnarray, pinvarray, invarray))
 assert any((True, transpose, dagger, col, row, scalar, qr, lq, lqr, lu,
-            flattish, unflattish, expand_dims, matldiv, matrdiv,
+            flattish, foldaxis, expand_dims, matldiv, matrdiv,
             matmul, solve, rsolve, lstsq, rlstsq, norm))
 assert any((
     True, mgrid, ogrid, r_, c_, empty, eye, identity, ones, zeros, full,

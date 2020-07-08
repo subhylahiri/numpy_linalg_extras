@@ -183,7 +183,7 @@ class lnarray(np.ndarray):
         """
         return la.flattish(self, start, stop)
 
-    def unflattish(self, axis: int, shape: Tuple[int, ...]) -> lnarray:
+    def foldaxis(self, axis: int, shape: Tuple[int, ...]) -> lnarray:
         """Partial unflattening.
 
         Folds an `axis` into `shape`.
@@ -192,7 +192,7 @@ class lnarray(np.ndarray):
         --------
         numpy_linalg.unflattish
         """
-        return la.unflattish(self, axis, shape)
+        return la.foldaxis(self, axis, shape)
 
     def moveaxis(self, source: Axes, destination: Axes) -> lnarray:
         """Move axes of an array to new positions.

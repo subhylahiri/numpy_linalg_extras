@@ -68,7 +68,7 @@ class TestLU(TestCaseNumpy):
         cond = np.linalg.cond(m_bb).max()
 
         sq_l, sq_u, sq_ip = gfl.lu_m(m_bb)
-        sq = gfl.rpivot(sq_l @ sq_u, sq_ip)
+        squ = gfl.rpivot(sq_l @ sq_u, sq_ip)
         sqp = gfl.pivot(m_bb, sq_ip)
         dinds = (...,) + np.diag_indices(big[-1], 2)  # to check l
         uinds = (...,) + np.triu_indices(big[-1], 1)  # to check l
@@ -78,7 +78,7 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(sq_l[uinds], 0.)
         self.assertArrayAllClose(sq_u[linds], 0.)
         self.assertArrayAllClose(sq_l @ sq_u, sqp, cond=cond)
-        self.assertArrayAllClose(sq, m_bb, cond=cond)
+        self.assertArrayAllClose(squ, m_bb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_basic_returns_expected_values_wide(self, m_sb):
@@ -87,7 +87,7 @@ class TestLU(TestCaseNumpy):
         cond = np.linalg.cond(m_sb).max()
 
         wd_l, wd_u, wd_ip = gfl.lu_m(m_sb)
-        wd = gfl.rpivot(wd_l @ wd_u, wd_ip)
+        wid = gfl.rpivot(wd_l @ wd_u, wd_ip)
         wdp = gfl.pivot(m_sb, wd_ip)
         dinds = (...,) + np.diag_indices(wide[-2], 2)  # to check l
         uinds = (...,) + np.triu_indices(wide[-2], 1, wide[-2])  # to check l
@@ -97,7 +97,7 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(wd_l[uinds], 0.)
         self.assertArrayAllClose(wd_u[linds], 0.)
         self.assertArrayAllClose(wd_l @ wd_u, wdp, cond=cond)
-        self.assertArrayAllClose(wd, m_sb, cond=cond)
+        self.assertArrayAllClose(wid, m_sb, cond=cond)
 
     @hy.given(hn.broadcastable('(a,b)', None))
     def test_lu_basic_returns_expected_values_tall(self, m_bs):
@@ -106,7 +106,7 @@ class TestLU(TestCaseNumpy):
         cond = np.linalg.cond(m_bs).max()
 
         tl_l, tl_u, tl_ip = gfl.lu_n(m_bs)
-        tl = gfl.rpivot(tl_l @ tl_u, tl_ip)
+        tal = gfl.rpivot(tl_l @ tl_u, tl_ip)
         tlp = gfl.pivot(m_bs, tl_ip)
         dinds = (...,) + np.diag_indices(tall[-1], 2)  # to check l
         uinds = (...,) + np.triu_indices(tall[-2], 1, tall[-1])  # to check l
@@ -116,7 +116,7 @@ class TestLU(TestCaseNumpy):
         self.assertArrayAllClose(tl_l[uinds], 0.)
         self.assertArrayAllClose(tl_u[linds], 0.)
         self.assertArrayAllClose(tl_l @ tl_u, tlp, cond=cond)
-        self.assertArrayAllClose(tl, m_bs, cond=cond)
+        self.assertArrayAllClose(tal, m_bs, cond=cond)
 
     @hy.given(hn.broadcastable('(a,a)', None))
     def test_lu_raw_returns_expected_values_square(self, m_bb):
@@ -429,7 +429,7 @@ class TestSolveVectors(TestCaseNumpy):
         with self.assertRaisesRegex(*utn.core_dim_err):
             # This would succeed/broadcast error if interpreted as vM:
             gfl.rlu_solve(m_sb[y_one], x_f[off_b], i_p[off_b])
-        self.assertArrayShape(gfl.lu_solve(x_f, i_p, v_s),  m_ss.shape[:-1])
+        self.assertArrayShape(gfl.lu_solve(x_f, i_p, v_s), m_ss.shape[:-1])
         with self.assertRaisesRegex(*utn.core_dim_err):
             gfl.lu_solve(x_f, i_p, v_b)
 

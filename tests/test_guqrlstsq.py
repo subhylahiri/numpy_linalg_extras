@@ -347,7 +347,7 @@ class TestLstsqQRVectors(TestCaseNumpy):
     def test_lstsq_qr_flexible_signature_with_vectors_vm(self, arrays, fun):
         m_sb, m_bs = arrays[:-1]
         wide = m_sb.shape
-        v_s = hn.core_only(*arrays[-1], dims=1)
+        v_s = hn.core_only(arrays[-1], dims=1)
         hy.assume(hn.wide(m_sb))
         hy.assume(la.norm(v_s) > 0.)
 
@@ -587,9 +587,9 @@ class TestLstsqVal(TestCaseNumpy):
         # with self.subTest('rqr_lstsq(under,' + suffix):
         self.assertArrayAllClose(y_sb @ m_bs, m_ss, cond=cond)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), rqr_funcs)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b)', None), rqr_funcs)
     def test_rlstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_ss, m_sb, m_bb = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()
@@ -609,9 +609,9 @@ class TestLstsqVal(TestCaseNumpy):
         # with self.subTest('qr_rlstsq(over,' + suffix):
         self.assertArrayAllClose(m_sb @ y_bs, m_ss, cond=cond)
 
-    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b),(b,a)', None), qr_funcs)
+    @hy.given(hn.broadcastable('(a,a),(a,b),(b,b)', None), qr_funcs)
     def test_lstsq_qr_returns_expected_values_with_wide(self, arrays, fun):
-        m_ss, m_sb, m_bb, m_bs = arrays
+        m_ss, m_sb, m_bb = arrays
         hy.assume(hn.wide(m_sb))
         hy.assume(hn.all_well_behaved(m_sb))
         cond = np.linalg.cond(m_sb).max()

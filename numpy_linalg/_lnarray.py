@@ -451,6 +451,18 @@ def _disallow_solve_pinv(ufunc: np.ufunc, is_pinv: Sequence[bool]) -> bool:
     return any(x and y for x, y in zip(denom, is_pinv))
 
 
+def _check_scalar(*inputs: Sequence[Arrayish]) -> bool:
+    """Check that multiplier/divisor of pinvarray is a scalar wrt linalg"""
+    if len(inputs) != 1:
+        return any(_check_scalar(arr) for arr in inputs)
+    factor = inputs[0]
+    if not isinstance(factor, (np.ndarray, pinvarray)):
+        return True
+    if factor.ndim == 0 or factor.ndim == 1 and factor.shape[0] == 1:
+        return True
+    return factor.shape[-2:] == (1, 1)
+
+
 def _who_chooses(obj: pinvarray,
                  ufunc: np.ufunc,
                  inputs: Sequence[Arrayish],
@@ -492,9 +504,14 @@ def _implicit_getattr(obj: pinvarray, attr: str):
     Not used on the basis that explicit > implicit.
     Use __call__ if you want an actual (pseudo)inverse matrix.
     """
-    if hasattr(obj._to_invert, attr):
-        return getattr(obj(), attr)
-    raise AttributeError(f"Attribute {attr} not found in pinvarray or inverse")
+    try:
+        if hasattr(obj.pinv, attr):
+            return getattr(obj(), attr)
+    except TypeError:
+        if hasattr(obj.inv, attr):
+            return getattr(obj(), attr)
+    raise AttributeError(f"Attribute {attr} not found in {type(obj).__name__} "
+                         "or its inverse")
 
 
 # =============================================================================
@@ -634,9 +651,13 @@ class pinvarray(NDArrayOperatorsMixin):
             # only operation that returns `invarray` is `invarray @ invarray`
             pinv_out[0] = left_arg and right_arg
         elif ufunc in fam.inverse_scalar_arguments.keys():
-            left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
-            ufunc = self._ufunc_map[left_arg][right_arg]
-            pinv_out[0] = True  # one of left_arg/right_arg must be True
+            # check other array is scalar-like wrt linalg
+            if _check_scalar(*args):
+                left_arg, right_arg = _inv_input_scalar(ufunc, pinv_in)
+                ufunc = self._ufunc_map[left_arg][right_arg]
+                pinv_out[0] = True  # one of left_arg/right_arg must be True
+            else:
+                ufunc = None
         elif ufunc in self._unary_ufuncs:
             # Apply ufunc to self._to_invert.
             # Already converted input; just need to convert output back

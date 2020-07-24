@@ -58,21 +58,12 @@ import numpy_linalg.convert as cv
             return cv.conv_out_attr(self, 'attr', results, outputs, conv)
 ```
 """
+from __future__ import annotations
+
 import itertools as _itertools
 import typing as _ty
 
 import numpy as _np
-
-MyArray = _ty.TypeVar('MyArray')
-BaseArray = _ty.TypeVar('BaseArray')
-OutTuple = _ty.Tuple[_ty.Optional[BaseArray], ...]
-ArrayTuple = _ty.Tuple[BaseArray, ...]
-ArgTuple = _ty.Tuple[_ty.Union[_np.ndarray, MyArray], ...]
-ArgDict = _ty.Dict[str, _ty.Any]
-ArgsIn = _ty.Union[ArgTuple[MyArray], ArgDict]
-BoolList = _ty.List[bool]
-Preparer = _ty.Callable[[MyArray], BaseArray]
-Restorer = _ty.Callable[[BaseArray], MyArray]
 # ==============================================================================
 # Inputs
 # ==============================================================================
@@ -80,7 +71,8 @@ Restorer = _ty.Callable[[BaseArray], MyArray]
 
 def conv_input(converter: Preparer[MyArray, BaseArray],
                obj_typ: _ty.Type[MyArray],
-               args: ArgTuple[MyArray]) -> (ArrayTuple[BaseArray], BoolList):
+               args: ArgTuple[MyArray]
+               ) -> _ty.Tuple[ArrayTuple[BaseArray], BoolList]:
     """Process inputs in an __array_ufunc__ method.
 
     Parameters
@@ -114,7 +106,7 @@ def conv_input(converter: Preparer[MyArray, BaseArray],
 def conv_in_out(converter: Preparer[MyArray, BaseArray],
                 obj_typ: _ty.Type[MyArray],
                 kwds: ArgDict,
-                cv_out: BoolList) -> (OutTuple[BaseArray], BoolList):
+                cv_out: BoolList) -> _ty.Tuple[OutTuple[BaseArray], BoolList]:
     """Process the out keyword in an __array_ufunc__ method.
 
     Parameters
@@ -149,7 +141,7 @@ def conv_in_out(converter: Preparer[MyArray, BaseArray],
 def _conv_in(converter: Preparer[MyArray, BaseArray],
              obj_typ: _ty.Type[MyArray],
              tup: ArgsIn,
-             *cv_out) -> (OutTuple[BaseArray], BoolList):
+             *cv_out) -> _ty.Tuple[OutTuple[BaseArray], BoolList]:
     """Call one of conv_input or conv_in_out"""
     if isinstance(tup, (tuple, list)):
         return conv_input(converter, obj_typ, tup)
@@ -194,7 +186,7 @@ def prepare_via_attr(attr: str) -> Preparer[MyArray, BaseArray]:
 
 def conv_in_view(obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *cv_out) -> (OutTuple[_np.ndarray], BoolList):
+                 *cv_out) -> _ty.Tuple[OutTuple[_np.ndarray], BoolList]:
     """Process inputs in an __array_ufunc__ method using view method.
 
     If the second argument is a tuple, we assume we are processing the ufunc's
@@ -223,7 +215,7 @@ def conv_in_view(obj_typ: _ty.Type[MyArray],
 def conv_in_attr(attr: str,
                  obj_typ: _ty.Type[MyArray],
                  tup: ArgsIn[MyArray],
-                 *cv_out: bool) -> (OutTuple[BaseArray], BoolList):
+                 *cv_out: bool) -> _ty.Tuple[OutTuple[BaseArray], BoolList]:
     """Process inputs in an __array_ufunc__ method using an attribute.
 
     If the third argument is a tuple, we assume we are processing the ufunc's
@@ -331,7 +323,7 @@ def restore_via_attr(obj: MyArray, attr: str) -> Restorer[BaseArray, MyArray]:
 
 
 def restore_via_init(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
-    """Create function to convert arrays  using objt.__init__.
+    """Create function to convert arrays using objt.__init__.
 
     Parameters
     ----------
@@ -460,3 +452,19 @@ def conv_out_view(obj: MyArray,
         New tuple of results from ufunc with conversions.
     """
     return conv_out(restore_via_view(type(obj)), results, outputs, conv)
+
+
+# =============================================================================
+# Hint classes
+# =============================================================================
+
+MyArray = _ty.TypeVar('MyArray')
+BaseArray = _ty.TypeVar('BaseArray')
+OutTuple = _ty.Tuple[_ty.Optional[BaseArray], ...]
+ArrayTuple = _ty.Tuple[BaseArray, ...]
+ArgTuple = _ty.Tuple[_ty.Union[_np.ndarray, MyArray], ...]
+ArgDict = _ty.Dict[str, _ty.Any]
+ArgsIn = _ty.Union[ArgTuple[MyArray], ArgDict]
+BoolList = _ty.List[bool]
+Preparer = _ty.Callable[[MyArray], BaseArray]
+Restorer = _ty.Callable[[BaseArray], MyArray]

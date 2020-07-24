@@ -637,8 +637,8 @@ class pinvarray(NDArrayOperatorsMixin):
         return conv_out_init(self, results, outs, pinv_out)
 
     def _choose_ufunc(self, ufunc: np.ufunc, args: Tuple[np.ndarray],
-                      pinv_in: Sequence[bool]) -> (np.ufunc, Tuple[np.ndarray],
-                                                   List[bool]):
+                      pinv_in: Sequence[bool]
+                      ) -> Tuple[np.ufunc, Tuple[np.ndarray], List[bool]]:
         """Choose which ufunc to use, swap args if needed, convert result?"""
         pinv_out = [False] * ufunc.nout  # which outputs need converting back?
         if ufunc in fam.inverse_arguments.keys():

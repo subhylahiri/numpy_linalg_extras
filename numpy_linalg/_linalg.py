@@ -290,12 +290,6 @@ def scalar(arr: np.ndarray) -> np.ndarray:
 # =============================================================================
 # Division & Multiplication
 # =============================================================================
-# matmul = gf.vec.vec_wrap(gf.matmul)
-# rmatmul = gf.vec.vec_wrap(gf.rmatmul)
-# solve = gf.vec.vec_wrap(gf.solve)
-# rsolve = gf.vec.vec_wrap(gf.rsolve)
-# lstsq = gf.vec.vec_wrap(gf.lstsq)
-# rlstsq = gf.vec.vec_wrap(gf.rlstsq)
 
 
 @set_module('numpy_linalg')
@@ -385,9 +379,10 @@ def matrdiv(lft: np.ndarray, rgt: np.ndarray, *args, **kwargs) -> np.ndarray:
 # =============================================================================
 # Matrix decomposition
 # =============================================================================
+# pylint: disable=invalid-name
 
 
-qr_modes = {'reduced': (gf.qr_m, gf.qr_n),
+QR_MODES = {'reduced': (gf.qr_m, gf.qr_n),
             'complete': (gf.qr_m, gf.qr_m),
             'r': (gf.qr_rm, gf.qr_rn),
             'raw': (gf.qr_rawm, gf.qr_rawn)}
@@ -428,16 +423,16 @@ def qr(arr: np.ndarray, mode: str = 'reduced',
         Scaling factors for Householder reflectors. The unit normal to the
         reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
     """
-    if mode.lower() not in qr_modes.keys():
+    if mode.lower() not in QR_MODES.keys():
         raise ValueError('Modes known to qr: reduced, complete, r, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = qr_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
+    ufunc = QR_MODES[mode.lower()][arr.shape[-2] > arr.shape[-1]]
     out = kwds.pop('out', (out1, out2)[:ufunc.nout])
     gf.make_errobj("QR failed: rank deficient?", kwds)
     return ufunc(arr, out=out, **kwds)
 
 
-lq_modes = {'reduced': (gf.lq_m, gf.lq_n),
+LQ_MODES = {'reduced': (gf.lq_m, gf.lq_n),
             'complete': (gf.lq_n, gf.lq_n),
             'l': (gf.lq_lm, gf.lq_ln),
             'raw': (gf.lq_rawm, gf.lq_rawn)}
@@ -478,10 +473,10 @@ def lq(arr: np.ndarray, mode: str = 'reduced',
         Scaling factors for Householder reflectors. The unit normal to the
         reflection plane is ``V = sqrt(tau/2) [0 ... 0 1 v^T]^T``.
     """
-    if mode.lower() not in lq_modes.keys():
+    if mode.lower() not in LQ_MODES.keys():
         raise ValueError('Modes known to lq: reduced, complete, l, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = lq_modes[mode.lower()][arr.shape[-2] > arr.shape[-1]]
+    ufunc = LQ_MODES[mode.lower()][arr.shape[-2] > arr.shape[-1]]
     out = kwds.pop('out', (out1, out2)[:ufunc.nout])
     gf.make_errobj("LQ failed: rank deficient?", kwds)
     return ufunc(arr, out=out, **kwds)
@@ -533,7 +528,7 @@ def lqr(arr: np.ndarray, mode: str = 'reduced',
     return qr(arr, mode, out1, out2, **kwds)
 
 
-lu_modes = {'separate': (gf.lu_m, gf.lu_n),
+LU_MODES = {'separate': (gf.lu_m, gf.lu_n),
             'raw': (gf.lu_rawm, gf.lu_rawn)}
 
 
@@ -571,10 +566,10 @@ def lu(arr: np.ndarray, mode: str = 'separate',
     ipiv: ndarray (...,K,). Modes: `separate, raw`.
         Pivot indices
     """
-    if mode not in lu_modes.keys():
+    if mode not in LU_MODES.keys():
         raise ValueError('Modes known to lu: separate, raw.\n'
                          + 'Unknown mode: ' + mode)
-    ufunc = lu_modes[mode][arr.shape[-2] > arr.shape[-1]]
+    ufunc = LU_MODES[mode][arr.shape[-2] > arr.shape[-1]]
     out = kwds.pop('out', (out1, out2, out3)[:ufunc.nout])
     gf.make_errobj("LU failed: rank deficient?", kwds)
     return ufunc(arr, out=out, **kwds)

@@ -82,7 +82,7 @@ import typing as _ty
 
 import numpy as _np
 
-_Arr = _ty.TypeVar("MyArray")
+_Arr = _ty.TypeVar("_Arr")
 _NpFn = _ty.Callable[..., _np.ndarray]
 _MyFn = _ty.Callable[..., _Arr]
 # =============================================================================

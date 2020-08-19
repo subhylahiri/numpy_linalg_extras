@@ -170,10 +170,18 @@ class lnarray(np.ndarray):
         outs, conv_out = conv_in_view(lnarray, kwargs, ())
         # pylint: disable=no-member
         result = super().__array_function__(func, (), tuple(args), kwargs)
-        return conv_out_view(self, result, outs, conv_out)
+        out = conv_out_view(self, result, outs, conv_out)
+        # pylint: disable=comparison-with-callable
+        if func == np.ix_ and len(args) == 1:
+            return (out,)
+        return out
 
     def flattish(self, start: int = 0, stop: Optional[int] = None) -> lnarray:
         """Partial flattening.
+
+        .. deprecated:: 0.3.1
+            `flattish`  will be removed in numpy_linalg0.4,0, it is renamed as
+            `ravelaxes`.
 
         Flattens those axes in the range [start:stop)
 
@@ -183,7 +191,18 @@ class lnarray(np.ndarray):
         """
         return la.flattish(self, start, stop)
 
-    def foldaxis(self, axis: int, shape: Tuple[int, ...]) -> lnarray:
+    def ravelaxes(self, start: int = 0, stop: Optional[int] = None) -> lnarray:
+        """Partial flattening.
+
+        Flattens those axes in the range [start:stop)
+
+        See Also
+        --------
+        numpy_linalg.flattish
+        """
+        return la.ravelaxes(self, start, stop)
+
+    def unravelaxis(self, axis: int, shape: Tuple[int, ...]) -> lnarray:
         """Partial unflattening.
 
         Folds an `axis` into `shape`.
@@ -192,7 +211,7 @@ class lnarray(np.ndarray):
         --------
         numpy_linalg.unflattish
         """
-        return la.foldaxis(self, axis, shape)
+        return la.unravelaxis(self, axis, shape)
 
     def moveaxis(self, source: Axes, destination: Axes) -> lnarray:
         """Move axes of an array to new positions.

@@ -1,3 +1,7 @@
+"""Extension module containing gufuncs related to matrix multiplication.
+
+They use explicit for-loops in C.
+"""
 from numpy import ufunc
 
 matmul: ufunc

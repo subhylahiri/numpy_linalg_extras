@@ -138,7 +138,8 @@ def _split_signature(signature: str) -> List[Tuple[str, ...]]:
 
 def _broads_cores(sigs_in: List[Tuple[str]],
                   shapes: Tuple[Tuple[int, ...]],
-                  msg: str) -> (List[Tuple[int, ...]], List[Tuple[int, ...]]):
+                  msg: str
+                  ) -> Tuple[List[Tuple[int, ...]], List[Tuple[int, ...]]]:
     """Extract broadcast and core shapes of arrays
 
     Parameters
@@ -242,6 +243,31 @@ def return_shape(signature: str, *shapes: Tuple[int, ...]) -> Tuple[int, ...]:
     return shapes_out[0] if len(shapes_out) == 1 else tuple(shapes_out)
 
 
+def broadcast_shapes(signature: str, *shapes: Tuple[int, ...]
+                     ) -> Tuple[Tuple[int, ...], ...]:
+    """Shape of broadcasted inputs to a matrix operation
+
+    Parameters
+    ----------
+    signature : Tuple[str]
+        Signature of the inputs, without optional axes, spaces or returns,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    shapes : Tuple[int, ...]
+        Shapes of arguments of matrix operation.
+
+    Returns
+    -------
+    broadcasted_shapes : Tuple[Tuple[int]]
+        Shapes of broadcasted inputs to a matrix operation.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    return return_shape(f'{signature}->{signature}', *shapes)
+
+
 def array_return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
     """Shape of result of broadcasted matrix operation
 
@@ -264,3 +290,56 @@ def array_return_shape(signature: str, *arrays: np.ndarray) -> Tuple[int, ...]:
         If `arrays.shape`s do not match signatures.
     """
     return return_shape(signature, *(arr.shape for arr in arrays))
+
+
+def broadcast_array_shapes(signature: str, *arrays: np.ndarray
+                           ) -> Tuple[Tuple[int, ...], ...]:
+    """Shape of broadcasted inputs to a matrix operation
+
+    Parameters
+    ----------
+    signature : Tuple[str]
+        Signature of the inputs, without optional axes, spaces or returns,
+        e.g. `'(a,b),(b,c)->(a,c)'`
+    shapes : Tuple[int, ...]
+        Shapes of arguments of matrix operation.
+
+    Returns
+    -------
+    output_shape : Tuple[int]
+        Shape of broadcasted inputs to a matrix operation.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    return array_return_shape(f'{signature}->{signature}', *arrays)
+
+
+def broadcast_matrices(signature: str, *arrays: np.ndarray
+                       ) -> Tuple[np.ndarray, ...]:
+    """Broadcast arrays, taking account of core dimensions from signature
+
+    Parameters
+    ----------
+    signature : Tuple[str]
+        Signature of the inputs, without optional axes, spaces or a return
+        e.g. `'(a,b),(b,c)'`
+    arrays : np.ndarray
+        Input arrays.
+
+    Returns
+    -------
+    output_arays : Tuple[np.ndarray]
+        Broadcasted arrays, read-only views of the originals, typically not
+        contiguous and several elements refer to the same memory location.
+
+    Raises
+    ------
+    ValueError
+        If `arrays.shape`s do not match signatures.
+    """
+    shapes = broadcast_array_shapes(signature, *arrays)
+    broadcasted = [np.broadcast_to(*arg, True) for arg in zip(arrays, shapes)]
+    return broadcasted[0] if len(broadcasted) == 1 else tuple(broadcasted)

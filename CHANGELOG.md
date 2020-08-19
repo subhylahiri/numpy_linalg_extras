@@ -1,6 +1,6 @@
 ## Changelog for numpy_linalg_extras
 
-### v0.2.0
+### v0.3.0
 
 - Requires NumPy 1.17
 - Implements the `__array_function__` protocol for `lnarray`.

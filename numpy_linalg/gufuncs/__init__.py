@@ -97,6 +97,7 @@ from ._gufuncs_qr_lstsq import (
 from . import _families as fam
 from ._util import make_errobj, unbroadcast_factors
 from ._util import return_shape, array_return_shape
+from ._util import broadcast_shapes, broadcast_array_shapes, broadcast_matrices
 
 from ..version import max_version as _version
 __version__ = _version("0.3.0", _gufuncs_blas, _gufuncs_cloop,
@@ -104,8 +105,9 @@ __version__ = _version("0.3.0", _gufuncs_blas, _gufuncs_cloop,
 
 # fool pyflakes
 assert any((True, norm, rtrue_divide, matmul, rmatmul))
-assert any((True, make_errobj, unbroadcast_factors))
-assert any((True, return_shape, array_return_shape))
+assert any((True, make_errobj, unbroadcast_factors, return_shape,
+            array_return_shape, broadcast_shapes, broadcast_array_shapes,
+            broadcast_matrices))
 assert any((True, solve, rsolve, solve_lu, rsolve_lu, lu_solve, rlu_solve,
             lu_m, lu_n, lu_rawm, lu_rawn, pivot, rpivot, inv, inv_lu, lu_inv))
 assert any((

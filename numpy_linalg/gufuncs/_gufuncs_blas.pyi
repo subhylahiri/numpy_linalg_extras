@@ -1,3 +1,7 @@
+"""Extension module containing gufuncs related to matrix multiplication.
+
+They use the same BLAS implementation as numpy.
+"""
 from numpy import ufunc
 
 matmul: ufunc

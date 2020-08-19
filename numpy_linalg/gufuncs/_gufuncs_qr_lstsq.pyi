@@ -1,3 +1,8 @@
+"""Extension module containing gufuncs related to linear least-square solving,
+Moore-Penrose matrix pseudo-inversion and QR/LQ decomposition.
+
+They use the same LAPACK implementation as numpy.
+"""
 from numpy import ufunc
 
 qr_m: ufunc

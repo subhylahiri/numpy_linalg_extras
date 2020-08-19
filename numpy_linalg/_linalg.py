@@ -49,7 +49,8 @@ from .wrappers import set_module
 
 __all__ = [
     'flattish',
-    'foldaxis',
+    'ravelaxes',
+    'unravelaxis',
     'expand_dims',
     'transpose',
     'dagger',
@@ -76,7 +77,7 @@ __all__ = [
 
 
 @set_module('numpy_linalg')
-def flattish(arr: np.ndarray, start: int = 0, stop: ty.Optional[int] = None
+def ravelaxes(arr: np.ndarray, start: int = 0, stop: ty.Optional[int] = None
              ) -> np.ndarray:
     """Partial flattening.
 
@@ -109,9 +110,13 @@ def flattish(arr: np.ndarray, start: int = 0, stop: ty.Optional[int] = None
     return np.reshape(arr, newshape)
 
 
+flattish = np.deprecate(ravelaxes, old_name='flattish', new_name='ravelaxes',
+                        message="This alias will be removed in v.0.4.0")
+
+
 @set_module('numpy_linalg')
-def foldaxis(arr: np.ndarray, axis: int, shape: ty.Tuple[int, ...]
-             ) -> np.ndarray:
+def unravelaxis(arr: np.ndarray, axis: int, shape: ty.Tuple[int, ...]
+                ) -> np.ndarray:
     """Partial unflattening.
 
     Folds an `axis` into `shape`.

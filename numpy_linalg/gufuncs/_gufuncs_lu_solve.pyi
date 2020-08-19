@@ -1,3 +1,8 @@
+"""Extension module containing gufuncs related to solving linear equations,
+matrix inversion and LU decomposition.
+
+They use the same LAPACK implementation as numpy.
+"""
 from numpy import ufunc
 
 lu_m: ufunc

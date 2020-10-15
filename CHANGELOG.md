@@ -1,5 +1,12 @@
 ## Changelog for numpy_linalg_extras
 
+### v0.3.1
+
+- Renaming `flattish` as `ravelaxes`.
+- Fixed bug in `__array_function__` for `bloc`.
+- Added `moveaxis` method to `lnarray`.
+- Added broadcast helpers to `gufuncs`.
+
 ### v0.3.0
 
 - Requires NumPy 1.17

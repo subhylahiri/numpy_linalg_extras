@@ -62,11 +62,12 @@ from __future__ import annotations
 
 import itertools as _itertools
 import typing as _ty
+import operator as _op
 
 import numpy as _np
-# ==============================================================================
+# =============================================================================
 # Inputs
-# ==============================================================================
+# =============================================================================
 
 
 def conv_input(converter: Preparer[MyArray, BaseArray],
@@ -157,11 +158,7 @@ def prepare_via_view(std_array: _ty.Type[BaseArray] = _np.ndarray
     converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
     """
-    def converter(thing: MyArray) -> BaseArray:
-        """convert to array using view method
-        """
-        return thing.view(std_array)
-    return converter
+    return _op.methodcaller('view', std_array)
 
 
 def prepare_via_attr(attr: str) -> Preparer[MyArray, BaseArray]:
@@ -177,11 +174,7 @@ def prepare_via_attr(attr: str) -> Preparer[MyArray, BaseArray]:
     converter : Callable[MyArray -> ndarray]
         Function to convert specified type to `ndarray`s.
     """
-    def converter(thing: MyArray) -> BaseArray:
-        """convert to array using an attribute
-        """
-        return getattr(thing, attr)
-    return converter
+    return _op.attrgetter(attr)
 
 
 def conv_in_view(obj_typ: _ty.Type[MyArray],
@@ -284,11 +277,11 @@ def conv_out(converter: Restorer[BaseArray, MyArray],
         if output is not None:
             results_out.append(output)
         elif cout and isinstance(result, _np.ndarray):
-            results_out.append(converter(result))
+            results_out.append(converter(result[()]))
         else:
             results_out.append(result)
     if len(results_out) == 1:
-        return results_out[0]
+        return results_out[0][()]
     return tuple(results_out)
 
 
@@ -335,11 +328,7 @@ def restore_via_init(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
     converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     """
-    def converter(thing: BaseArray) -> MyArray:
-        """convert arrays using objt.__init__
-        """
-        return objt(thing)
-    return converter
+    return objt
 
 
 def restore_via_view(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
@@ -355,11 +344,7 @@ def restore_via_view(objt: _ty.Type[MyArray]) -> Restorer[BaseArray, MyArray]:
     converter : Callable[ndarray -> MyArray]
         Function to perform conversions back from `ndarray` to specified type.
     """
-    def converter(thing: BaseArray) -> MyArray:
-        """convert arrays using array.view
-        """
-        return thing.view(objt)
-    return converter
+    return _op.methodcaller('view', objt)
 
 
 def conv_out_attr(obj: MyArray,

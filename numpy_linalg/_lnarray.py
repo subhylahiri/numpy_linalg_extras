@@ -189,7 +189,7 @@ class lnarray(np.ndarray):
         --------
         numpy_linalg.flattish
         """
-        return la.flattish(self, start, stop)
+        return self.ravelaxes(start, stop)
 
     def ravelaxes(self, start: int = 0, stop: Optional[int] = None) -> lnarray:
         """Partial flattening.
@@ -423,9 +423,9 @@ def _inv_input(ufunc: np.ufunc, pinv_in: Sequence[bool]) -> Tuple[bool, ...]:
     Returns
     -------
     left, right
-        `gufuncs.fam.inverse_arguments` of ufunc to call
+        The `gufuncs.fam.inverse_arguments` of ufunc to call
     swap
-        should inputs be swapped?
+        Should inputs be swapped?
     """
     # NOTE: rmatmul doesn't fit the pattern, needs special handling
     swap = ufunc == gf.rmatmul

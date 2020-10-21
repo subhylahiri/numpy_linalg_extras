@@ -277,11 +277,11 @@ def conv_out(converter: Restorer[BaseArray, MyArray],
         if output is not None:
             results_out.append(output)
         elif cout and isinstance(result, _np.ndarray):
-            results_out.append(converter(result[()]))
+            results_out.append(converter(result))
         else:
             results_out.append(result)
     if len(results_out) == 1:
-        return results_out[0][()]
+        return results_out[0]
     return tuple(results_out)
 
 
@@ -408,7 +408,7 @@ def conv_out_init(obj: MyArray,
     results : Tuple[ndarray|MyArray]
         New tuple of results from ufunc with conversions.
     """
-    return conv_out(restore_via_init(type(obj)), results, outputs, conv)
+    return conv_out(type(obj), results, outputs, conv)
 
 
 def conv_out_view(obj: MyArray,
